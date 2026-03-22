@@ -1,0 +1,34 @@
+server:
+  # Porta interna do contêiner. O Docker a aloca dinamicamente na rede,
+  # mas o serviço sempre escuta nesta porta.
+  port: 8090 
+
+spring:
+  application:
+    name: portaria-service
+  
+  cloud:
+    consul:
+      host: consul
+      port: 8500
+      discovery:
+        # Habilita o auto-registro no Consul
+        register: true
+        instance-id: ${spring.application.name}:${random.value}
+        prefer-ip-address: true
+        tags: 
+          - "traefik.enable=true"
+          - "traefik.http.routers.portaria.rule=PathPrefix(`/api/portaria`)"
+          - "traefik.http.routers.portaria.entrypoints=web" # 'web' é o entrypoint 8087
+          - "traefik.http.middlewares.portaria-stripprefix.stripprefix.prefixes=/api/portaria"
+          - "traefik.http.routers.portaria.middlewares=portaria-stripprefix"
+        
+        # Health Check
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health # Expõe o endpoint /actuator/health
