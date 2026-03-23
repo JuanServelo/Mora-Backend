@@ -1,0 +1,13 @@
+# Docker Compose para testar o sistema de autenticação
+# Uso: docker compose -f docker/docker-compose.auth.yml up -d
+services:
+  mongodb:
+    image: mongo:7
+    container_name: auth-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - auth_mongodb_data:/data/db
+
+volumes:
+  auth_mongodb_data:

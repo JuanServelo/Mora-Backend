@@ -35,7 +35,18 @@ services:
       - "--providers.consul.endpoint.address=consul:8500"
       - "--providers.consul.rootkey=traefik/config"
 
-  # 3. Microservice 1: Portaria (Java)
+  # 3. MongoDB (para Auth API)
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - microservices-net
+
+  # 4. Microservice 1: Portaria (Java)
   portaria-service:
     build:
       context: ../services/portaria-service
@@ -48,6 +59,9 @@ services:
     ports:
       - "8090:8090"
     
+volumes:
+  mongodb_data:
+
 networks:
   microservices-net:
     driver: bridge
