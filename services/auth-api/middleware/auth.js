@@ -15,6 +15,7 @@ const authMiddleware = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.id;
+    req.userRole = decoded.role;
     next();
   } catch (err) {
     return res.status(401).json({
@@ -22,6 +23,16 @@ const authMiddleware = (req, res, next) => {
       mensagem: 'Token inválido ou expirado',
     });
   }
+};
+
+export const adminMiddleware = (req, res, next) => {
+  if (req.userRole !== 'admin') {
+    return res.status(403).json({
+      sucesso: false,
+      mensagem: 'Acesso negado — apenas administradores',
+    });
+  }
+  next();
 };
 
 export default authMiddleware;

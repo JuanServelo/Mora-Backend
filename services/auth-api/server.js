@@ -8,6 +8,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from './models/User.js';
 import authRoutes from './routes/auth.js';
+import usersRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -80,6 +81,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auth API funcionando' });
