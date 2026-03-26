@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AuthCallback from './pages/AuthCallback';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }) {
@@ -25,6 +26,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
