@@ -1,34 +1,73 @@
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import { useState } from 'react';
+
+const modules = [
+  {
+    icon: '🏢',
+    title: 'Portaria',
+    desc: 'Controle de entrada e saída de visitantes e entregas.',
+    href: '#portaria',
+    active: true,
+  },
+  {
+    icon: '👥',
+    title: 'Moradores',
+    desc: 'Gestão de moradores, unidades e cadastros.',
+    href: '#moradores',
+    active: false,
+  },
+  {
+    icon: '📋',
+    title: 'Ocorrências',
+    desc: 'Registro e acompanhamento de ocorrências no condomínio.',
+    href: '#ocorrencias',
+    active: false,
+  },
+  {
+    icon: '💬',
+    title: 'Avisos',
+    desc: 'Comunicados e avisos para os moradores.',
+    href: '#avisos',
+    active: false,
+  },
+];
 
 export default function Dashboard() {
-  const { usuario, logout } = useAuth();
-  const [msgProtegida, setMsgProtegida] = useState('');
+  const { usuario } = useAuth();
 
-  const testarRotaProtegida = async () => {
-    try {
-      const { data } = await api.get('/auth/me');
-      setMsgProtegida(data.sucesso ? `Olá, ${data.usuario.nome}! Token válido.` : 'Erro');
-    } catch (err) {
-      setMsgProtegida('Erro: ' + (err.response?.data?.mensagem || 'Falha na requisição'));
-    }
-  };
+  const primeiroNome = usuario?.nome?.split(' ')[0] ?? 'Morador';
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-card">
-        <h1>Dashboard</h1>
-        <p className="welcome">Bem-vindo, <strong>{usuario?.nome}</strong>!</p>
-        <p className="email">{usuario?.email}</p>
-        <button onClick={testarRotaProtegida} className="btn-testar">
-          Testar rota protegida /api/auth/me
-        </button>
-        {msgProtegida && <p className="msg-protegida">{msgProtegida}</p>}
-        <button onClick={logout} className="btn-logout">
-          Sair
-        </button>
-      </div>
+    <div className="home">
+      <section className="home-hero">
+        <div className="home-hero-text">
+          <span className="home-greeting">Bem-vindo de volta,</span>
+          <h1 className="home-title">{primeiroNome}</h1>
+          <p className="home-subtitle">{usuario?.email}</p>
+        </div>
+        <div className="home-avatar">{primeiroNome[0].toUpperCase()}</div>
+      </section>
+
+      <section className="home-section">
+        <h2 className="home-section-title">Módulos</h2>
+        <div className="home-grid">
+          {modules.map((mod) => (
+            <a
+              key={mod.title}
+              href={mod.href}
+              className={`home-card ${!mod.active ? 'home-card--disabled' : ''}`}
+            >
+              <span className="home-card-icon">{mod.icon}</span>
+              <div>
+                <p className="home-card-title">
+                  {mod.title}
+                  {!mod.active && <span className="home-card-badge">Em breve</span>}
+                </p>
+                <p className="home-card-desc">{mod.desc}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

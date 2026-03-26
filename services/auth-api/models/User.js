@@ -16,9 +16,18 @@ const userSchema = new mongoose.Schema({
   },
   senha: {
     type: String,
-    required: [true, 'Senha é obrigatória'],
     minlength: 6,
     select: false,
+  },
+  googleId: {
+    type: String,
+    sparse: true,
+    unique: true,
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local',
   },
   createdAt: {
     type: Date,
@@ -27,7 +36,7 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('senha')) return next();
+  if (!this.isModified('senha') || !this.senha) return next();
   this.senha = await bcrypt.hash(this.senha, 10);
   next();
 });

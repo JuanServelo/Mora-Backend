@@ -2,15 +2,18 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Layout({ children }) {
-  const { usuario } = useAuth();
+  const { usuario, logout } = useAuth();
 
   return (
     <div className="layout">
       <header className="header">
-        <Link to="/" className="logo">Auth</Link>
+        <Link to={usuario ? '/dashboard' : '/'} className="logo">Mora</Link>
         <nav>
           {usuario ? (
-            <Link to="/dashboard" className="nav-link">Dashboard</Link>
+            <div className="header-user">
+              <span className="header-user-name">{usuario.nome.split(' ')[0]}</span>
+              <button className="btn-logout-header" onClick={logout}>Sair</button>
+            </div>
           ) : (
             <>
               <Link to="/" className="nav-link">Entrar</Link>
@@ -19,7 +22,7 @@ export default function Layout({ children }) {
           )}
         </nav>
       </header>
-      <main className="main">{children}</main>
+      <main className={usuario ? 'main main--home' : 'main'}>{children}</main>
     </div>
   );
 }
