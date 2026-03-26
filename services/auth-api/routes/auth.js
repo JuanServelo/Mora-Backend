@@ -21,8 +21,8 @@ const authLimiter = rateLimit({
 const getJwtSecret = () => process.env.JWT_SECRET;
 const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
 
-const signToken = (userId) =>
-  jwt.sign({ id: userId }, getJwtSecret(), { expiresIn: '7d' });
+const signToken = (userId, role = 'user') =>
+  jwt.sign({ id: userId, role }, getJwtSecret(), { expiresIn: '7d' });
 
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req, res) => {
@@ -43,13 +43,13 @@ router.post('/register', authLimiter, async (req, res) => {
     }
 
     const usuario = await User.create({ nome, email, senha, provider: 'local' });
-    const token = signToken(usuario._id);
+    const token = signToken(usuario._id, usuario.role);
 
     res.status(201).json({
       sucesso: true,
       mensagem: 'Usuário criado com sucesso',
       token,
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email },
+      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, role: usuario.role },
     });
   } catch (err) {
     console.error('Erro no register:', err);
@@ -79,13 +79,13 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ sucesso: false, mensagem: 'Credenciais inválidas' });
     }
 
-    const token = signToken(usuario._id);
+    const token = signToken(usuario._id, usuario.role);
 
     res.json({
       sucesso: true,
       mensagem: 'Login realizado com sucesso',
       token,
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email },
+      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, role: usuario.role },
     });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao fazer login' });
@@ -101,7 +101,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
     res.json({
       sucesso: true,
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, provider: usuario.provider },
+      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, provider: usuario.provider, role: usuario.role },
     });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao buscar usuário' });
@@ -130,7 +130,7 @@ router.get('/google/callback', (req, res) => {
       return res.redirect(`${getFrontendUrl()}/?erro=oauth`);
     }
 
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.role);
     console.log('[Google Callback] Sucesso → redirecionando para frontend');
     res.redirect(`${getFrontendUrl()}/auth/callback?token=${token}`);
   })(req, res);
