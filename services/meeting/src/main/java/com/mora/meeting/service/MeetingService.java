@@ -1,0 +1,130 @@
+package com.mora.meeting.service;
+
+import com.google.api.services.meet.v2.model.Space;
+import com.mora.meeting.dto.meeting.MeetingRequestDTO;
+import com.mora.meeting.dto.meeting.MeetingResponseDTO;
+import com.mora.meeting.entity.Meeting;
+import com.mora.meeting.enums.MeetingStatus;
+import com.mora.meeting.mapper.MeetingMapper;
+import com.mora.meeting.repository.MeetingRepository;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.google.api.services.meet.v2.Meet;
+
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class MeetingService {
+
+    private final MeetingRepository meetingRepository;
+    private final MeetingMapper meetingMapper;
+    private final Meet googleMeetClient;
+
+    @Transactional
+    public MeetingResponseDTO createMeeting(@NotNull MeetingRequestDTO dto) {
+
+        if (dto.getDataHoraFim().isBefore(dto.getDataHoraInicio())) {
+            throw new IllegalArgumentException("A data de término deve ser posterior à data de início.");
+        }
+
+        Meeting meeting = meetingMapper.toEntity(dto);
+
+        //todo: alterar para microsserviço de usuários
+        List<String> emailsParaOMeet = buscarEmailsDosUsuariosMock(dto.getIdConvidados());
+        System.out.println("E-mails recuperados para o convite: " + emailsParaOMeet);
+
+
+        /* * acesso a microserviço de usuários
+         * List<String> emails = usuarioClient.buscarEmails(dto.getIdConvidados());
+         */
+
+
+        try {
+            Space spaceRequest = new Space();
+            Space createdSpace = googleMeetClient.spaces().create(spaceRequest).execute();
+            String meetLink = createdSpace.getMeetingUri();
+            meeting.setMeetLink(meetLink);
+
+            System.out.println("Link do Meet gerado com sucesso: " + meetLink);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao comunicar com a API do Google Meet: " + e.getMessage());
+            throw new RuntimeException("Falha ao gerar o link da reunião no Google Meet.", e);
+        }
+
+        meeting.setStatus(MeetingStatus.AGENDADA);
+        Meeting meetingSalvo = meetingRepository.save(meeting);
+
+        return meetingMapper.toResponseDto(meetingSalvo);
+    }
+
+    @Transactional(readOnly = true)
+    public MeetingResponseDTO readMeeting(@NotNull Long id) {
+
+        Meeting meeting = meetingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
+
+        MeetingResponseDTO responseDTO = meetingMapper.toResponseDto(meeting);
+
+        /* * acesso a microserviço de usuários
+         * * List<String> emails = buscarEmailsDosUsuariosMock(meeting.getIdConvidados());
+         * responseDTO.setConvidados(emails);
+         */
+
+        return responseDTO;
+    }
+
+    @Transactional
+    public MeetingResponseDTO updateMeeting(@NotNull Long id, @NotNull MeetingRequestDTO dto) {
+        if (dto.getDataHoraFim().isBefore(dto.getDataHoraInicio())) {
+            throw new IllegalArgumentException("A data de término deve ser posterior à data de início.");
+        }
+        Meeting meetingExistente = meetingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
+
+        meetingExistente.setTitulo(dto.getTitulo());
+        meetingExistente.setDescricao(dto.getDescricao());
+        meetingExistente.setDataHoraInicio(dto.getDataHoraInicio());
+        meetingExistente.setDataHoraFim(dto.getDataHoraFim());
+
+        // todo: atualizar a lista de usuários
+
+        Meeting meetingAtualizado = meetingRepository.save(meetingExistente);
+
+        return meetingMapper.toResponseDto(meetingAtualizado);
+    }
+
+    @Transactional
+    public void cancelMeeting(@NotNull Long id) {
+        Meeting meeting = meetingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
+
+        meeting.setStatus(MeetingStatus.CANCELADA);
+
+        // Todo : Adicionar lógica para cancelar a reunião no Google Meet
+        // Todo : Disparar notificação/e-mail de cancelamento para os convidados
+
+        meetingRepository.save(meeting);
+    }
+
+    //MOCK DE USUÁRIOS
+    private List<String> buscarEmailsDosUsuariosMock(List<Long> ids) {
+        Map<Long, String> bancoDeUsuariosFalso = Map.of(
+                1L, "akemiskrd@gmail.com",
+                2L, "juan@empresa.com",
+                3L, "joao.victor@empresa.com",
+                4L, "thais@empresa.com",
+                5L, "ray@empresa.com"
+        );
+
+        // Percorre a lista de IDs que chegou no DTO e busca o e-mail correspondente
+        return ids.stream()
+                .map(id -> bancoDeUsuariosFalso.getOrDefault(id, "convidado_padrao@empresa.com"))
+                .toList();
+    }
+}
