@@ -1,0 +1,7 @@
+
+.env
+docker/.env
+*.env
+
+credentials.json
+tokens/
