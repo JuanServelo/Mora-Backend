@@ -58,9 +58,46 @@ services:
       - microservices-net
     ports:
       - "8090:8090"
-    
+
+  # 5. Banco de Dados Relacional (Para o Meeting Service)
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: mora
+    ports:
+      - "3306:3306"
+    networks:
+      - microservices-net
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 6. Microservice 2: Meetings e Atas
+  meeting-service:
+    build:
+      context: ../services/meeting
+      dockerfile: Dockerfile
+    container_name: meeting-service
+    depends_on:
+      - consul
+      - mysql-db
+    networks:
+      - microservices-net
+    ports:
+      - "8091:8091"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/mora
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+
 volumes:
   mongodb_data:
+  mysql_data:
 
 networks:
   microservices-net:
