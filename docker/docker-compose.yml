@@ -46,7 +46,22 @@ services:
     networks:
       - microservices-net
 
-  # 4. Microservice 1: Portaria (Java)
+  # 4. Banco de Dados Relacional (Para o Portaria Service)
+  postgres-portaria:
+    image: postgres:16-alpine
+    container_name: postgres-portaria
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-mora}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+    ports:
+      - "5432:5432"
+    networks:
+      - microservices-net
+    volumes:
+      - postgres_portaria_data:/var/lib/postgresql/data
+
+  # 5. Microservice 1: Portaria (Java)
   portaria-service:
     build:
       context: ../services/portaria-service
@@ -54,12 +69,20 @@ services:
     container_name: portaria-service
     depends_on:
       - consul
+      - postgres-portaria
     networks:
       - microservices-net
     ports:
       - "8090:8090"
+    environment:
+      - POSTGRES_HOST=postgres-portaria
+      - POSTGRES_DB=${POSTGRES_DB:-mora}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
 
-  # 5. Banco de Dados Relacional (Para o Meeting Service)
+  # 6. Banco de Dados Relacional (Para o Meeting Service)
   mysql-db:
     image: mysql:8.0
     container_name: mysql-db
@@ -73,7 +96,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  # 6. Microservice 2: Meetings e Atas
+  # 7. Microservice 2: Meetings e Atas
   meeting-service:
     build:
       context: ../services/meeting
@@ -87,15 +110,15 @@ services:
     ports:
       - "8091:8091"
     environment:
-    - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}
-    - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-    - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    - SPRING_CLOUD_CONSUL_HOST=consul
-    - SPRING_CLOUD_CONSUL_PORT=8500
-      -
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
 volumes:
   mongodb_data:
   mysql_data:
+  postgres_portaria_data:
 
 networks:
   microservices-net:

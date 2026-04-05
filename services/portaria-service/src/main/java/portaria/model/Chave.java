@@ -1,21 +1,37 @@
 package portaria.model;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import portaria.model.enums.TipoResponsavel;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
+@Entity
+@Table(name = "chaves")
 public class Chave {
-    private String id;
-    private String nomeChave;
-    private String responsavel;
-    private LocalDateTime retirada;
-    private LocalDateTime devolucao;
-    private boolean disponivel;
 
-    public Chave(String nomeChave) {
-        this.id = UUID.randomUUID().toString();
-        this.nomeChave = nomeChave;
-        this.disponivel = true;
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @NotBlank(message = "Nome da chave é obrigatório")
+    @Column(name = "nome_chave")
+    private String nomeChave;
+
+    @Column(name = "responsavel_id")
+    private String responsavelId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_responsavel")
+    private TipoResponsavel tipoResponsavel;
+
+    @Column(name = "nome_responsavel")
+    private String nomeResponsavel;
+
+    private LocalDateTime retirada;
+
+    private LocalDateTime devolucao;
+
+    private boolean disponivel = true;
 }

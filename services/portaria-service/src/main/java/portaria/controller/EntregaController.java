@@ -1,49 +1,44 @@
 package portaria.controller;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import portaria.model.Entrega;
+import portaria.service.EntregaService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/entregas")
+@RequiredArgsConstructor
 public class EntregaController {
 
-    private List<Entrega> entregas = new ArrayList<>();
+    private final EntregaService entregaService;
 
-    @PostMapping("/cadastrar")
-    public Entrega registrarEntrega(@RequestBody Entrega novaEntrega) {
-        entregas.add(novaEntrega);
-        return novaEntrega;
+    @PostMapping("/registrar")
+    public ResponseEntity<Entrega> registrar(@Valid @RequestBody Entrega entrega) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(entregaService.registrar(entrega));
     }
 
-    @GetMapping("/procurar")
-    public List<Entrega> listarEntregas() {
-        return entregas;
+    @PostMapping("/{id}/retirar")
+    public Entrega retirar(@PathVariable String id, @RequestBody String recebedor) {
+        return entregaService.retirar(id, recebedor);
     }
 
-    @GetMapping("/procurar/{id}")
-    public Entrega buscarEntregaPorId(@PathVariable String id) {
-        return entregas.stream()
-                       .filter(e -> e.getId().equals(id))
-                       .findFirst()
-                       .orElse(null);
+    @GetMapping
+    public List<Entrega> listarTodas() {
+        return entregaService.listarTodas();
     }
 
-    @PostMapping("/retirar/{id}")
-    public String retirarEntrega(@PathVariable String id, @RequestBody String recebedor) {
-        Optional<Entrega> entrega = entregas.stream()
-                                          .filter(e -> e.getId().equals(id))
-                                          .findFirst();
+    @GetMapping("/pendentes")
+    public List<Entrega> listarPendentes() {
+        return entregaService.listarPendentes();
+    }
 
-        if (entrega.isPresent() && !entrega.get().isRetirada()) {
-            entrega.get().setRetirada(true);
-            entrega.get().setDataRetirada(java.time.LocalDateTime.now());
-            entrega.get().setRecebedor(recebedor);
-            return "Entrega retirada com sucesso por " + recebedor; //adicionar a funcao de disparada de email/notificacao
-        } else {
-            return "Entrega não encontrada ou já retirada.";
-        }
+    @GetMapping("/{id}")
+    public Entrega buscarPorId(@PathVariable String id) {
+        return entregaService.buscarPorId(id);
     }
 }

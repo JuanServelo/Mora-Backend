@@ -1,25 +1,34 @@
 package portaria.model;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Data
+@Entity
+@Table(name = "turnos")
 public class Turno {
-    private String id;
-    private String funcionario;
-    private String cargo;
-    private List<LocalDateTime> entradas;
-    private List<LocalDateTime> saidas;
 
-    public Turno(String funcionario, String cargo) {
-        this.id = UUID.randomUUID().toString();
-        this.funcionario = funcionario;
-        this.cargo = cargo;
-        this.entradas = new ArrayList<>();
-        this.saidas = new ArrayList<>();
-        this.entradas.add(LocalDateTime.now());
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @NotBlank(message = "Nome do funcionário é obrigatório")
+    private String funcionario;
+
+    @NotBlank(message = "Cargo é obrigatório")
+    private String cargo;
+
+    @ElementCollection
+    @CollectionTable(name = "turno_entradas", joinColumns = @JoinColumn(name = "turno_id"))
+    @Column(name = "entrada")
+    private List<LocalDateTime> entradas = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "turno_saidas", joinColumns = @JoinColumn(name = "turno_id"))
+    @Column(name = "saida")
+    private List<LocalDateTime> saidas = new ArrayList<>();
 }
