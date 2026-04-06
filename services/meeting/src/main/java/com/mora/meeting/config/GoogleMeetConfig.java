@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 
-@Configuration
+//@Configuration
 public class GoogleMeetConfig {
 
     private static final String APPLICATION_NAME = "Mora Meeting API";
@@ -30,7 +30,7 @@ public class GoogleMeetConfig {
     // Escopo necessário para criar reuniões no Google Meet
     private static final List<String> SCOPES = Collections.singletonList("https://www.googleapis.com/auth/meetings.space.created");
 
-    @Bean
+    //@Bean
     public Meet meetService() throws Exception {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 

@@ -90,7 +90,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     networks:
       - microservices-net
     volumes:
@@ -110,11 +110,11 @@ services:
     ports:
       - "8091:8091"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - SPRING_CLOUD_CONSUL_HOST=consul
-      - SPRING_CLOUD_CONSUL_PORT=8500
+    - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}
+    - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+    - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    - SPRING_CLOUD_CONSUL_HOST=consul
+    - SPRING_CLOUD_CONSUL_PORT=8500
 volumes:
   mongodb_data:
   mysql_data:
