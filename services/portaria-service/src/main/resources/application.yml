@@ -1,29 +1,40 @@
 server:
-  # Porta interna do contêiner. O Docker a aloca dinamicamente na rede,
-  # mas o serviço sempre escuta nesta porta.
-  port: 8090 
+  port: 8090
 
 spring:
   application:
     name: portaria-service
-  
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora}
+    username: ${POSTGRES_USER:admin}
+    password: ${POSTGRES_PASSWORD:Vibers@2112}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
   cloud:
     consul:
-      host: consul
-      port: 8500
+      host: ${SPRING_CLOUD_CONSUL_HOST:localhost}
+      port: ${SPRING_CLOUD_CONSUL_PORT:8500}
       discovery:
-        # Habilita o auto-registro no Consul
         register: true
         instance-id: ${spring.application.name}:${random.value}
         prefer-ip-address: true
-        tags: 
+        tags:
           - "traefik.enable=true"
           - "traefik.http.routers.portaria.rule=PathPrefix(`/api/portaria`)"
-          - "traefik.http.routers.portaria.entrypoints=web" # 'web' é o entrypoint 8087
+          - "traefik.http.routers.portaria.entrypoints=web"
           - "traefik.http.middlewares.portaria-stripprefix.stripprefix.prefixes=/api/portaria"
           - "traefik.http.routers.portaria.middlewares=portaria-stripprefix"
-        
-        # Health Check
+
         health-check-path: /actuator/health
         health-check-interval: 15s
 
@@ -31,4 +42,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health # Expõe o endpoint /actuator/health
+        include: health
