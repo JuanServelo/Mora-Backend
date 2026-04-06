@@ -92,7 +92,6 @@ services:
     - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
     - SPRING_CLOUD_CONSUL_HOST=consul
     - SPRING_CLOUD_CONSUL_PORT=8500
-      -
 volumes:
   mongodb_data:
   mysql_data:
