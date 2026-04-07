@@ -1,28 +1,35 @@
 package portaria.model;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
+@Entity
+@Table(name = "entregas")
 public class Entrega {
-    private String id;
-    private String nomeEntregador;
-    private String destinatario;
-    private String recebedor;
-    private String descricao;
-    private LocalDateTime dataRecebimento;
-    private LocalDateTime dataRetirada;
-    private boolean retirada;
 
-    public Entrega(String nomeEntregador, String destinatario, String descricao) {
-        this.id = UUID.randomUUID().toString();
-        this.nomeEntregador = nomeEntregador;
-        this.destinatario = destinatario;
-        this.descricao = descricao;
-        this.dataRecebimento = LocalDateTime.now();
-        this.dataRetirada = null;
-        this.recebedor = null;
-        this.retirada = false;
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @NotBlank(message = "Nome do entregador é obrigatório")
+    @Column(name = "nome_entregador")
+    private String nomeEntregador;
+
+    @NotBlank(message = "Destinatário é obrigatório")
+    private String destinatario;
+
+    private String recebedor;
+
+    private String descricao;
+
+    @Column(name = "data_recebimento")
+    private LocalDateTime dataRecebimento;
+
+    @Column(name = "data_retirada")
+    private LocalDateTime dataRetirada;
+
+    private boolean retirada = false;
 }
