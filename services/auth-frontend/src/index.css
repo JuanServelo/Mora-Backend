@@ -311,6 +311,328 @@ body {
   background: rgba(0, 212, 170, 0.05);
 }
 
+<<<<<<< Updated upstream
+=======
+/* Home card as button */
+.home-card--btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.2s, background 0.2s;
+}
+.home-card--btn:hover {
+  border-color: var(--accent);
+  background: rgba(0, 212, 170, 0.04);
+}
+
+/* Admin page */
+.admin-page {
+  width: 100%;
+}
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+.admin-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.admin-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.admin-loading {
+  color: var(--text-muted);
+  padding: 2rem 0;
+}
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.admin-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.admin-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.admin-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.admin-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.admin-email {
+  color: var(--text-muted);
+}
+.admin-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.admin-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem;
+}
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.role-badge--admin {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent);
+}
+.role-badge--user {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+/* Buttons */
+.btn-primary {
+  padding: 0.6rem 1.25rem;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-dim);
+}
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.btn-secondary {
+  padding: 0.6rem 1.25rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-secondary:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+.btn-icon {
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: border-color 0.2s, background 0.2s;
+}
+.btn-icon:hover {
+  border-color: var(--accent);
+  background: rgba(0, 212, 170, 0.07);
+}
+.btn-icon--danger:hover {
+  border-color: var(--error);
+  background: rgba(255, 107, 107, 0.08);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 440px;
+  padding: 1.75rem;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.modal-close:hover {
+  color: var(--text-primary);
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.form-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+.form-input {
+  padding: 0.65rem 0.9rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Success message */
+.sucesso {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+/* Auth success state */
+.auth-success-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Profile page */
+.perfil-link {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.perfil-link:hover {
+  color: var(--accent);
+}
+.perfil-grid {
+  max-width: 520px;
+}
+.perfil-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+}
+.perfil-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.perfil-section-subtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.perfil-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.perfil-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.5rem 0;
+}
+.perfil-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+>>>>>>> Stashed changes
 /* Loading */
 .loading {
   display: flex;

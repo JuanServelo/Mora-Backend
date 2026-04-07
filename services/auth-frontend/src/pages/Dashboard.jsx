@@ -1,3 +1,7 @@
+<<<<<<< Updated upstream
+=======
+import { useNavigate, Link } from 'react-router-dom';
+>>>>>>> Stashed changes
 import { useAuth } from '../context/AuthContext';
 
 const modules = [
@@ -44,7 +48,10 @@ export default function Dashboard() {
           <h1 className="home-title">{primeiroNome}</h1>
           <p className="home-subtitle">{usuario?.email}</p>
         </div>
-        <div className="home-avatar">{primeiroNome[0].toUpperCase()}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="home-avatar">{primeiroNome[0].toUpperCase()}</div>
+          <Link to="/perfil" className="perfil-link">Editar perfil</Link>
+        </div>
       </section>
 
       <section className="home-section">

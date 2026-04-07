@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
@@ -5,6 +6,7 @@ import passport from 'passport';
 import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 import authMiddleware from '../middleware/auth.js';
+import { enviarEmailReset } from '../utils/emailService.js';
 
 const router = express.Router();
 
@@ -13,6 +15,15 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { sucesso: false, mensagem: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter para forgot-password (3 tentativas por hora)
+const forgotLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { sucesso: false, mensagem: 'Muitas solicitações de recuperação. Tente novamente em 1 hora.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -105,6 +116,100 @@ router.get('/me', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao buscar usuário' });
+  }
+});
+
+// PUT /api/auth/me - Atualizar perfil do usuário logado
+router.put('/me', authMiddleware, async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+    const usuario = await User.findById(req.userId);
+    if (!usuario) {
+      return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado' });
+    }
+
+    if (nome) usuario.nome = nome;
+    if (email) usuario.email = email;
+    if (senha) {
+      if (senha.length < 6) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Senha deve ter no mínimo 6 caracteres' });
+      }
+      usuario.senha = senha;
+    }
+
+    await usuario.save();
+    res.json({
+      sucesso: true,
+      mensagem: 'Perfil atualizado com sucesso',
+      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, role: usuario.role },
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Email já cadastrado' });
+    }
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar perfil' });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', forgotLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Email é obrigatório' });
+    }
+
+    const usuario = await User.findOne({ email });
+    // Sempre retorna 200 para não revelar se o email existe
+    if (!usuario || usuario.provider !== 'local') {
+      console.log(`[forgot-password] ${!usuario ? 'email não encontrado' : `provider=${usuario.provider}, apenas local suportado`}: ${email}`);
+      return res.json({ sucesso: true, mensagem: 'Se esse email estiver cadastrado, você receberá um link em breve.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+
+    usuario.resetToken = hash;
+    usuario.resetTokenExpira = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+    await usuario.save({ validateBeforeSave: false });
+
+    await enviarEmailReset(usuario.email, token);
+
+    res.json({ sucesso: true, mensagem: 'Se esse email estiver cadastrado, você receberá um link em breve.' });
+  } catch (err) {
+    console.error('Erro no forgot-password:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar solicitação' });
+  }
+});
+
+// POST /api/auth/reset-password/:token
+router.post('/reset-password/:token', authLimiter, async (req, res) => {
+  try {
+    const { senha } = req.body;
+    if (!senha || senha.length < 6) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Senha deve ter no mínimo 6 caracteres' });
+    }
+
+    const hash = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const usuario = await User.findOne({
+      resetToken: hash,
+      resetTokenExpira: { $gt: new Date() },
+    }).select('+resetToken +resetTokenExpira');
+
+    if (!usuario) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Token inválido ou expirado' });
+    }
+
+    usuario.senha = senha;
+    usuario.resetToken = undefined;
+    usuario.resetTokenExpira = undefined;
+    await usuario.save();
+
+    res.json({ sucesso: true, mensagem: 'Senha redefinida com sucesso' });
+  } catch (err) {
+    console.error('Erro no reset-password:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao redefinir senha' });
   }
 });
 
