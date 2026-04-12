@@ -25,4 +25,15 @@ public class MeetingGuests{
     @Enumerated(EnumType.STRING)
     @Column(name = "status_presenca", nullable = false)
     private AttendanceStatus status;
+
+    @Column(name = "nota_avaliacao")
+    private Integer nota;
+
+    @Column(name = "comentario_avaliacao", length = 500)
+    private String comentario;
+
+    public MeetingGuests(Long usuarioId, AttendanceStatus status) {
+        this.usuarioId = usuarioId;
+        this.status = status;
+    }
 }

@@ -1,5 +1,6 @@
 package com.mora.meeting.controller;
 
+import com.mora.meeting.dto.meeting.MeetingEvaluationRequestDTO;
 import com.mora.meeting.dto.meeting.MeetingRequestDTO;
 import com.mora.meeting.dto.meeting.MeetingResponseDTO;
 import com.mora.meeting.enums.AttendanceStatus;
@@ -59,6 +60,23 @@ public class MeetingController {
             @RequestParam AttendanceStatus status) {
 
         meetingService.atualizarStatusPresenca(id, usuarioId, status);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/convidados/{usuarioId}/avaliacoes")
+    @Operation(summary = "Avaliar reunião", description = "Permite que um participante avalie a condução da reunião após ela ser finalizada.")
+    public ResponseEntity<Void> avaliarReuniao(
+            @PathVariable Long id,
+            @PathVariable Long usuarioId,
+            @Valid @RequestBody MeetingEvaluationRequestDTO dto) {
+
+        meetingService.avaliarReuniao(id, usuarioId, dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/finalizar")
+    public ResponseEntity<Void> finalizarReuniao(@PathVariable Long id) {
+        meetingService.finalizarReuniao(id);
         return ResponseEntity.noContent().build();
     }
 }

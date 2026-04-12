@@ -69,3 +69,7 @@ CREATE TABLE tb_poll_votes (
 
 ALTER TABLE tb_meeting_convidados
 ADD COLUMN status_presenca VARCHAR(20) NOT NULL DEFAULT 'PENDENTE';
+
+ALTER TABLE tb_meeting_convidados
+ADD COLUMN nota_avaliacao INT NULL,
+ADD COLUMN comentario_avaliacao VARCHAR(500) NULL;
