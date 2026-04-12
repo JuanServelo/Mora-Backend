@@ -1,9 +1,12 @@
 package com.mora.meeting.service;
 
 import com.google.api.services.meet.v2.model.Space;
+import com.mora.meeting.dto.meeting.MeetingEvaluationRequestDTO;
 import com.mora.meeting.dto.meeting.MeetingRequestDTO;
 import com.mora.meeting.dto.meeting.MeetingResponseDTO;
 import com.mora.meeting.entity.Meeting;
+import com.mora.meeting.entity.MeetingGuests;
+import com.mora.meeting.enums.AttendanceStatus;
 import com.mora.meeting.enums.MeetingStatus;
 import com.mora.meeting.mapper.MeetingMapper;
 import com.mora.meeting.repository.MeetingRepository;
@@ -60,6 +63,11 @@ public class MeetingService {
         // Link fake só para o banco não dar erro de nulo (caso seja obrigatório)
         meeting.setMeetLink("https://meet.google.com/fake-link-temporario");
 
+        List<MeetingGuests> convidados = dto.getIdConvidados().stream()
+                .map(id -> new MeetingGuests(id, AttendanceStatus.PENDENTE))
+                .toList();
+        meeting.setConvidados(convidados);
+
         meeting.setStatus(MeetingStatus.AGENDADA);
         Meeting meetingSalvo = meetingRepository.save(meeting);
 
@@ -111,6 +119,77 @@ public class MeetingService {
 
         // Todo : Adicionar lógica para cancelar a reunião no Google Meet
         // Todo : Disparar notificação/e-mail de cancelamento para os convidados
+
+        meetingRepository.save(meeting);
+    }
+
+    @Transactional
+    public void atualizarStatusPresenca(Long meetingId, Long usuarioId, AttendanceStatus novoStatus) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + meetingId));
+
+        boolean convidadoAtualizado = false;
+
+        for (MeetingGuests convidado : meeting.getConvidados()) {
+            if (convidado.getUsuarioId().equals(usuarioId)) {
+                convidado.setStatus(novoStatus);
+                convidadoAtualizado = true;
+                break;
+            }
+        }
+
+        if (!convidadoAtualizado) {
+            throw new IllegalArgumentException("O usuário informado não é um convidado desta reunião.");
+        }
+
+        meetingRepository.save(meeting);
+    }
+
+    @Transactional
+    public void avaliarReuniao(Long meetingId, Long usuarioId, MeetingEvaluationRequestDTO dto) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + meetingId));
+
+        if (meeting.getStatus() != MeetingStatus.FINALIZADA) {
+            throw new IllegalStateException("Apenas reuniões finalizadas podem ser avaliadas.");
+        }
+        boolean achouConvidado = false;
+        for (MeetingGuests convidado : meeting.getConvidados()) {
+            if (convidado.getUsuarioId().equals(usuarioId)) {
+                achouConvidado = true;
+
+                if (convidado.getStatus() != AttendanceStatus.CONFIRMADO) {
+                    throw new IllegalStateException("Apenas participantes com presença confirmada podem avaliar a reunião.");
+                }
+                if (convidado.getNota() != null) {
+                    throw new IllegalStateException("Você já enviou uma avaliação para esta reunião.");
+                }
+
+                convidado.setNota(dto.nota());
+                convidado.setComentario(dto.comentario());
+                break;
+            }
+        }
+        if (!achouConvidado) {
+            throw new IllegalArgumentException("O usuário informado não é um convidado desta reunião.");
+        }
+        meetingRepository.save(meeting);
+    }
+
+    @Transactional
+    public void finalizarReuniao(Long id) {
+        Meeting meeting = meetingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada."));
+
+        // Opcional: Validar se já não está finalizada para evitar processamento à toa
+        if (MeetingStatus.FINALIZADA.equals(meeting.getStatus())) {
+            throw new IllegalStateException("Esta reunião já foi finalizada.");
+        }
+
+        meeting.setStatus(MeetingStatus.FINALIZADA);
+
+        // Futuramente, aqui você poderia disparar um evento:
+        // eventPublisher.publishEvent(new MeetingFinishedEvent(meeting));
 
         meetingRepository.save(meeting);
     }

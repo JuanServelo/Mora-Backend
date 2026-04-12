@@ -37,8 +37,7 @@ public class Meeting {
 
     @ElementCollection
     @CollectionTable(name = "tb_meeting_convidados", joinColumns = @JoinColumn(name = "meeting_id"))
-    @Column(name = "convidado_id")
-    private List<Long> idConvidados;
+    private List<MeetingGuests> convidados;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
