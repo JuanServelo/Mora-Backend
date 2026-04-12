@@ -36,3 +36,8 @@ build/
 src/main/resources/credentials.json
 tokens/
 .idea/
+
+.idea/
+*.patch
+target/
+*.xml

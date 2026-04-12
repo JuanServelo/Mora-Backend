@@ -4,6 +4,8 @@ import com.google.api.services.meet.v2.model.Space;
 import com.mora.meeting.dto.meeting.MeetingRequestDTO;
 import com.mora.meeting.dto.meeting.MeetingResponseDTO;
 import com.mora.meeting.entity.Meeting;
+import com.mora.meeting.entity.MeetingGuests;
+import com.mora.meeting.enums.AttendanceStatus;
 import com.mora.meeting.enums.MeetingStatus;
 import com.mora.meeting.mapper.MeetingMapper;
 import com.mora.meeting.repository.MeetingRepository;
@@ -60,6 +62,11 @@ public class MeetingService {
         // Link fake só para o banco não dar erro de nulo (caso seja obrigatório)
         meeting.setMeetLink("https://meet.google.com/fake-link-temporario");
 
+        List<MeetingGuests> convidados = dto.getIdConvidados().stream()
+                .map(id -> new MeetingGuests(id, AttendanceStatus.PENDENTE))
+                .toList();
+        meeting.setConvidados(convidados);
+
         meeting.setStatus(MeetingStatus.AGENDADA);
         Meeting meetingSalvo = meetingRepository.save(meeting);
 
@@ -111,6 +118,28 @@ public class MeetingService {
 
         // Todo : Adicionar lógica para cancelar a reunião no Google Meet
         // Todo : Disparar notificação/e-mail de cancelamento para os convidados
+
+        meetingRepository.save(meeting);
+    }
+
+    @Transactional
+    public void atualizarStatusPresenca(Long meetingId, Long usuarioId, AttendanceStatus novoStatus) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + meetingId));
+
+        boolean convidadoAtualizado = false;
+
+        for (MeetingGuests convidado : meeting.getConvidados()) {
+            if (convidado.getUsuarioId().equals(usuarioId)) {
+                convidado.setStatus(novoStatus);
+                convidadoAtualizado = true;
+                break;
+            }
+        }
+
+        if (!convidadoAtualizado) {
+            throw new IllegalArgumentException("O usuário informado não é um convidado desta reunião.");
+        }
 
         meetingRepository.save(meeting);
     }

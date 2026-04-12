@@ -2,6 +2,7 @@ package com.mora.meeting.controller;
 
 import com.mora.meeting.dto.meeting.MeetingRequestDTO;
 import com.mora.meeting.dto.meeting.MeetingResponseDTO;
+import com.mora.meeting.enums.AttendanceStatus;
 import com.mora.meeting.service.MeetingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,6 +48,17 @@ public class MeetingController {
     @Operation(summary = "Cancelar uma reunião", description = "Recebe o ID e altera o status da reunião existente para CANCELADA.")
     public ResponseEntity<Void> cancelMeeting(@PathVariable Long id) {
         meetingService.cancelMeeting(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/convidados/{usuarioId}/presenca")
+    @Operation(summary = "Atualizar presença", description = "Permite que um morador convidado confirme ou recuse a presença na reunião.")
+    public ResponseEntity<Void> atualizarPresenca(
+            @PathVariable Long id,
+            @PathVariable Long usuarioId,
+            @RequestParam AttendanceStatus status) {
+
+        meetingService.atualizarStatusPresenca(id, usuarioId, status);
         return ResponseEntity.noContent().build();
     }
 }
