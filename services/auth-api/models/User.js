@@ -38,6 +38,8 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  resetToken: { type: String, select: false },
+  resetTokenExpira: { type: Date, select: false },
 });
 
 userSchema.pre('save', async function (next) {

@@ -567,6 +567,69 @@ body {
   border-color: var(--accent);
 }
 
+/* Success message */
+.sucesso {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+/* Auth success state */
+.auth-success-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Profile page */
+.perfil-link {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.perfil-link:hover {
+  color: var(--accent);
+}
+.perfil-grid {
+  max-width: 520px;
+}
+.perfil-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+}
+.perfil-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.perfil-section-subtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.perfil-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.perfil-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.5rem 0;
+}
+.perfil-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
 /* Loading */
 .loading {
   display: flex;

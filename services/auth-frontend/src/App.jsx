@@ -5,6 +5,9 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import AuthCallback from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import EditarPerfil from './pages/EditarPerfil';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }) {
@@ -41,6 +44,16 @@ export default function App() {
           <AdminRoute>
             <Layout><Admin /></Layout>
           </AdminRoute>
+        }
+      />
+      <Route path="/esqueci-senha" element={<Layout><ForgotPassword /></Layout>} />
+      <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
+      <Route
+        path="/perfil"
+        element={
+          <ProtectedRoute>
+            <Layout><EditarPerfil /></Layout>
+          </ProtectedRoute>
         }
       />
       <Route path="/auth/callback" element={<AuthCallback />} />

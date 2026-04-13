@@ -68,6 +68,9 @@ export default function Login() {
           Entrar com Google
         </button>
         <p className="link-alt">
+          <Link to="/esqueci-senha">Esqueci minha senha</Link>
+        </p>
+        <p className="link-alt">
           Não tem conta? <Link to="/registrar">Registrar</Link>
         </p>
       </div>
