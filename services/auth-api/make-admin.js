@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import sequelize from './config/database.js';
+import User from './models/User.js';
 
 dotenv.config();
 
@@ -9,18 +10,14 @@ if (!email) {
   process.exit(1);
 }
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_db';
+await sequelize.authenticate();
 
-await mongoose.connect(mongoUri);
+const [count] = await User.update({ role: 'admin' }, { where: { email } });
 
-const result = await mongoose.connection.db
-  .collection('users')
-  .updateOne({ email }, { $set: { role: 'admin' } });
-
-if (result.matchedCount === 0) {
+if (count === 0) {
   console.error(`Usuário não encontrado: ${email}`);
 } else {
-  console.log(`✓ ${email} agora é admin`);
+  console.log(`${email} agora é admin`);
 }
 
-await mongoose.disconnect();
+await sequelize.close();

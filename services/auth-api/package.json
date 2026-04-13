@@ -1,7 +1,7 @@
 {
   "name": "auth-api",
   "version": "1.0.0",
-  "description": "API de autenticação com JWT e MongoDB",
+  "description": "API de autenticação com JWT e PostgreSQL",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -17,7 +17,9 @@
     "express-session": "^1.19.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.3",
+    "pg": "^8.13.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.0",
     "nodemailer": "^8.0.4",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0"

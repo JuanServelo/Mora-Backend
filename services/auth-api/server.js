@@ -1,11 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import helmet from 'helmet';
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import sequelize from './config/database.js';
 import User from './models/User.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
@@ -18,9 +18,9 @@ if (!process.env.JWT_SECRET) {
 }
 
 // Necessário apenas para o fluxo OAuth (state verification) — auth real é JWT
-passport.serializeUser((user, done) => done(null, user._id.toString()));
+passport.serializeUser((user, done) => done(null, user.id.toString()));
 passport.deserializeUser(async (id, done) => {
-  try { done(null, await User.findById(id)); } catch (e) { done(e); }
+  try { done(null, await User.findByPk(id)); } catch (e) { done(e); }
 });
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -33,12 +33,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     async (accessToken, refreshToken, profile, done) => {
       console.log('[Google Strategy] Profile recebido:', { id: profile.id, email: profile.emails?.[0]?.value, nome: profile.displayName });
       try {
-        let usuario = await User.findOne({ googleId: profile.id });
+        let usuario = await User.findOne({ where: { googleId: profile.id } });
         if (!usuario) {
           const email = profile.emails?.[0]?.value;
           if (!email) return done(new Error('Email não fornecido pelo Google'), null);
 
-          usuario = await User.findOne({ email });
+          usuario = await User.findOne({ where: { email } });
           if (usuario) {
             usuario.googleId = profile.id;
             usuario.provider = 'google';
@@ -60,9 +60,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       }
     }
   ));
-  console.log('✓ Google OAuth configurado');
+  console.log('Google OAuth configurado');
 } else {
-  console.warn('⚠ GOOGLE_CLIENT_ID/SECRET não configurados — OAuth Google desativado');
+  console.warn('GOOGLE_CLIENT_ID/SECRET não configurados — OAuth Google desativado');
 }
 
 const app = express();
@@ -88,21 +88,18 @@ app.get('/api/health', (req, res) => {
 });
 
 const startServer = async () => {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_db';
-
   try {
-    await mongoose.connect(mongoUri);
-    console.log('✓ MongoDB conectado');
+    await sequelize.authenticate();
+    console.log('PostgreSQL conectado');
+    await sequelize.sync();
+    console.log('Tabelas sincronizadas');
   } catch (err) {
-    console.error('Erro ao conectar MongoDB:', err.message);
-    console.error('Certifique-se de que o MongoDB está rodando (Docker ou instalação local)');
+    console.error('Erro ao conectar PostgreSQL:', err.message);
+    console.error('Certifique-se de que o PostgreSQL está rodando');
   }
 
   app.listen(PORT, () => {
-    console.log(`✓ Servidor rodando em http://localhost:${PORT}`);
-    if (!mongoose.connection.readyState) {
-      console.warn('⚠ Requisições falharão até o MongoDB conectar');
-    }
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
   });
 };
 

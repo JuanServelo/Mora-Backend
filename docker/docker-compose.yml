@@ -35,21 +35,10 @@ services:
       - "--providers.consul.endpoint.address=consul:8500"
       - "--providers.consul.rootkey=traefik/config"
 
-  # 3. MongoDB (para Auth API)
-  mongodb:
-    image: mongo:7
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - microservices-net
-
-  # 4. Banco de Dados Relacional (Para o Portaria Service)
-  postgres-portaria:
+  # 3. Banco de Dados PostgreSQL (unico para todos os servicos)
+  postgres:
     image: postgres:16-alpine
-    container_name: postgres-portaria
+    container_name: postgres
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
@@ -59,9 +48,10 @@ services:
     networks:
       - microservices-net
     volumes:
-      - postgres_portaria_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
 
-  # 5. Microservice 1: Portaria (Java)
+  # 4. Microservice 1: Portaria (Java)
   portaria-service:
     build:
       context: ../services/portaria-service
@@ -69,34 +59,20 @@ services:
     container_name: portaria-service
     depends_on:
       - consul
-      - postgres-portaria
+      - postgres
     networks:
       - microservices-net
     ports:
       - "8090:8090"
     environment:
-      - POSTGRES_HOST=postgres-portaria
+      - POSTGRES_HOST=postgres
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
 
-  # 6. Banco de Dados Relacional (Para o Meeting Service)
-  mysql-db:
-    image: mysql:8.0
-    container_name: mysql-db
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-    ports:
-      - "3307:3306"
-    networks:
-      - microservices-net
-    volumes:
-      - mysql_data:/var/lib/mysql
-
-  # 7. Microservice 2: Meetings e Atas
+  # 5. Microservice 2: Meetings e Atas (Java)
   meeting-service:
     build:
       context: ../services/meeting
@@ -104,21 +80,45 @@ services:
     container_name: meeting-service
     depends_on:
       - consul
-      - mysql-db
+      - postgres
     networks:
       - microservices-net
     ports:
       - "8091:8091"
     environment:
-    - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}
-    - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-    - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    - SPRING_CLOUD_CONSUL_HOST=consul
-    - SPRING_CLOUD_CONSUL_PORT=8500
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+
+  # 6. Auth API (Node.js)
+  auth-api:
+    build:
+      context: ../services/auth-api
+      dockerfile: Dockerfile
+    container_name: auth-api
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - microservices-net
+    ports:
+      - "3001:3001"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - JWT_SECRET=${JWT_SECRET:-troque-por-uma-chave-secreta}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+
 volumes:
-  mongodb_data:
-  mysql_data:
-  postgres_portaria_data:
+  postgres_data:
 
 networks:
   microservices-net:

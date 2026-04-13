@@ -1,55 +1,75 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
 import bcrypt from 'bcryptjs';
+import sequelize from '../config/database.js';
 
-const userSchema = new mongoose.Schema({
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
   nome: {
-    type: String,
-    required: [true, 'Nome é obrigatório'],
-    trim: true,
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: { notEmpty: { msg: 'Nome é obrigatório' } },
   },
   email: {
-    type: String,
-    required: [true, 'Email é obrigatório'],
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    lowercase: true,
-    trim: true,
+    validate: { isEmail: true },
+    set(value) {
+      this.setDataValue('email', value?.toLowerCase().trim());
+    },
   },
   senha: {
-    type: String,
-    minlength: 6,
-    select: false,
+    type: DataTypes.STRING,
+    validate: { len: [6, 255] },
   },
   googleId: {
-    type: String,
-    sparse: true,
+    type: DataTypes.STRING,
     unique: true,
+    allowNull: true,
   },
   provider: {
-    type: String,
-    enum: ['local', 'google'],
-    default: 'local',
+    type: DataTypes.ENUM('local', 'google'),
+    defaultValue: 'local',
   },
   role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user',
+    type: DataTypes.ENUM('user', 'admin'),
+    defaultValue: 'user',
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  resetToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
-  resetToken: { type: String, select: false },
-  resetTokenExpira: { type: Date, select: false },
+  resetTokenExpira: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+}, {
+  tableName: 'users',
+  timestamps: true,
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  defaultScope: {
+    attributes: { exclude: ['senha', 'resetToken', 'resetTokenExpira'] },
+  },
+  scopes: {
+    withPassword: { attributes: { include: ['senha'] } },
+    withResetToken: { attributes: { include: ['resetToken', 'resetTokenExpira'] } },
+  },
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('senha') && user.senha) {
+        user.senha = await bcrypt.hash(user.senha, 10);
+      }
+    },
+  },
 });
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('senha') || !this.senha) return next();
-  this.senha = await bcrypt.hash(this.senha, 10);
-  next();
-});
-
-userSchema.methods.compararSenha = async function (senhaDigitada) {
+User.prototype.compararSenha = async function (senhaDigitada) {
   return bcrypt.compare(senhaDigitada, this.senha);
 };
 
-export default mongoose.model('User', userSchema);
+export default User;
