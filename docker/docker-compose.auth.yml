@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql
 
 volumes:
   auth_postgres_data:

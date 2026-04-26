@@ -31,8 +31,7 @@ services:
       - "--providers.consulcatalog=true"
       - "--providers.consulcatalog.endpoint.address=consul:8500"
       - "--providers.consulcatalog.exposedByDefault=false"
-      - "--providers.consul=true"
-      - "--providers.consul.endpoint.address=consul:8500"
+      - "--providers.consul.endpoints=consul:8500"
       - "--providers.consul.rootkey=traefik/config"
 
   # 3. Banco de Dados PostgreSQL (unico para todos os servicos)
