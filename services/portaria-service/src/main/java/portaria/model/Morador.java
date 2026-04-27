@@ -1,35 +1,25 @@
 package portaria.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "moradores")
-public class Morador {
+public class Morador extends Usuario {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "apartamento_id")
+    private Apartamento apartamento;
 
-    @NotBlank(message = "Nome é obrigatório")
-    private String nome;
-
-    @NotBlank(message = "CPF é obrigatório")
-    @Column(unique = true)
-    private String cpf;
-
-    @NotBlank(message = "Apartamento é obrigatório")
-    private String apartamento;
-
-    private String bloco;
-
-    private String telefone;
-
-    private boolean ativo = true;
-
-    @Column(name = "criado_em")
-    private LocalDateTime criadoEm = LocalDateTime.now();
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bloco_id")
+    private Bloco bloco;
 }

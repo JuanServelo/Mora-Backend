@@ -1,5 +1,6 @@
 package portaria.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -10,6 +11,7 @@ import java.util.UUID;
 @Data
 @Entity
 @Table(name = "blocos")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Bloco {
 
     @Id
@@ -25,13 +27,14 @@ public class Bloco {
 
     private Integer andares;
 
+    @Column(name = "`apartamentosPorAndar`")
     private Integer apartamentosPorAndar;
 
     private boolean ativo = true;
 
-    @Column(name = "criado_em")
+    @Column(name = "`criadoEm`")
     private LocalDateTime criadoEm = LocalDateTime.now();
 
-    @Column(name = "atualizado_em")
+    @Column(name = "`atualizadoEm`")
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }

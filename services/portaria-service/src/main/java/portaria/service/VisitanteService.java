@@ -18,7 +18,7 @@ public class VisitanteService {
     private final VisitanteRepository visitanteRepository;
 
     public Visitante registrarEntrada(Visitante visitante) {
-        visitante.setDataEntrada(LocalDateTime.now());
+        visitante.setHorarioEntrada(LocalDateTime.now());
         visitante.setStatus(StatusAcesso.DENTRO);
         return visitanteRepository.save(visitante);
     }
@@ -28,7 +28,7 @@ public class VisitanteService {
         if (visitante.getStatus() != StatusAcesso.DENTRO) {
             throw new OperacaoInvalidaException("Visitante não está registrado como DENTRO do condomínio.");
         }
-        visitante.setDataSaida(LocalDateTime.now());
+        visitante.setHorarioSaida(LocalDateTime.now());
         visitante.setStatus(StatusAcesso.SAIU);
         return visitanteRepository.save(visitante);
     }

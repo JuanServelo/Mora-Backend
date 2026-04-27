@@ -3,33 +3,24 @@ package portaria.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "funcionarios")
-public class Funcionario {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
-    @NotBlank(message = "Nome é obrigatório")
-    private String nome;
-
-    @NotBlank(message = "CPF é obrigatório")
-    @Column(unique = true)
-    private String cpf;
+public class Funcionario extends Usuario {
 
     @NotBlank(message = "Cargo é obrigatório")
     private String cargo;
 
     private String matricula;
 
-    private String telefone;
+    @Column(name = "horario_entrada")
+    private LocalTime horarioEntrada;
 
-    private boolean ativo = true;
-
-    @Column(name = "criado_em")
-    private LocalDateTime criadoEm = LocalDateTime.now();
+    @Column(name = "horario_saida")
+    private LocalTime horarioSaida;
 }

@@ -25,19 +25,27 @@ public class AreaComum {
 
     private String localizacao;
 
+    @Column(name = "`capacidadeMaxima`")
     private Integer capacidadeMaxima;
 
     private Double area;
 
+    @Column(name = "`podeReservar`")
     private boolean podeReservar = false;
+
+    private Double taxaLocacao;
+
+    private String informacoesLimpeza;
+
+    private String politicaCancelamento;
 
     private String observacoes;
 
     private boolean ativo = true;
 
-    @Column(name = "criado_em")
+    @Column(name = "`criadoEm`")
     private LocalDateTime criadoEm = LocalDateTime.now();
 
-    @Column(name = "atualizado_em")
+    @Column(name = "`atualizadoEm`")
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }
