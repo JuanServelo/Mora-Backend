@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import portaria.dto.ApartamentoRequestDTO;
+import portaria.dto.ApartamentoResponseDTO;
 import portaria.model.Apartamento;
 import portaria.service.ApartamentoService;
 
@@ -19,46 +21,50 @@ public class ApartamentoController {
     private final ApartamentoService apartamentoService;
 
     @PostMapping("/cadastrar")
-    public ResponseEntity<Apartamento> cadastrar(
-            @Valid @RequestBody Apartamento apartamento,
-            @RequestParam UUID blocoId
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(apartamentoService.cadastrar(apartamento, blocoId));
+    public ResponseEntity<ApartamentoResponseDTO> cadastrar(@Valid @RequestBody ApartamentoRequestDTO request) {
+        Apartamento salvo = apartamentoService.cadastrar(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApartamentoResponseDTO.fromEntity(salvo));
     }
 
     @GetMapping
-    public List<Apartamento> listarAtivos() {
-        return apartamentoService.listarAtivos();
+    public List<ApartamentoResponseDTO> listarAtivos() {
+        return apartamentoService.listarAtivos().stream()
+                .map(ApartamentoResponseDTO::fromEntity)
+                .toList();
     }
 
     @GetMapping("/todos")
-    public List<Apartamento> listarTodos() {
-        return apartamentoService.listarTodos();
+    public List<ApartamentoResponseDTO> listarTodos() {
+        return apartamentoService.listarTodos().stream()
+                .map(ApartamentoResponseDTO::fromEntity)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public Apartamento buscarPorId(@PathVariable UUID id) {
-        return apartamentoService.buscarPorId(id);
+    public ApartamentoResponseDTO buscarPorId(@PathVariable UUID id) {
+        return ApartamentoResponseDTO.fromEntity(apartamentoService.buscarPorId(id));
     }
 
     @GetMapping("/bloco/{blocoId}")
-    public List<Apartamento> listarPorBloco(@PathVariable UUID blocoId) {
-        return apartamentoService.listarPorBloco(blocoId);
+    public List<ApartamentoResponseDTO> listarPorBloco(@PathVariable UUID blocoId) {
+        return apartamentoService.listarPorBloco(blocoId).stream()
+                .map(ApartamentoResponseDTO::fromEntity)
+                .toList();
     }
 
     @GetMapping("/bloco/{blocoId}/ativos")
-    public List<Apartamento> listarPorBlocoAtivos(@PathVariable UUID blocoId) {
-        return apartamentoService.listarPorBlocoAtivos(blocoId);
+    public List<ApartamentoResponseDTO> listarPorBlocoAtivos(@PathVariable UUID blocoId) {
+        return apartamentoService.listarPorBlocoAtivos(blocoId).stream()
+                .map(ApartamentoResponseDTO::fromEntity)
+                .toList();
     }
 
     @PutMapping("/{id}")
-    public Apartamento atualizar(
+    public ApartamentoResponseDTO atualizar(
             @PathVariable UUID id,
-            @Valid @RequestBody Apartamento dados,
-            @RequestParam UUID blocoId
+            @Valid @RequestBody ApartamentoRequestDTO request
     ) {
-        return apartamentoService.atualizar(id, dados, blocoId);
+        return ApartamentoResponseDTO.fromEntity(apartamentoService.atualizar(id, request));
     }
 
     @PutMapping("/{id}/desativar")

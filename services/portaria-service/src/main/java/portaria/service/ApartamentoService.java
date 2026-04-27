@@ -2,6 +2,7 @@ package portaria.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import portaria.dto.ApartamentoRequestDTO;
 import portaria.exception.OperacaoInvalidaException;
 import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Apartamento;
@@ -19,25 +20,30 @@ public class ApartamentoService {
     private final ApartamentoRepository apartamentoRepository;
     private final BlocoService blocoService;
 
-    public Apartamento cadastrar(Apartamento apartamento, UUID blocoId) {
+    public Apartamento cadastrar(ApartamentoRequestDTO request) {
+        Bloco bloco = blocoService.buscarPorId(request.getBlocoId());
 
-        Bloco bloco = blocoService.buscarPorId(blocoId);
-
-        apartamentoRepository.findByNumeroAndBloco_Id(apartamento.getNumero(), blocoId)
+        apartamentoRepository.findByNumeroAndBloco_Id(request.getNumero(), request.getBlocoId())
                 .ifPresent(a -> {
                     throw new OperacaoInvalidaException(
-                            "Já existe um apartamento " + apartamento.getNumero() +
+                            "Já existe um apartamento " + request.getNumero() +
                             " no bloco " + bloco.getNome());
                 });
 
-        if (bloco.getAndares() != null && apartamento.getAndar() > bloco.getAndares()) {
+        if (bloco.getAndares() != null && request.getAndar() > bloco.getAndares()) {
             throw new OperacaoInvalidaException(
-                    "Andar " + apartamento.getAndar() +
+                    "Andar " + request.getAndar() +
                     " inválido. O bloco " + bloco.getNome() +
                     " tem apenas " + bloco.getAndares() + " andares");
         }
 
+        Apartamento apartamento = new Apartamento();
+        apartamento.setNumero(request.getNumero());
+        apartamento.setAndar(request.getAndar());
         apartamento.setBloco(bloco);
+        apartamento.setQuartos(request.getQuartos());
+        apartamento.setAreaMxComTotal(request.getAreaMxComTotal());
+        apartamento.setObservacoes(request.getObservacoes());
 
         return apartamentoRepository.save(apartamento);
     }
@@ -65,24 +71,23 @@ public class ApartamentoService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Apartamento não encontrado com id: " + id));
     }
 
-    public Apartamento atualizar(UUID id, Apartamento dados, UUID blocoId) {
-
+    public Apartamento atualizar(UUID id, ApartamentoRequestDTO request) {
         Apartamento apartamento = buscarPorId(id);
-        Bloco bloco = blocoService.buscarPorId(blocoId);
+        Bloco bloco = blocoService.buscarPorId(request.getBlocoId());
 
-        if (bloco.getAndares() != null && dados.getAndar() > bloco.getAndares()) {
+        if (bloco.getAndares() != null && request.getAndar() > bloco.getAndares()) {
             throw new OperacaoInvalidaException(
-                    "Andar " + dados.getAndar() +
+                    "Andar " + request.getAndar() +
                     " inválido. O bloco " + bloco.getNome() +
                     " tem apenas " + bloco.getAndares() + " andares");
         }
 
-        apartamento.setNumero(dados.getNumero());
-        apartamento.setAndar(dados.getAndar());
+        apartamento.setNumero(request.getNumero());
+        apartamento.setAndar(request.getAndar());
         apartamento.setBloco(bloco);
-        apartamento.setQuartos(dados.getQuartos());
-        apartamento.setAreaMxComTotal(dados.getAreaMxComTotal());
-        apartamento.setObservacoes(dados.getObservacoes());
+        apartamento.setQuartos(request.getQuartos());
+        apartamento.setAreaMxComTotal(request.getAreaMxComTotal());
+        apartamento.setObservacoes(request.getObservacoes());
         apartamento.setAtualizadoEm(LocalDateTime.now());
 
         return apartamentoRepository.save(apartamento);

@@ -6,7 +6,12 @@ import portaria.exception.OperacaoInvalidaException;
 import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Carro;
 import portaria.model.enums.StatusAcesso;
+import portaria.model.enums.TipoProprietario;
+import portaria.dto.CriarCarroDTO;
 import portaria.repository.CarroRepository;
+import portaria.repository.MoradorRepository;
+import portaria.repository.VisitanteRepository;
+import portaria.repository.FuncionarioRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +21,28 @@ import java.util.List;
 public class CarroService {
 
     private final CarroRepository carroRepository;
+    private final MoradorRepository moradorRepository;
+    private final VisitanteRepository visitanteRepository;
+    private final FuncionarioRepository funcionarioRepository;
+
+    public Carro cadastrar(CriarCarroDTO dto) {
+        validarProprietario(dto.getProprietarioId(), dto.getTipoProprietario());
+        
+        carroRepository.findByPlaca(dto.getPlaca()).ifPresent(c -> {
+            throw new OperacaoInvalidaException("Já existe um carro cadastrado com a placa: " + dto.getPlaca());
+        });
+
+        Carro carro = new Carro();
+        carro.setPlaca(dto.getPlaca());
+        carro.setModelo(dto.getModelo());
+        carro.setProprietarioId(dto.getProprietarioId());
+        carro.setTipoProprietario(dto.getTipoProprietario());
+        carro.setStatus(StatusAcesso.SAIU);
+        carro.setCriadoEm(LocalDateTime.now());
+        carro.setAtualizadoEm(LocalDateTime.now());
+
+        return carroRepository.save(carro);
+    }
 
     public Carro registrarEntrada(Carro carro) {
         carroRepository.findByPlaca(carro.getPlaca()).ifPresent(c -> {
@@ -25,6 +52,7 @@ public class CarroService {
         });
         carro.setDataEntrada(LocalDateTime.now());
         carro.setStatus(StatusAcesso.DENTRO);
+        carro.setAtualizadoEm(LocalDateTime.now());
         return carroRepository.save(carro);
     }
 
@@ -35,6 +63,7 @@ public class CarroService {
         }
         carro.setDataSaida(LocalDateTime.now());
         carro.setStatus(StatusAcesso.SAIU);
+        carro.setAtualizadoEm(LocalDateTime.now());
         return carroRepository.save(carro);
     }
 
@@ -49,5 +78,47 @@ public class CarroService {
     public Carro buscarPorId(String id) {
         return carroRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Veículo não encontrado com id: " + id));
+    }
+
+    public Carro atualizar(String id, CriarCarroDTO dados) {
+        Carro carro = buscarPorId(id);
+        
+        if (!carro.getPlaca().equals(dados.getPlaca())) {
+            carroRepository.findByPlaca(dados.getPlaca()).ifPresent(c -> {
+                throw new OperacaoInvalidaException("Já existe um carro cadastrado com a placa: " + dados.getPlaca());
+            });
+        }
+
+        validarProprietario(dados.getProprietarioId(), dados.getTipoProprietario());
+
+        carro.setPlaca(dados.getPlaca());
+        carro.setModelo(dados.getModelo());
+        carro.setProprietarioId(dados.getProprietarioId());
+        carro.setTipoProprietario(dados.getTipoProprietario());
+        carro.setAtualizadoEm(LocalDateTime.now());
+
+        return carroRepository.save(carro);
+    }
+
+    private void validarProprietario(String proprietarioId, TipoProprietario tipo) {
+        switch (tipo) {
+            case MORADOR:
+                if (!moradorRepository.existsById(proprietarioId)) {
+                    throw new RecursoNaoEncontradoException("Morador não encontrado com id: " + proprietarioId);
+                }
+                break;
+            case VISITANTE:
+                if (!visitanteRepository.existsById(proprietarioId)) {
+                    throw new RecursoNaoEncontradoException("Visitante não encontrado com id: " + proprietarioId);
+                }
+                break;
+            case FUNCIONARIO:
+                if (!funcionarioRepository.existsById(proprietarioId)) {
+                    throw new RecursoNaoEncontradoException("Funcionário não encontrado com id: " + proprietarioId);
+                }
+                break;
+            default:
+                throw new OperacaoInvalidaException("Tipo de proprietário inválido: " + tipo);
+        }
     }
 }

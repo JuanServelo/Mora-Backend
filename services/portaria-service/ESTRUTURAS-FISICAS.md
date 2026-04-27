@@ -95,7 +95,7 @@ curl -X POST http://localhost:8090/apartamentos/cadastrar \
   -d '{
     "numero": "101",
     "andar": 1,
-    "blocoId": "123e4567-e89b-12d3-a456-426614174000",
+    "blocoId": "45f33815-d6a9-448f-adff-b150562c4d65",
     "quartos": 3,
     "areaMxComTotal": 85.5,
     "observacoes": "Apto com varanda"
