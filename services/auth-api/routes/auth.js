@@ -1,9 +1,9 @@
 import crypto from 'crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
 import passport from 'passport';
 import rateLimit from 'express-rate-limit';
+import { Op } from 'sequelize';
 import User from '../models/User.js';
 import authMiddleware from '../middleware/auth.js';
 import { usuarioPublico } from '../utils/usuarioPublico.js';
@@ -11,7 +11,6 @@ import { enviarEmailReset } from '../utils/emailService.js';
 
 const router = express.Router();
 
-// Rate limiter para rotas de autenticação (10 tentativas por 15 min)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -20,7 +19,6 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter para forgot-password (3 tentativas por hora)
 const forgotLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 3,
@@ -29,14 +27,12 @@ const forgotLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Lidos em runtime para garantir que dotenv já carregou
 const getJwtSecret = () => process.env.JWT_SECRET;
 const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
 
-const signToken = (userId) =>
-  jwt.sign({ id: userId }, getJwtSecret(), { expiresIn: '7d' });
+const signToken = (userId, role = 'user') =>
+  jwt.sign({ id: userId, role }, getJwtSecret(), { expiresIn: '7d' });
 
-// POST /api/auth/register
 router.post('/register', authLimiter, async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
@@ -44,39 +40,30 @@ router.post('/register', authLimiter, async (req, res) => {
     if (!nome || !email || !senha) {
       return res.status(400).json({ sucesso: false, mensagem: 'Nome, email e senha são obrigatórios' });
     }
-
     if (senha.length < 6) {
       return res.status(400).json({ sucesso: false, mensagem: 'Senha deve ter no mínimo 6 caracteres' });
     }
 
-    const existeUsuario = await User.findOne({ email });
+    const existeUsuario = await User.findOne({ where: { email: email.toLowerCase().trim() } });
     if (existeUsuario) {
       return res.status(400).json({ sucesso: false, mensagem: 'Email já cadastrado' });
     }
 
     const usuario = await User.create({ nome, email, senha, provider: 'local' });
-    const token = signToken(usuario._id);
+    const token = signToken(usuario.id, usuario.role);
 
     res.status(201).json({
       sucesso: true,
       mensagem: 'Usuário criado com sucesso',
       token,
-<<<<<<< Updated upstream
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email },
-=======
       usuario: usuarioPublico(usuario),
->>>>>>> Stashed changes
     });
   } catch (err) {
     console.error('Erro no register:', err);
-    const msg = mongoose.connection.readyState !== 1
-      ? 'Banco de dados não conectado. Inicie o MongoDB.'
-      : (err.message || 'Erro ao registrar');
-    res.status(500).json({ sucesso: false, mensagem: msg });
+    res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao registrar' });
   }
 });
 
-// POST /api/auth/login
 router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -85,7 +72,7 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(400).json({ sucesso: false, mensagem: 'Email e senha são obrigatórios' });
     }
 
-    const usuario = await User.findOne({ email }).select('+senha');
+    const usuario = await User.scope('withPassword').findOne({ where: { email: email.toLowerCase().trim() } });
     if (!usuario || !usuario.senha) {
       return res.status(401).json({ sucesso: false, mensagem: 'Credenciais inválidas' });
     }
@@ -95,48 +82,38 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ sucesso: false, mensagem: 'Credenciais inválidas' });
     }
 
-    const token = signToken(usuario._id);
+    const token = signToken(usuario.id, usuario.role);
 
     res.json({
       sucesso: true,
       mensagem: 'Login realizado com sucesso',
       token,
-<<<<<<< Updated upstream
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email },
-=======
       usuario: usuarioPublico(usuario),
->>>>>>> Stashed changes
     });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao fazer login' });
   }
 });
 
-// GET /api/auth/me - Rota protegida
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const usuario = await User.findById(req.userId);
+    const usuario = await User.findByPk(req.userId);
     if (!usuario) {
       return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado' });
     }
     res.json({
       sucesso: true,
-<<<<<<< Updated upstream
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, provider: usuario.provider },
-=======
       usuario: usuarioPublico(usuario),
->>>>>>> Stashed changes
     });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao buscar usuário' });
   }
 });
 
-// PUT /api/auth/me - Atualizar perfil do usuário logado
 router.put('/me', authMiddleware, async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
-    const usuario = await User.findById(req.userId);
+    const usuario = await User.scope('withPassword').findByPk(req.userId);
     if (!usuario) {
       return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado' });
     }
@@ -154,21 +131,16 @@ router.put('/me', authMiddleware, async (req, res) => {
     res.json({
       sucesso: true,
       mensagem: 'Perfil atualizado com sucesso',
-<<<<<<< Updated upstream
-      usuario: { id: usuario._id, nome: usuario.nome, email: usuario.email, role: usuario.role },
-=======
       usuario: usuarioPublico(usuario),
->>>>>>> Stashed changes
     });
   } catch (err) {
-    if (err.code === 11000) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({ sucesso: false, mensagem: 'Email já cadastrado' });
     }
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar perfil' });
   }
 });
 
-// POST /api/auth/forgot-password
 router.post('/forgot-password', forgotLimiter, async (req, res) => {
   try {
     const { email } = req.body;
@@ -176,10 +148,8 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
       return res.status(400).json({ sucesso: false, mensagem: 'Email é obrigatório' });
     }
 
-    const usuario = await User.findOne({ email });
-    // Sempre retorna 200 para não revelar se o email existe
+    const usuario = await User.findOne({ where: { email: email.toLowerCase().trim() } });
     if (!usuario || usuario.provider !== 'local') {
-      console.log(`[forgot-password] ${!usuario ? 'email não encontrado' : `provider=${usuario.provider}, apenas local suportado`}: ${email}`);
       return res.json({ sucesso: true, mensagem: 'Se esse email estiver cadastrado, você receberá um link em breve.' });
     }
 
@@ -187,8 +157,8 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     const hash = crypto.createHash('sha256').update(token).digest('hex');
 
     usuario.resetToken = hash;
-    usuario.resetTokenExpira = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
-    await usuario.save({ validateBeforeSave: false });
+    usuario.resetTokenExpira = new Date(Date.now() + 60 * 60 * 1000);
+    await usuario.save({ validate: false });
 
     await enviarEmailReset(usuario.email, token);
 
@@ -199,7 +169,6 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
   }
 });
 
-// POST /api/auth/reset-password/:token
 router.post('/reset-password/:token', authLimiter, async (req, res) => {
   try {
     const { senha } = req.body;
@@ -209,18 +178,20 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
 
     const hash = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-    const usuario = await User.findOne({
-      resetToken: hash,
-      resetTokenExpira: { $gt: new Date() },
-    }).select('+resetToken +resetTokenExpira');
+    const usuario = await User.scope('withResetToken').findOne({
+      where: {
+        resetToken: hash,
+        resetTokenExpira: { [Op.gt]: new Date() },
+      },
+    });
 
     if (!usuario) {
       return res.status(400).json({ sucesso: false, mensagem: 'Token inválido ou expirado' });
     }
 
     usuario.senha = senha;
-    usuario.resetToken = undefined;
-    usuario.resetTokenExpira = undefined;
+    usuario.resetToken = null;
+    usuario.resetTokenExpira = null;
     await usuario.save();
 
     res.json({ sucesso: true, mensagem: 'Senha redefinida com sucesso' });
@@ -230,30 +201,16 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
   }
 });
 
-// GET /api/auth/google
 router.get('/google', (req, res, next) => {
-  console.log('[Google OAuth] Iniciando fluxo, session id:', req.sessionID);
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
-// GET /api/auth/google/callback
 router.get('/google/callback', (req, res) => {
-  console.log('[Google Callback] Recebido — query:', req.query);
-  console.log('[Google Callback] Session id:', req.sessionID);
-  console.log('[Google Callback] Session data:', JSON.stringify(req.session));
-
-  passport.authenticate('google', (err, user, info) => {
-    console.log('[Google Callback] err:', err?.message ?? null);
-    console.log('[Google Callback] user:', user ? user.email : null);
-    console.log('[Google Callback] info:', info);
-
+  passport.authenticate('google', (err, user) => {
     if (err || !user) {
-      console.error('[Google Callback] FALHA —', err?.message || info?.message || 'sem usuário retornado');
       return res.redirect(`${getFrontendUrl()}/?erro=oauth`);
     }
-
-    const token = signToken(user._id);
-    console.log('[Google Callback] Sucesso → redirecionando para frontend');
+    const token = signToken(user.id, user.role);
     res.redirect(`${getFrontendUrl()}/auth/callback?token=${token}`);
   })(req, res);
 });
