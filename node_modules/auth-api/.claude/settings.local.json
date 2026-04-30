@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git filter-repo:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m git_filter_repo --path services/auth-api/.env --invert-paths --force)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"import\\(''nodemailer''\\).then\\(m => console.log\\(''ok'', m.default?.createTransport ? ''createTransport OK'' : ''sem createTransport''\\)\\).catch\\(e => console.error\\(''ERRO:'', e.message\\)\\)\")"
+    ]
+  }
+}
