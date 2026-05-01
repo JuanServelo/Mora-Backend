@@ -28,6 +28,7 @@ const User = sequelize.define('User', {
   },
   googleId: {
     type: DataTypes.STRING,
+    allowNull: true,
     unique: true,
     allowNull: true,
   },
@@ -39,14 +40,11 @@ const User = sequelize.define('User', {
     type: DataTypes.ENUM('user', 'admin'),
     defaultValue: 'user',
   },
-  resetToken: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  resetTokenExpira: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
+  bloco: { type: DataTypes.STRING, allowNull: true },
+  apartamento: { type: DataTypes.STRING, allowNull: true },
+  vaga: { type: DataTypes.STRING, allowNull: true },
+  resetToken: { type: DataTypes.STRING, allowNull: true },
+  resetTokenExpira: { type: DataTypes.DATE, allowNull: true },
 }, {
   tableName: 'users',
   timestamps: true,
@@ -68,7 +66,7 @@ const User = sequelize.define('User', {
   },
 });
 
-User.prototype.compararSenha = async function (senhaDigitada) {
+User.prototype.compararSenha = async function compararSenha(senhaDigitada) {
   return bcrypt.compare(senhaDigitada, this.senha);
 };
 
