@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
-=======
 import { useNavigate, Link } from 'react-router-dom';
->>>>>>> Stashed changes
 import { useAuth } from '../context/AuthContext';
 
 const modules = [
@@ -37,6 +34,7 @@ const modules = [
 
 export default function Dashboard() {
   const { usuario } = useAuth();
+  const navigate = useNavigate();
 
   const primeiroNome = usuario?.nome?.split(' ')[0] ?? 'Morador';
 
@@ -75,6 +73,21 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+
+      {usuario?.role === 'admin' && (
+        <section className="home-section">
+          <h2 className="home-section-title">Administração</h2>
+          <div className="home-grid">
+            <button className="home-card home-card--btn" onClick={() => navigate('/admin')}>
+              <span className="home-card-icon">⚙️</span>
+              <div>
+                <p className="home-card-title">Gestão de Usuários</p>
+                <p className="home-card-desc">Criar, editar e remover contas de usuários do sistema.</p>
+              </div>
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -1,0 +1,78 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#ffffff', 'primaryTextColor': '#111', 'lineColor': '#333', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#fff'}}}%%
+erDiagram
+    MORADOR {
+        string id PK
+        string nome
+        string cpf UK
+        string apartamento
+        string bloco
+        string telefone
+        boolean ativo
+        datetime criado_em
+    }
+    FUNCIONARIO {
+        string id PK
+        string nome
+        string cpf UK
+        string cargo
+        string matricula
+        string telefone
+        boolean ativo
+        datetime criado_em
+    }
+    VISITANTE {
+        string id PK
+        string nome
+        string documento
+        string motivo_visita
+        string status
+        datetime data_entrada
+        datetime data_saida
+    }
+    CARRO {
+        string id PK
+        string placa UK
+        string modelo
+        string proprietario
+        string status
+        datetime data_entrada
+        datetime data_saida
+    }
+    CHAVE {
+        string id PK
+        string nome_chave
+        string responsavel_id FK
+        string tipo_responsavel
+        string nome_responsavel
+        datetime retirada
+        datetime devolucao
+        boolean disponivel
+    }
+    ENTREGA {
+        string id PK
+        string nome_entregador
+        string destinatario
+        string recebedor
+        string descricao
+        datetime data_recebimento
+        datetime data_retirada
+        boolean retirada
+    }
+    TURNO {
+        string id PK
+        string funcionario
+        string cargo
+    }
+    TURNO_ENTRADA {
+        string turno_id FK
+        datetime entrada
+    }
+    TURNO_SAIDA {
+        string turno_id FK
+        datetime saida
+    }
+
+    MORADOR o|--o| CHAVE : "responsavel MORADOR"
+    FUNCIONARIO o|--o| CHAVE : "responsavel FUNC"
+    TURNO ||--o{ TURNO_ENTRADA : tem
+    TURNO ||--o{ TURNO_SAIDA : tem

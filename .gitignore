@@ -1,0 +1,9 @@
+
+.env
+docker/.env
+*.env
+
+credentials.json
+tokens/
+
+node_modules/

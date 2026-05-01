@@ -1,13 +1,18 @@
 # Docker Compose para testar o sistema de autenticação
 # Uso: docker compose -f docker/docker-compose.auth.yml up -d
 services:
-  mongodb:
-    image: mongo:7
-    container_name: auth-mongodb
+  postgres:
+    image: postgres:16-alpine
+    container_name: auth-postgres
+    environment:
+      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=Vibers@2112
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - auth_mongodb_data:/data/db
+      - auth_postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql
 
 volumes:
-  auth_mongodb_data:
+  auth_postgres_data:

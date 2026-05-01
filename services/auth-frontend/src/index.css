@@ -311,8 +311,6 @@ body {
   background: rgba(0, 212, 170, 0.05);
 }
 
-<<<<<<< Updated upstream
-=======
 /* Home card as button */
 .home-card--btn {
   background: var(--bg-card);
@@ -632,7 +630,6 @@ body {
   margin-top: 0.5rem;
 }
 
->>>>>>> Stashed changes
 /* Loading */
 .loading {
   display: flex;
