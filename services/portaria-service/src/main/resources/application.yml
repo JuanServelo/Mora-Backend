@@ -1,5 +1,8 @@
 server:
   port: 8090
+  error:
+    include-message: always
+    include-binding-errors: always
 
 spring:
   application:
@@ -14,6 +17,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
     properties:
       hibernate:
