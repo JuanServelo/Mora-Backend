@@ -5,7 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import portaria.model.Entrega;
+import portaria.dto.EntregaRequestDTO;
+import portaria.dto.EntregaResponseDTO;
 import portaria.service.EntregaService;
 
 import java.util.List;
@@ -17,28 +18,45 @@ public class EntregaController {
 
     private final EntregaService entregaService;
 
-    @PostMapping("/registrar")
-    public ResponseEntity<Entrega> registrar(@Valid @RequestBody Entrega entrega) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(entregaService.registrar(entrega));
+    @PostMapping("/cadastrar")
+    public ResponseEntity<EntregaResponseDTO> cadastrar(@RequestBody EntregaRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(EntregaResponseDTO.fromEntity(entregaService.cadastrar(dto)));
     }
 
-    @PostMapping("/{id}/retirar")
-    public Entrega retirar(@PathVariable String id, @RequestBody String recebedor) {
-        return entregaService.retirar(id, recebedor);
+    @PutMapping("/{id}")
+    public EntregaResponseDTO atualizar(@PathVariable String id, @RequestBody EntregaRequestDTO dto) {
+        return EntregaResponseDTO.fromEntity(entregaService.atualizar(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable String id) {
+        entregaService.excluir(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public List<Entrega> listarTodas() {
-        return entregaService.listarTodas();
+    public List<EntregaResponseDTO> listarTodas() {
+        return entregaService.listarTodas().stream()
+                .map(EntregaResponseDTO::fromEntity)
+                .toList();
     }
 
     @GetMapping("/pendentes")
-    public List<Entrega> listarPendentes() {
-        return entregaService.listarPendentes();
+    public List<EntregaResponseDTO> listarPendentes() {
+        return entregaService.listarPendentes().stream()
+                .map(EntregaResponseDTO::fromEntity)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public Entrega buscarPorId(@PathVariable String id) {
-        return entregaService.buscarPorId(id);
+    public EntregaResponseDTO buscarPorId(@PathVariable String id) {
+        return EntregaResponseDTO.fromEntity(entregaService.buscarPorId(id));
+    }
+
+    // Endpoint legado da portaria: marcar retirada com nome do recebedor
+    @PostMapping("/{id}/retirar")
+    public EntregaResponseDTO retirar(@PathVariable String id, @RequestBody(required = false) String recebedor) {
+        return EntregaResponseDTO.fromEntity(entregaService.retirar(id, recebedor));
     }
 }
