@@ -59,6 +59,8 @@ router.put('/:id', async (req, res) => {
   try {
     const { nome, email, senha, role, bloco, apartamento, vaga } = req.body;
 
+    console.log("REQ BODY:", req.body);
+
     const usuario = await User.scope('withPassword').findByPk(req.params.id);
     if (!usuario) {
       return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado' });
@@ -78,10 +80,23 @@ router.put('/:id', async (req, res) => {
     if (vaga !== undefined) usuario.vaga = normalizarVinculo(vaga);
 
     await usuario.save();
-    const atualizado = await User.findByPk(req.params.id);
+    const atualizado = await User.findByPk(req.params.id, {
+    attributes: [
+        'id',
+        'nome',
+        'email',
+        'provider',
+        'role',
+        'bloco',
+        'apartamento',
+        'vaga',
+        'createdAt'
+      ]
+    });
+
     res.json({
       sucesso: true,
-      usuario: usuarioPublico(atualizado),
+      usuario: atualizado,
     });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });

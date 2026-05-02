@@ -26,7 +26,7 @@ public class Vaga {
     private boolean ativa = true;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "apartamento_id")
     private Apartamento apartamento;
 

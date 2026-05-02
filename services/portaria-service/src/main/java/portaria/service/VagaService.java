@@ -19,8 +19,13 @@ public class VagaService {
     private final VagaRepository vagaRepository;
     private final ApartamentoRepository apartamentoRepository;
 
-    public Vaga cadastrar(Vaga vaga) {
+    public Vaga cadastrar(Vaga vaga, UUID apartamentoId) {
         validarVagaUnica(vaga.getNumero());
+        if (apartamentoId != null) {
+            Apartamento apt = apartamentoRepository.findById(apartamentoId)
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Apartamento não encontrado: " + apartamentoId));
+            vaga.setApartamento(apt);
+        }
         vaga.setAtiva(true);
         return vagaRepository.save(vaga);
     }
@@ -42,19 +47,29 @@ public class VagaService {
         return vagaRepository.findByApartamentoId(apartamentoId);
     }
 
-    public Vaga atualizar(String id, Vaga dados) {
+    public Vaga atualizar(String id, Vaga dados, String apartamentoIdStr) {
         Vaga vaga = buscarPorId(id);
-        
+
         if (!vaga.getNumero().equals(dados.getNumero())) {
             validarVagaUnica(dados.getNumero());
         }
-        
+
         vaga.setNumero(dados.getNumero());
         vaga.setLocalizacao(dados.getLocalizacao());
         vaga.setTipo(dados.getTipo());
-        vaga.setApartamento(dados.getApartamento());
+
+        if (apartamentoIdStr != null) {
+            if ("none".equals(apartamentoIdStr)) {
+                vaga.setApartamento(null);
+            } else {
+                UUID aptId = UUID.fromString(apartamentoIdStr);
+                Apartamento apt = apartamentoRepository.findById(aptId)
+                        .orElseThrow(() -> new RecursoNaoEncontradoException("Apartamento não encontrado: " + aptId));
+                vaga.setApartamento(apt);
+            }
+        }
+
         vaga.setAtualizadoEm(LocalDateTime.now());
-        
         return vagaRepository.save(vaga);
     }
 

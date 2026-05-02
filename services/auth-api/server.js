@@ -101,8 +101,19 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     console.log('Tabelas sincronizadas');
   } catch (err) {
-    console.error('Erro ao conectar PostgreSQL:', err.message);
-    console.error('Certifique-se de que o PostgreSQL está rodando');
+    console.error('Erro ao sincronizar tabelas:', err.message);
+  }
+
+  try {
+    await sequelize.query(`
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS bloco       VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS apartamento VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS vaga        VARCHAR(50)
+    `);
+    console.log('Colunas de vínculo garantidas');
+  } catch (err) {
+    console.error('Aviso ao garantir colunas de vínculo:', err.message);
   }
 
   const server = app.listen(PORT, () => {
