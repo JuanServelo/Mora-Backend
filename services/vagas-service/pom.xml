@@ -107,7 +107,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>portaria.VagasServiceApplication</mainClass>
+                    <mainClass>vagas.VagasServiceApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
