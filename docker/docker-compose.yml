@@ -71,7 +71,28 @@ services:
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
 
-  # 5. Microservice 2: Meetings e Atas (Java)
+  # 5. Microservice 2: Vagas de Estacionamento (Java)
+  vagas-service:
+    build:
+      context: ../services/vagas-service
+      dockerfile: Dockerfile
+    container_name: vagas-service
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - microservices-net
+    ports:
+      - "8092:8092"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-mora}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+
+  # 6. Microservice 3: Meetings e Atas (Java)
   meeting-service:
     build:
       context: ../services/meeting
@@ -91,7 +112,7 @@ services:
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
 
-  # 6. Auth API (Node.js)
+  # 7. Auth API (Node.js)
   auth-api:
     build:
       context: ../services/auth-api
@@ -116,7 +137,7 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
 
-  # 7. pgAdmin (visualizador do banco de dados)
+  # 8. pgAdmin (visualizador do banco de dados)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
