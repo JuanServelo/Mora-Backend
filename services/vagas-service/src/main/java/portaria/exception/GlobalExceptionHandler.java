@@ -24,7 +24,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(OperacaoInvalidaException.class)
     public ResponseEntity<Map<String, Object>> handleOperacaoInvalida(OperacaoInvalidaException ex) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+        // 403 para acesso negado, 409 para conflito de negócio
+        boolean isAcessoNegado = ex.getMessage() != null && ex.getMessage().startsWith("Acesso negado");
+        HttpStatus status = isAcessoNegado ? HttpStatus.FORBIDDEN : HttpStatus.CONFLICT;
+        return buildResponse(status, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -42,7 +45,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleNotReadable(HttpMessageNotReadableException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido ou malformado.");
+        return buildResponse(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido ou malformado. " +
+                "Verifique se o campo 'tipo' contém um valor válido: COBERTA, DESCOBERTA, MOTO ou DEFICIENTE.");
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

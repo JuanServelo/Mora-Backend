@@ -2,12 +2,14 @@ package portaria.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import portaria.dto.VagaRequestDTO;
 import portaria.exception.OperacaoInvalidaException;
 import portaria.exception.RecursoNaoEncontradoException;
-import portaria.model.Vaga;
 import portaria.model.Apartamento;
-import portaria.repository.VagaRepository;
+import portaria.model.Vaga;
 import portaria.repository.ApartamentoRepository;
+import portaria.repository.VagaRepository;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -19,14 +21,20 @@ public class VagaService {
     private final VagaRepository vagaRepository;
     private final ApartamentoRepository apartamentoRepository;
 
-    public Vaga cadastrar(Vaga vaga, UUID apartamentoId) {
-        validarVagaUnica(vaga.getNumero());
-        if (apartamentoId != null) {
-            Apartamento apt = apartamentoRepository.findById(apartamentoId)
-                    .orElseThrow(() -> new RecursoNaoEncontradoException("Apartamento não encontrado: " + apartamentoId));
-            vaga.setApartamento(apt);
-        }
+    public Vaga cadastrar(VagaRequestDTO dto) {
+        validarVagaUnica(dto.numero());
+
+        Apartamento apt = apartamentoRepository.findById(dto.apartamentoId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Apartamento não encontrado: " + dto.apartamentoId()));
+
+        Vaga vaga = new Vaga();
+        vaga.setNumero(dto.numero());
+        vaga.setLocalizacao(dto.localizacao());
+        vaga.setTipo(dto.tipo());
+        vaga.setApartamento(apt);
         vaga.setAtiva(true);
+
         return vagaRepository.save(vaga);
     }
 
@@ -47,29 +55,23 @@ public class VagaService {
         return vagaRepository.findByApartamentoId(apartamentoId);
     }
 
-    public Vaga atualizar(String id, Vaga dados, String apartamentoIdStr) {
+    public Vaga atualizar(String id, VagaRequestDTO dto) {
         Vaga vaga = buscarPorId(id);
 
-        if (!vaga.getNumero().equals(dados.getNumero())) {
-            validarVagaUnica(dados.getNumero());
+        if (!vaga.getNumero().equals(dto.numero())) {
+            validarVagaUnica(dto.numero());
         }
 
-        vaga.setNumero(dados.getNumero());
-        vaga.setLocalizacao(dados.getLocalizacao());
-        vaga.setTipo(dados.getTipo());
+        Apartamento apt = apartamentoRepository.findById(dto.apartamentoId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Apartamento não encontrado: " + dto.apartamentoId()));
 
-        if (apartamentoIdStr != null) {
-            if ("none".equals(apartamentoIdStr)) {
-                vaga.setApartamento(null);
-            } else {
-                UUID aptId = UUID.fromString(apartamentoIdStr);
-                Apartamento apt = apartamentoRepository.findById(aptId)
-                        .orElseThrow(() -> new RecursoNaoEncontradoException("Apartamento não encontrado: " + aptId));
-                vaga.setApartamento(apt);
-            }
-        }
-
+        vaga.setNumero(dto.numero());
+        vaga.setLocalizacao(dto.localizacao());
+        vaga.setTipo(dto.tipo());
+        vaga.setApartamento(apt);
         vaga.setAtualizadoEm(LocalDateTime.now());
+
         return vagaRepository.save(vaga);
     }
 

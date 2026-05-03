@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import portaria.model.Vaga;
+import portaria.model.enums.TipoVaga;
 
 @Data
 @Builder
@@ -15,7 +16,7 @@ public class VagaResponseDTO {
     private String id;
     private String numero;
     private String localizacao;
-    private String tipo;
+    private TipoVaga tipo;
     private boolean ativa;
     private String apartamentoId;
     private String apartamentoNumero;

@@ -3,7 +3,10 @@ package portaria.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import portaria.model.enums.TipoVaga;
+
 import java.time.LocalDateTime;
 
 @Data
@@ -21,7 +24,9 @@ public class Vaga {
 
     private String localizacao;
 
-    private String tipo; // Coberta, Descoberta, etc
+    @NotNull(message = "Tipo da vaga é obrigatório")
+    @Enumerated(EnumType.STRING)
+    private TipoVaga tipo;
 
     private boolean ativa = true;
 
