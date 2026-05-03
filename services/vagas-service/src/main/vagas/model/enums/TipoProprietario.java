@@ -1,4 +1,4 @@
-package portaria.model.enums;
+package vagas.model.enums;
 
 public enum TipoProprietario {
     PROPRIETARIO,

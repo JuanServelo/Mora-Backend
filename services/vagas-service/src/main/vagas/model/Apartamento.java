@@ -1,4 +1,4 @@
-package portaria.model;
+package vagas.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -55,3 +55,4 @@ public class Apartamento {
     @Column(name = "`atualizadoEm`")
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }
+

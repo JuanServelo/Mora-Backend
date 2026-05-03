@@ -1,7 +1,7 @@
-package portaria.dto;
+package vagas.dto;
 
 import lombok.Builder;
-import portaria.model.DisponibilidadeVaga;
+import vagas.model.DisponibilidadeVaga;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -32,3 +32,4 @@ public record DisponibilidadeResponseDTO(
                 .build();
     }
 }
+

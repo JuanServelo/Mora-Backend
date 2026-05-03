@@ -1,4 +1,4 @@
-package portaria.dto;
+package vagas.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,3 +18,4 @@ public record DisponibilidadeRequestDTO(
         @NotNull(message = "Data de fim é obrigatória")
         LocalDate dataFim
 ) {}
+

@@ -1,15 +1,15 @@
-package portaria.controller;
+package vagas.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import portaria.dto.VagaRequestDTO;
-import portaria.dto.VagaResponseDTO;
-import portaria.exception.OperacaoInvalidaException;
-import portaria.model.Vaga;
-import portaria.service.VagaService;
+import vagas.dto.VagaRequestDTO;
+import vagas.dto.VagaResponseDTO;
+import vagas.exception.OperacaoInvalidaException;
+import vagas.model.Vaga;
+import vagas.service.VagaService;
 
 import java.util.List;
 import java.util.UUID;
@@ -109,3 +109,4 @@ public class VagaController {
         }
     }
 }
+

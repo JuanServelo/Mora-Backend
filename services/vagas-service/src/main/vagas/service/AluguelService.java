@@ -1,20 +1,20 @@
-package portaria.service;
+package vagas.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import portaria.dto.AluguelRequestDTO;
-import portaria.dto.DisponibilidadeRequestDTO;
-import portaria.exception.OperacaoInvalidaException;
-import portaria.exception.RecursoNaoEncontradoException;
-import portaria.model.AluguelVaga;
-import portaria.model.DisponibilidadeVaga;
-import portaria.model.Vaga;
-import portaria.model.enums.ModalidadeAluguel;
-import portaria.model.enums.StatusAluguel;
-import portaria.repository.AluguelVagaRepository;
-import portaria.repository.DisponibilidadeVagaRepository;
-import portaria.repository.VagaRepository;
+import vagas.dto.AluguelRequestDTO;
+import vagas.dto.DisponibilidadeRequestDTO;
+import vagas.exception.OperacaoInvalidaException;
+import vagas.exception.RecursoNaoEncontradoException;
+import vagas.model.AluguelVaga;
+import vagas.model.DisponibilidadeVaga;
+import vagas.model.Vaga;
+import vagas.model.enums.ModalidadeAluguel;
+import vagas.model.enums.StatusAluguel;
+import vagas.repository.AluguelVagaRepository;
+import vagas.repository.DisponibilidadeVagaRepository;
+import vagas.repository.VagaRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -296,3 +296,4 @@ public class AluguelService {
         }
     }
 }
+

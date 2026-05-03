@@ -1,4 +1,4 @@
-package portaria.model;
+package vagas.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

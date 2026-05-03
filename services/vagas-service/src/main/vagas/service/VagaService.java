@@ -1,14 +1,14 @@
-package portaria.service;
+package vagas.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import portaria.dto.VagaRequestDTO;
-import portaria.exception.OperacaoInvalidaException;
-import portaria.exception.RecursoNaoEncontradoException;
-import portaria.model.Apartamento;
-import portaria.model.Vaga;
-import portaria.repository.ApartamentoRepository;
-import portaria.repository.VagaRepository;
+import vagas.dto.VagaRequestDTO;
+import vagas.exception.OperacaoInvalidaException;
+import vagas.exception.RecursoNaoEncontradoException;
+import vagas.model.Apartamento;
+import vagas.model.Vaga;
+import vagas.repository.ApartamentoRepository;
+import vagas.repository.VagaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -95,3 +95,4 @@ public class VagaService {
         });
     }
 }
+

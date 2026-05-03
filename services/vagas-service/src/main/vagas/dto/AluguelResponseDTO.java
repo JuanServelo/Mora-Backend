@@ -1,9 +1,9 @@
-package portaria.dto;
+package vagas.dto;
 
 import lombok.Builder;
-import portaria.model.AluguelVaga;
-import portaria.model.enums.ModalidadeAluguel;
-import portaria.model.enums.StatusAluguel;
+import vagas.model.AluguelVaga;
+import vagas.model.enums.ModalidadeAluguel;
+import vagas.model.enums.StatusAluguel;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,3 +45,4 @@ public record AluguelResponseDTO(
                 .build();
     }
 }
+

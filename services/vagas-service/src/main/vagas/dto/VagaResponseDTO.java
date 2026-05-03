@@ -1,11 +1,11 @@
-package portaria.dto;
+package vagas.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import portaria.model.Vaga;
-import portaria.model.enums.TipoVaga;
+import vagas.model.Vaga;
+import vagas.model.enums.TipoVaga;
 
 @Data
 @Builder
@@ -42,3 +42,4 @@ public class VagaResponseDTO {
                 .build();
     }
 }
+

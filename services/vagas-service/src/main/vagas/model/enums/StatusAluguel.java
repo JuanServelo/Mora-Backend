@@ -1,4 +1,4 @@
-package portaria.model.enums;
+package vagas.model.enums;
 
 public enum StatusAluguel {
     PENDENTE,
@@ -7,3 +7,4 @@ public enum StatusAluguel {
     CANCELADO,
     CONCLUIDO
 }
+

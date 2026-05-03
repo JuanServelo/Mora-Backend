@@ -1,8 +1,8 @@
-package portaria.dto;
+package vagas.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import portaria.model.enums.TipoVaga;
+import vagas.model.enums.TipoVaga;
 
 import java.util.UUID;
 
@@ -24,3 +24,4 @@ public record VagaRequestDTO(
         @NotNull(message = "Vaga deve estar associada a um apartamento")
         UUID apartamentoId
 ) {}
+

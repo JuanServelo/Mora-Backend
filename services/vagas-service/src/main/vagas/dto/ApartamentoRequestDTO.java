@@ -1,4 +1,4 @@
-package portaria.dto;
+package vagas.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,3 +22,4 @@ public class ApartamentoRequestDTO {
     private Double areaMxComTotal;
     private String observacoes;
 }
+

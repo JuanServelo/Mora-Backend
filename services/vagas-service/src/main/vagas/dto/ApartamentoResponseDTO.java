@@ -1,7 +1,7 @@
-package portaria.dto;
+package vagas.dto;
 
 import lombok.*;
-import portaria.model.Apartamento;
+import vagas.model.Apartamento;
 
 import java.util.UUID;
 

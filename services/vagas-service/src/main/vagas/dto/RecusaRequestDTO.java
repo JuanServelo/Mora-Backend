@@ -1,4 +1,4 @@
-package portaria.dto;
+package vagas.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
@@ -9,3 +9,4 @@ public record RecusaRequestDTO(
         @NotBlank(message = "Justificativa da recusa é obrigatória")
         String justificativa
 ) {}
+

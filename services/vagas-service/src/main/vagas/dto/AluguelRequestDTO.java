@@ -1,8 +1,8 @@
-package portaria.dto;
+package vagas.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import portaria.model.enums.ModalidadeAluguel;
+import vagas.model.enums.ModalidadeAluguel;
 import java.time.LocalDate;
 
 /**
@@ -22,3 +22,4 @@ public record AluguelRequestDTO(
         @NotNull(message = "Modalidade é obrigatória (DIARIA ou MENSAL)")
         ModalidadeAluguel modalidade
 ) {}
+

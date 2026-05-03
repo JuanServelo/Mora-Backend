@@ -1,11 +1,11 @@
-package portaria.model;
+package vagas.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import portaria.model.enums.TipoVaga;
+import vagas.model.enums.TipoVaga;
 
 import java.time.LocalDateTime;
 
@@ -41,3 +41,4 @@ public class Vaga {
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }
+

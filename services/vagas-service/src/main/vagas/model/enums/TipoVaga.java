@@ -1,4 +1,4 @@
-package portaria.model.enums;
+package vagas.model.enums;
 
 public enum TipoVaga {
     COBERTA,
@@ -6,3 +6,4 @@ public enum TipoVaga {
     MOTO,
     DEFICIENTE
 }
+

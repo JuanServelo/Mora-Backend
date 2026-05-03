@@ -1,10 +1,10 @@
-package portaria.model;
+package vagas.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import portaria.model.enums.ModalidadeAluguel;
-import portaria.model.enums.StatusAluguel;
+import vagas.model.enums.ModalidadeAluguel;
+import vagas.model.enums.StatusAluguel;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -71,3 +71,4 @@ public class AluguelVaga {
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }
+

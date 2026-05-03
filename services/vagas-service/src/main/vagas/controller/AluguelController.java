@@ -1,14 +1,14 @@
-package portaria.controller;
+package vagas.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import portaria.dto.*;
-import portaria.exception.OperacaoInvalidaException;
-import portaria.model.enums.StatusAluguel;
-import portaria.service.AluguelService;
+import vagas.dto.*;
+import vagas.exception.OperacaoInvalidaException;
+import vagas.model.enums.StatusAluguel;
+import vagas.service.AluguelService;
 
 import java.util.List;
 import java.util.UUID;
@@ -211,3 +211,4 @@ public class AluguelController {
                 (role.equalsIgnoreCase("ADMINISTRADOR") || role.equalsIgnoreCase("SINDICO"));
     }
 }
+

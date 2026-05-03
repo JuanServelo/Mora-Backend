@@ -1,4 +1,4 @@
-package portaria.model;
+package vagas.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -43,3 +43,4 @@ public class DisponibilidadeVaga {
     @Column(name = "criado_em")
     private LocalDateTime criadoEm = LocalDateTime.now();
 }
+

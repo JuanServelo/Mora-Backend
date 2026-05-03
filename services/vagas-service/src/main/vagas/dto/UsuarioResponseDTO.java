@@ -1,10 +1,10 @@
-package portaria.dto;
+package vagas.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import portaria.model.enums.TipoProprietario;
+import vagas.model.enums.TipoProprietario;
 
 @Data
 @Builder
@@ -20,3 +20,4 @@ public class UsuarioResponseDTO {
     private TipoProprietario tipo;
     private boolean ativo;
 }
+
