@@ -7,7 +7,7 @@ Serviço responsável pelo gerenciamento completo de vagas de estacionamento do 
 - **Java 21**
 - **Spring Boot 3.5.6**
 - **Spring Data JPA**
-- **PostgreSQL 16**
+- **PostgreSQL 18**
 - **Spring Cloud Consul** (Service Discovery)
 - **Traefik** (API Gateway)
 
@@ -54,7 +54,7 @@ src/main/java/portaria/
 ### Pré-requisitos
 - Java 21
 - Maven 3.9+
-- PostgreSQL 16 rodando
+- PostgreSQL 18 rodando
 - Consul rodando na porta 8500
 
 ### Passos
