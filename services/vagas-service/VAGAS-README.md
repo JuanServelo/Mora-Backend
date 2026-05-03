@@ -35,7 +35,7 @@ O controle é feito via header `X-User-Role` propagado pelo Traefik após valida
 ## Estrutura
 
 ```
-src/main/java/portaria/
+src/main/
 ├── VagasServiceApplication.java
 ├── config/
 │   └── CorsConfig.java

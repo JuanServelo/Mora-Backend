@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-13T17:20:32-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.1 (Oracle Corporation)"
+    date = "2026-05-03T18:26:25-0300",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class PollMapperImpl implements PollMapper {
@@ -27,8 +27,8 @@ public class PollMapperImpl implements PollMapper {
 
         Poll.PollBuilder poll = Poll.builder();
 
-        poll.titulo( dto.getTitulo() );
         poll.descricao( dto.getDescricao() );
+        poll.titulo( dto.getTitulo() );
 
         return poll.build();
     }
@@ -42,11 +42,11 @@ public class PollMapperImpl implements PollMapper {
         PollResponseDTO.PollResponseDTOBuilder pollResponseDTO = PollResponseDTO.builder();
 
         pollResponseDTO.meetingId( pollMeetingId( poll ) );
-        pollResponseDTO.id( poll.getId() );
-        pollResponseDTO.titulo( poll.getTitulo() );
         pollResponseDTO.descricao( poll.getDescricao() );
-        pollResponseDTO.status( poll.getStatus() );
+        pollResponseDTO.id( poll.getId() );
         pollResponseDTO.opcoes( pollOptionListToPollOptionDTOList( poll.getOpcoes() ) );
+        pollResponseDTO.status( poll.getStatus() );
+        pollResponseDTO.titulo( poll.getTitulo() );
 
         return pollResponseDTO.build();
     }
@@ -73,8 +73,8 @@ public class PollMapperImpl implements PollMapper {
 
         PollOptionDTO.PollOptionDTOBuilder pollOptionDTO = PollOptionDTO.builder();
 
-        pollOptionDTO.id( pollOption.getId() );
         pollOptionDTO.descricao( pollOption.getDescricao() );
+        pollOptionDTO.id( pollOption.getId() );
 
         return pollOptionDTO.build();
     }

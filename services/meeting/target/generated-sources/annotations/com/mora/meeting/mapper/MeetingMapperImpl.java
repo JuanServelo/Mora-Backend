@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-13T17:20:32-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.1 (Oracle Corporation)"
+    date = "2026-05-03T18:26:25-0300",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class MeetingMapperImpl implements MeetingMapper {
@@ -22,11 +22,11 @@ public class MeetingMapperImpl implements MeetingMapper {
 
         Meeting.MeetingBuilder meeting = Meeting.builder();
 
-        meeting.titulo( dto.getTitulo() );
-        meeting.descricao( dto.getDescricao() );
-        meeting.dataHoraInicio( dto.getDataHoraInicio() );
         meeting.dataHoraFim( dto.getDataHoraFim() );
+        meeting.dataHoraInicio( dto.getDataHoraInicio() );
+        meeting.descricao( dto.getDescricao() );
         meeting.idOrganizador( dto.getIdOrganizador() );
+        meeting.titulo( dto.getTitulo() );
 
         return meeting.build();
     }
@@ -40,14 +40,14 @@ public class MeetingMapperImpl implements MeetingMapper {
         MeetingResponseDTO.MeetingResponseDTOBuilder meetingResponseDTO = MeetingResponseDTO.builder();
 
         meetingResponseDTO.googleMeetLink( meeting.getMeetLink() );
-        meetingResponseDTO.id( meeting.getId() );
-        meetingResponseDTO.titulo( meeting.getTitulo() );
-        meetingResponseDTO.descricao( meeting.getDescricao() );
-        meetingResponseDTO.dataHoraInicio( meeting.getDataHoraInicio() );
         meetingResponseDTO.dataHoraFim( meeting.getDataHoraFim() );
+        meetingResponseDTO.dataHoraInicio( meeting.getDataHoraInicio() );
+        meetingResponseDTO.descricao( meeting.getDescricao() );
+        meetingResponseDTO.id( meeting.getId() );
         if ( meeting.getStatus() != null ) {
             meetingResponseDTO.status( meeting.getStatus().name() );
         }
+        meetingResponseDTO.titulo( meeting.getTitulo() );
 
         return meetingResponseDTO.build();
     }
