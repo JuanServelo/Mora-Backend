@@ -86,7 +86,7 @@ services:
       - "8092:8092"
     environment:
       - POSTGRES_HOST=postgres
-      - POSTGRES_DB=${POSTGRES_DB:-mora}
+      - POSTGRES_DB=vagas_db
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - SPRING_CLOUD_CONSUL_HOST=consul

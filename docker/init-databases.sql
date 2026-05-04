@@ -2,6 +2,7 @@
 -- O banco 'mora' (portaria) e criado automaticamente pela variavel POSTGRES_DB
 CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
+CREATE DATABASE vagas_db;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;
