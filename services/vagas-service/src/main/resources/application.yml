@@ -9,7 +9,7 @@ spring:
     name: vagas-service
 
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:vagas_db}
     username: ${POSTGRES_USER:admin}
     password: ${POSTGRES_PASSWORD:Vibers@2112}
     driver-class-name: org.postgresql.Driver
