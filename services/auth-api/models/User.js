@@ -26,14 +26,19 @@ const User = sequelize.define('User', {
 
   email: {
     type: DataTypes.STRING(150),
-    allowNull: false,
+    allowNull: true,
     unique: true,
     validate: {
-      isEmail: { msg: 'E-mail inválido' },
-      notEmpty: { msg: 'E-mail é obrigatório' },
+      isEmailOrEmpty(value) {
+        if (value == null || value === '') return;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          throw new Error('E-mail inválido');
+        }
+      },
     },
     set(value) {
-      this.setDataValue('email', value?.toLowerCase().trim());
+      this.setDataValue('email', value ? value.toLowerCase().trim() : null);
     },
   },
 
@@ -100,6 +105,16 @@ const User = sequelize.define('User', {
   },
 
   responsavelFinanceiro: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+
+  dataNascimento: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+
+  semAcessoSistema: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },

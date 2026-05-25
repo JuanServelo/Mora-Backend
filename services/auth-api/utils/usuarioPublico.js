@@ -18,6 +18,8 @@ export function usuarioPublico(usuario) {
     apartamento: usuario.apartamento ?? null,
     vaga: usuario.vaga ?? null,
     responsavelFinanceiro: usuario.responsavelFinanceiro ?? false,
+    semAcessoSistema: usuario.semAcessoSistema ?? false,
+    dataNascimento: usuario.dataNascimento ?? null,
     ...(usuario.createdAt && { createdAt: usuario.createdAt }),
     ...(usuario.activatedAt && { activatedAt: usuario.activatedAt }),
   };

@@ -150,6 +150,10 @@ export async function reenviarConvite(inviteId, cadastradoPorId) {
     return { sucesso: false, mensagem: MSG.CODIGO_USADO, status: 400 };
   }
 
+  if (invite.perfil === 'GUEST') {
+    return { sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.', status: 400 };
+  }
+
   invite.status = STATUS_CONVITE.REVOKED;
   await invite.save();
 
@@ -181,6 +185,10 @@ export async function validarDadosConviteAdmin({
 }) {
   if (perfilExigeUnidade(perfil) && !unidadeId) {
     return { sucesso: false, mensagem: 'Unidade é obrigatória para este perfil.' };
+  }
+
+  if (perfil === 'GUEST') {
+    return { sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.' };
   }
 
   if (unidadeId) {

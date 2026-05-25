@@ -103,6 +103,10 @@ router.post('/login', authLimiter, async (req, res) => {
       });
     }
 
+    if (usuario.semAcessoSistema) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.' });
+    }
+
     const senhaValida = await usuario.compararSenha(senha);
     if (!senhaValida) {
       return res.status(401).json({ sucesso: false, mensagem: 'E-mail ou senha inválidos.' });
@@ -341,6 +345,9 @@ router.get('/google/callback', (req, res) => {
     }
     if (user.status === STATUS_USUARIO.PENDING_ACTIVATION) {
       return res.redirect(`${getFrontendUrl()}/login?erro=cadastro_pendente`);
+    }
+    if (user.semAcessoSistema) {
+      return res.redirect(`${getFrontendUrl()}/login?erro=sem_acesso_sistema`);
     }
 
     const perfil = user.getPerfilEfetivo();

@@ -17,6 +17,7 @@ import invitesRoutes from './routes/invites.js';
 import userManagementRoutes from './routes/user-management.js';
 import reclamacoesRoutes from './routes/reclamacoes.js';
 import { garantirColunasNovas, migrarUsuariosLegados } from './migrations/migrate-rf03.js';
+import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
 import { STATUS_USUARIO } from './constants/perfis.js';
 import { googleOAuthConfigurado } from './utils/oauthConfig.js';
 
@@ -116,8 +117,9 @@ const startServer = async () => {
     console.log('PostgreSQL conectado');
     await sequelize.sync({ alter: true });
     await garantirColunasNovas();
+    await garantirColunasRf07();
     await migrarUsuariosLegados();
-    console.log('Tabelas sincronizadas e migração RF03 aplicada');
+    console.log('Tabelas sincronizadas e migrações RF03/RF07 aplicadas');
   } catch (err) {
     console.error('Erro ao sincronizar tabelas:', err.message);
   }

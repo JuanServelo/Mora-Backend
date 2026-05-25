@@ -7,7 +7,7 @@ import {
   STATUS_CONVITE,
   podeCadastrarPerfil,
 } from '../constants/perfis.js';
-import { possuiCobrancasEmAberto } from '../utils/financialGuardService.js';
+import { MSG_RF07 } from '../constants/occupantMessages.js';
 import {
   criarConvite,
   reenviarConvite,
@@ -52,14 +52,25 @@ export async function emitirConvite(ator, dados) {
     };
   }
 
+  if (perfil === PERFIS.GUEST) {
+    return {
+      sucesso: false,
+      mensagem: MSG_RF07.GUEST_SEM_ACESSO,
+      status: 400,
+    };
+  }
+
   const unidadeEfetiva = unidadeId || ator.unidadeId || null;
 
-  if (perfilAtor === PERFIS.ABSENT_OWNER && perfil === PERFIS.LESSEE) {
+  if (
+    perfil === PERFIS.LESSEE
+    && (perfilAtor === PERFIS.ABSENT_OWNER || perfilAtor === PERFIS.RESIDENT_OWNER)
+  ) {
     const lesseeExistente = await lesseeAtivoNaUnidade(unidadeEfetiva);
     if (lesseeExistente) {
       return {
         sucesso: false,
-        mensagem: 'Você já possui um Lessee vinculado a esta unidade.',
+        mensagem: MSG_RF07.LESSEE_DUPLICADO,
         status: 400,
       };
     }
@@ -122,14 +133,22 @@ async function desativarUsuarioRecursivo(usuario) {
   await usuario.save();
 }
 
-export async function desativarUsuario(ator, alvoId) {
+export async function desativarUsuario(ator, alvoId, opts = {}) {
   const alvo = await User.findByPk(alvoId);
   if (!alvo) {
-    return { sucesso: false, mensagem: 'Usuário não encontrado', status: 404 };
+    return {
+      sucesso: false,
+      mensagem: opts.mensagemRemocao ? MSG_RF07.VINCULO_INEXISTENTE : 'Usuário não encontrado',
+      status: 404,
+    };
   }
 
   if (alvo.status === STATUS_USUARIO.INACTIVE) {
-    return { sucesso: false, mensagem: 'Usuário já está inativo.', status: 400 };
+    return {
+      sucesso: false,
+      mensagem: opts.mensagemRemocao ? MSG_RF07.VINCULO_INEXISTENTE : 'Usuário já está inativo.',
+      status: 400,
+    };
   }
 
   const perfilAtor = ator.getPerfilEfetivo();
@@ -138,20 +157,19 @@ export async function desativarUsuario(ator, alvoId) {
   if (!podeDesativar(perfilAtor, perfilAlvo, ator, alvo)) {
     return {
       sucesso: false,
-      mensagem: 'Você não tem permissão para desativar este usuário.',
+      mensagem: opts.mensagemRemocao
+        ? MSG_RF07.SEM_PERMISSAO_REMOVER
+        : 'Você não tem permissão para desativar este usuário.',
       status: 403,
     };
   }
 
   if (alvo.responsavelFinanceiro && alvo.unidadeId) {
-    const temCobrancas = await possuiCobrancasEmAberto(alvo.id, alvo.unidadeId);
-    if (temCobrancas) {
-      return {
-        sucesso: false,
-        mensagem: `Este usuário é o responsável financeiro da unidade e possui cobranças em aberto. Regularize as pendências antes de prosseguir.`,
-        status: 400,
-      };
-    }
+    return {
+      sucesso: false,
+      mensagem: MSG_RF07.REMOVER_FINANCEIRO,
+      status: 400,
+    };
   }
 
   const cascata = await buscarUsuariosCascata(alvo);
@@ -162,10 +180,12 @@ export async function desativarUsuario(ator, alvoId) {
     await desativarUsuarioRecursivo(u);
   }
 
-  let mensagem = 'Usuário desativado com sucesso.';
+  let mensagem = opts.mensagemRemocao ? MSG_RF07.VINCULO_REMOVIDO : 'Usuário desativado com sucesso.';
   if (perfilAlvo === PERFIS.LESSEE && totalCascata > 0) {
-    mensagem = `Lessee desativado. ${totalCascata} usuários vinculados também foram desativados.`;
-  } else if (totalCascata > 0) {
+    mensagem = opts.mensagemRemocao
+      ? `Lessee removido. ${totalCascata} usuários vinculados também foram desativados.`
+      : `Lessee desativado. ${totalCascata} usuários vinculados também foram desativados.`;
+  } else if (totalCascata > 0 && !opts.mensagemRemocao) {
     mensagem = `Usuário desativado. ${totalCascata} usuários vinculados também foram desativados.`;
   }
 
@@ -180,6 +200,8 @@ function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
   const escopoCondominio = [
     PERFIS.CONTRACTING_PROPERTY_MANAGER,
     PERFIS.CONTRACTING_SYNDIC,
+    PERFIS.ADMINISTRATOR,
+    PERFIS.OPERATIONAL_SYNDIC,
   ];
 
   if (escopoCondominio.includes(perfilAtor)) {
@@ -190,8 +212,7 @@ function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
     if (alvo.cadastradoPorId !== ator.id && alvo.unidadeId !== ator.unidadeId) {
       return false;
     }
-    return [PERFIS.LESSEE, PERFIS.OCCUPANT, PERFIS.GUEST].includes(perfilAlvo)
-      || (perfilAlvo === PERFIS.RESIDENT_OWNER && ator.unidadeId === alvo.unidadeId);
+    return [PERFIS.LESSEE, PERFIS.OCCUPANT, PERFIS.GUEST].includes(perfilAlvo);
   }
 
   if (perfilAtor === PERFIS.LESSEE) {

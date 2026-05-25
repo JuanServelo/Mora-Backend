@@ -84,6 +84,10 @@ export function perfilExigeUnidade(perfil) {
   return PERFIS_EXIGEM_UNIDADE.includes(perfil);
 }
 
+export function perfilRequerPrecadastro(perfil) {
+  return PERFIS_UNIDADE.includes(perfil);
+}
+
 export const PERFIS_ACESSO_ADMIN = [
   PERFIS.CONTRACTING_PROPERTY_MANAGER,
   PERFIS.CONTRACTING_SYNDIC,
@@ -105,6 +109,20 @@ export function podeAcessarAdmin(perfil) {
 export function podeGerenciarUsuarios(perfil) {
   return PERFIS_GESTAO_USUARIOS.includes(perfil);
 }
+
+export function podeGerenciarOcupantes(perfil) {
+  return [
+    PERFIS.RESIDENT_OWNER,
+    PERFIS.ABSENT_OWNER,
+    PERFIS.LESSEE,
+  ].includes(perfil);
+}
+
+export const PERFIS_OCUPANTE_UNIDADE = [
+  PERFIS.LESSEE,
+  PERFIS.OCCUPANT,
+  PERFIS.GUEST,
+];
 
 export function isPerfilCondominio(perfil) {
   return [
