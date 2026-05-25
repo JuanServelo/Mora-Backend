@@ -20,6 +20,35 @@ CREATE TABLE IF NOT EXISTS users (
   vaga VARCHAR(50),
   "resetToken" VARCHAR(255),
   "resetTokenExpira" TIMESTAMP,
+  telefone VARCHAR(20),
+  cpf VARCHAR(14),
+  "fotoUrl" VARCHAR(500),
+  perfil VARCHAR(50),
+  status VARCHAR(30) DEFAULT 'pending_activation',
+  "condominioId" VARCHAR(50),
+  "unidadeId" UUID,
+  "cadastradoPorId" INTEGER,
+  "responsavelFinanceiro" BOOLEAN DEFAULT false,
+  "tokenVersion" INTEGER DEFAULT 0,
+  "activatedAt" TIMESTAMP,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS invites (
+  id SERIAL PRIMARY KEY,
+  codigo VARCHAR(12) NOT NULL UNIQUE,
+  email VARCHAR(150) NOT NULL,
+  perfil VARCHAR(50) NOT NULL,
+  "condominioId" VARCHAR(50) NOT NULL,
+  "unidadeId" UUID,
+  "nomePrecadastro" VARCHAR(150),
+  "cpfPrecadastro" VARCHAR(14),
+  "cadastradoPorId" INTEGER NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
+  "expiresAt" TIMESTAMP NOT NULL,
+  "usedAt" TIMESTAMP,
+  "usedByUserId" INTEGER,
   "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -1,0 +1,109 @@
+import express from 'express';
+import authMiddleware, { gestaoMiddleware } from '../middleware/auth.js';
+import {
+  listarUsuariosEscopo,
+  emitirConvite,
+  reenviarConvite,
+  desativarUsuario,
+} from '../services/userManagementService.js';
+import { usuarioPublico } from '../utils/usuarioPublico.js';
+
+const router = express.Router();
+
+router.use(authMiddleware, gestaoMiddleware);
+
+router.get('/users', async (req, res) => {
+  try {
+    const { usuarios, convitesPendentes } = await listarUsuariosEscopo(req.user);
+
+    res.json({
+      sucesso: true,
+      usuarios: usuarios.map(usuarioPublico),
+      convitesPendentes: convitesPendentes.map((c) => ({
+        id: c.id,
+        email: c.email,
+        perfil: c.perfil,
+        unidadeId: c.unidadeId,
+        status: c.status,
+        expiresAt: c.expiresAt,
+        createdAt: c.createdAt,
+        expirado: new Date(c.expiresAt) < new Date(),
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+router.post('/invites', async (req, res) => {
+  try {
+    const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro } = req.body;
+
+    if (!email || !perfil) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'E-mail e perfil são obrigatórios.',
+      });
+    }
+
+    const resultado = await emitirConvite(req.user, {
+      email,
+      perfil,
+      unidadeId,
+      nomePrecadastro,
+      cpfPrecadastro,
+    });
+
+    if (!resultado.sucesso) {
+      return res.status(resultado.status || 400).json(resultado);
+    }
+
+    res.status(201).json(resultado);
+  } catch (err) {
+    console.error('Erro emitir convite:', err);
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+router.post('/invites/:id/resend', async (req, res) => {
+  try {
+    const resultado = await reenviarConvite(Number(req.params.id), req.user.id);
+
+    if (!resultado.sucesso) {
+      return res.status(resultado.status || 400).json(resultado);
+    }
+
+    res.json({
+      sucesso: true,
+      mensagem: resultado.emailEnviado
+        ? 'Convite reenviado com sucesso.'
+        : 'Convite reenviado, mas o e-mail não pôde ser enviado.',
+      emailEnviado: resultado.emailEnviado,
+      avisoEmail: resultado.avisoEmail || null,
+      convite: {
+        id: resultado.convite.id,
+        email: resultado.convite.email,
+        codigo: resultado.convite.codigo,
+        expiresAt: resultado.convite.expiresAt,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+router.patch('/users/:id/deactivate', async (req, res) => {
+  try {
+    const resultado = await desativarUsuario(req.user, Number(req.params.id));
+
+    if (!resultado.sucesso) {
+      return res.status(resultado.status || 400).json(resultado);
+    }
+
+    res.json(resultado);
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+export default router;

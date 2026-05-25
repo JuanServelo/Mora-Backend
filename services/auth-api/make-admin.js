@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import sequelize from './config/database.js';
 import User from './models/User.js';
+import { PERFIS, STATUS_USUARIO, CONDOMINIO_DEFAULT } from './constants/perfis.js';
 
 dotenv.config();
 
@@ -12,12 +13,19 @@ if (!email) {
 
 await sequelize.authenticate();
 
-const [count] = await User.update({ role: 'admin' }, { where: { email } });
+const [count] = await User.update(
+  {
+    perfil: PERFIS.ADMINISTRATOR,
+    status: STATUS_USUARIO.ACTIVE,
+    condominioId: CONDOMINIO_DEFAULT,
+  },
+  { where: { email: email.toLowerCase().trim() } },
+);
 
 if (count === 0) {
   console.error(`Usuário não encontrado: ${email}`);
 } else {
-  console.log(`${email} agora é admin`);
+  console.log(`${email} agora é administrador (ADMINISTRATOR)`);
 }
 
 await sequelize.close();

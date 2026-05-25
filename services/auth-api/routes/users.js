@@ -1,65 +1,55 @@
 import express from 'express';
 import User from '../models/User.js';
-import authMiddleware, { adminMiddleware } from '../middleware/auth.js';
+import authMiddleware, { adminMiddleware, gestaoMiddleware } from '../middleware/auth.js';
 import { usuarioPublico, normalizarVinculo } from '../utils/usuarioPublico.js';
+import { emitirConvite } from '../services/userManagementService.js';
+import { desativarUsuario } from '../services/userManagementService.js';
+import { podeGerenciarUsuarios } from '../constants/perfis.js';
 
 const router = express.Router();
 
-router.use(authMiddleware, adminMiddleware);
-
-// GET /api/users
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
+    if (!podeGerenciarUsuarios(req.userPerfil)) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado' });
+    }
+
     const usuarios = await User.findAll({ order: [['createdAt', 'DESC']] });
-    res.json({ sucesso: true, usuarios });
+    res.json({ sucesso: true, usuarios: usuarios.map(usuarioPublico) });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
 });
 
-// POST /api/users
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, gestaoMiddleware, async (req, res) => {
   try {
-    const { nome, email, senha, role } = req.body;
+    const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro } = req.body;
 
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Nome, email e senha são obrigatórios' });
-    }
-    if (senha.length < 6) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Senha deve ter no mínimo 6 caracteres' });
+    if (!email || !perfil) {
+      return res.status(400).json({ sucesso: false, mensagem: 'E-mail e perfil são obrigatórios.' });
     }
 
-    const existe = await User.findOne({ where: { email } });
-    if (existe) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Email já cadastrado' });
-    }
-
-    const { bloco, apartamento, vaga } = req.body;
-    const usuario = await User.create({
-      nome,
+    const resultado = await emitirConvite(req.user, {
       email,
-      senha,
-      role: role || 'user',
-      provider: 'local',
-      bloco: normalizarVinculo(bloco) ?? null,
-      apartamento: normalizarVinculo(apartamento) ?? null,
-      vaga: normalizarVinculo(vaga) ?? null,
+      perfil,
+      unidadeId,
+      nomePrecadastro,
+      cpfPrecadastro,
     });
-    res.status(201).json({
-      sucesso: true,
-      usuario: usuarioPublico(usuario),
-    });
+
+    if (!resultado.sucesso) {
+      return res.status(resultado.status || 400).json(resultado);
+    }
+
+    res.status(201).json(resultado);
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
 });
 
-// PUT /api/users/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { nome, email, senha, role, bloco, apartamento, vaga } = req.body;
-
-    console.log("REQ BODY:", req.body);
+    const { nome, email, senha, bloco, apartamento, vaga, perfil } = req.body;
 
     const usuario = await User.scope('withPassword').findByPk(req.params.id);
     if (!usuario) {
@@ -68,55 +58,32 @@ router.put('/:id', async (req, res) => {
 
     if (nome) usuario.nome = nome;
     if (email) usuario.email = email;
-    if (role) usuario.role = role;
-    if (senha) {
-      if (senha.length < 6) {
-        return res.status(400).json({ sucesso: false, mensagem: 'Senha deve ter no mínimo 6 caracteres' });
-      }
-      usuario.senha = senha;
-    }
+    if (perfil) usuario.perfil = perfil;
+    if (senha) usuario.senha = senha;
     if (bloco !== undefined) usuario.bloco = normalizarVinculo(bloco);
     if (apartamento !== undefined) usuario.apartamento = normalizarVinculo(apartamento);
     if (vaga !== undefined) usuario.vaga = normalizarVinculo(vaga);
 
     await usuario.save();
-    const atualizado = await User.findByPk(req.params.id, {
-    attributes: [
-        'id',
-        'nome',
-        'email',
-        'provider',
-        'role',
-        'bloco',
-        'apartamento',
-        'vaga',
-        'createdAt'
-      ]
-    });
 
-    res.json({
-      sucesso: true,
-      usuario: atualizado,
-    });
+    res.json({ sucesso: true, usuario: usuarioPublico(usuario) });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
 });
 
-// DELETE /api/users/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, gestaoMiddleware, async (req, res) => {
   try {
     if (req.params.id === req.userId?.toString()) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Não é possível deletar sua própria conta' });
+      return res.status(400).json({ sucesso: false, mensagem: 'Não é possível desativar sua própria conta' });
     }
 
-    const usuario = await User.findByPk(req.params.id);
-    if (!usuario) {
-      return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado' });
+    const resultado = await desativarUsuario(req.user, Number(req.params.id));
+    if (!resultado.sucesso) {
+      return res.status(resultado.status || 400).json(resultado);
     }
 
-    await usuario.destroy();
-    res.json({ sucesso: true, mensagem: 'Usuário deletado com sucesso' });
+    res.json(resultado);
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
