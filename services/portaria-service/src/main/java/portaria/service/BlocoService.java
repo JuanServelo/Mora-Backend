@@ -18,17 +18,29 @@ public class BlocoService {
     private final BlocoRepository blocoRepository;
 
     public Bloco cadastrar(Bloco bloco) {
-        blocoRepository.findByNome(bloco.getNome()).ifPresent(b -> {
-            throw new OperacaoInvalidaException("Já existe um bloco cadastrado com o nome: " + bloco.getNome());
-        });
+        if (bloco.getCondominioId() != null) {
+            blocoRepository.findByNomeAndCondominioId(bloco.getNome(), bloco.getCondominioId()).ifPresent(b -> {
+                throw new OperacaoInvalidaException("Já existe um bloco com o nome '" + bloco.getNome() + "' neste cliente.");
+            });
+        } else {
+            blocoRepository.findByNome(bloco.getNome()).ifPresent(b -> {
+                throw new OperacaoInvalidaException("Já existe um bloco cadastrado com o nome: " + bloco.getNome());
+            });
+        }
         return blocoRepository.save(bloco);
     }
 
-    public List<Bloco> listarTodos() {
+    public List<Bloco> listarTodos(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return blocoRepository.findByCondominioId(condominioId);
+        }
         return blocoRepository.findAll();
     }
 
-    public List<Bloco> listarAtivos() {
+    public List<Bloco> listarAtivos(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return blocoRepository.findByCondominioIdAndAtivo(condominioId, true);
+        }
         return blocoRepository.findByAtivo(true);
     }
 
@@ -39,11 +51,18 @@ public class BlocoService {
 
     public Bloco atualizar(UUID id, Bloco dados) {
         Bloco bloco = buscarPorId(id);
+        String condId = bloco.getCondominioId();
 
         if (!bloco.getNome().equals(dados.getNome())) {
-            blocoRepository.findByNome(dados.getNome()).ifPresent(b -> {
-                throw new OperacaoInvalidaException("Já existe um bloco com o nome: " + dados.getNome());
-            });
+            if (condId != null) {
+                blocoRepository.findByNomeAndCondominioId(dados.getNome(), condId).ifPresent(b -> {
+                    throw new OperacaoInvalidaException("Já existe um bloco com o nome: " + dados.getNome());
+                });
+            } else {
+                blocoRepository.findByNome(dados.getNome()).ifPresent(b -> {
+                    throw new OperacaoInvalidaException("Já existe um bloco com o nome: " + dados.getNome());
+                });
+            }
             bloco.setNome(dados.getNome());
         }
 

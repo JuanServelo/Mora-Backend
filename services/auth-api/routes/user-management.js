@@ -1,6 +1,6 @@
 import express from 'express';
-import authMiddleware, { gestaoMiddleware } from '../middleware/auth.js';
-import { podeGerenciarOcupantes, podeGerenciarUsuarios } from '../constants/perfis.js';
+import authMiddleware, { adminMiddleware, gestaoMiddleware } from '../middleware/auth.js';
+import { PERFIS, PERFIS_EXIGEM_UNIDADE, podeGerenciarOcupantes, podeGerenciarUsuarios } from '../constants/perfis.js';
 import {
   listarUsuariosEscopo,
   emitirConvite,
@@ -16,6 +16,8 @@ import {
   verificarElegibilidadeTransferencia,
   removerVinculo,
 } from '../services/occupantService.js';
+import { validarUnidadeExiste } from '../utils/portariaClient.js';
+import User from '../models/User.js';
 import { usuarioPublico } from '../utils/usuarioPublico.js';
 
 const router = express.Router();
@@ -216,6 +218,79 @@ router.delete('/units/:unidadeId/occupants/:userId', occupantUnitMiddleware, asy
       return res.status(resultado.status || 400).json(resultado);
     }
     res.json(resultado);
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// Vincular usuário (RESIDENT_OWNER, LESSEE, OCCUPANT) a uma unidade
+router.patch('/users/:id/unit', adminMiddleware, async (req, res) => {
+  try {
+    const { unidadeId } = req.body;
+
+    const alvo = await User.findByPk(Number(req.params.id));
+    if (!alvo) return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
+
+    if (!PERFIS_EXIGEM_UNIDADE.includes(alvo.getPerfilEfetivo())) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'Este perfil não pode ser vinculado a uma unidade.',
+      });
+    }
+
+    if (!unidadeId) return res.status(400).json({ sucesso: false, mensagem: 'unidadeId é obrigatório.' });
+
+    const unidadeValida = await validarUnidadeExiste(unidadeId);
+    if (!unidadeValida) return res.status(404).json({ sucesso: false, mensagem: 'Unidade não encontrada.' });
+
+    alvo.unidadeId = unidadeId;
+    await alvo.save();
+
+    res.json({ sucesso: true, mensagem: 'Usuário vinculado à unidade.', usuario: usuarioPublico(alvo) });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// Desvincular usuário de uma unidade
+router.delete('/users/:id/unit', adminMiddleware, async (req, res) => {
+  try {
+    const alvo = await User.findByPk(Number(req.params.id));
+    if (!alvo) return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
+
+    if (alvo.responsavelFinanceiro) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'Não é possível desvincular o responsável financeiro da unidade.',
+      });
+    }
+
+    alvo.unidadeId = null;
+    await alvo.save();
+
+    res.json({ sucesso: true, mensagem: 'Vínculo com unidade removido.', usuario: usuarioPublico(alvo) });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// Listar usuários vinculados a uma unidade (moradores por unidade)
+router.get('/units/:unidadeId/residents', async (req, res) => {
+  try {
+    const { unidadeId } = req.params;
+
+    const perfil = req.userPerfil;
+    const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC, PERFIS.OPERATIONAL_SYNDIC, PERFIS.ADMINISTRATOR].includes(perfil);
+    if (!isPM && req.user.unidadeId !== unidadeId) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
+    }
+
+    const moradores = await User.findAll({
+      where: { unidadeId, status: 'active' },
+      order: [['nome', 'ASC']],
+    });
+
+    res.json({ sucesso: true, moradores: moradores.map(usuarioPublico) });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }

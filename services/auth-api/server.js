@@ -10,14 +10,18 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import sequelize from './config/database.js';
 import './models/index.js';
 import User from './models/User.js';
+import Condominio from './models/Condominio.js';
 import Reclamacao from './models/Reclamacao.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import invitesRoutes from './routes/invites.js';
 import userManagementRoutes from './routes/user-management.js';
 import reclamacoesRoutes from './routes/reclamacoes.js';
+import condominiosRoutes from './routes/condominios.js';
+import perfisRoutes from './routes/perfis.js';
 import { garantirColunasNovas, migrarUsuariosLegados } from './migrations/migrate-rf03.js';
 import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
+import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
 import { STATUS_USUARIO } from './constants/perfis.js';
 import { googleOAuthConfigurado } from './utils/oauthConfig.js';
 
@@ -106,6 +110,8 @@ app.use('/api/invites', invitesRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
+app.use('/api/condominios', condominiosRoutes);
+app.use('/api/perfis', perfisRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auth API funcionando' });
@@ -118,8 +124,9 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     await garantirColunasNovas();
     await garantirColunasRf07();
+    await garantirTabelaCondominios();
     await migrarUsuariosLegados();
-    console.log('Tabelas sincronizadas e migrações RF03/RF07 aplicadas');
+    console.log('Tabelas sincronizadas e migrações RF03/RF07/Condomínios aplicadas');
   } catch (err) {
     console.error('Erro ao sincronizar tabelas:', err.message);
   }

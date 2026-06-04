@@ -6,6 +6,24 @@ CREATE DATABASE mora_meeting;
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;
 
+-- Criar tabela condominios (clientes)
+CREATE TABLE IF NOT EXISTS condominios (
+  id VARCHAR(50) PRIMARY KEY,
+  nome VARCHAR(200) NOT NULL,
+  cnpj VARCHAR(18),
+  endereco VARCHAR(300),
+  telefone VARCHAR(20),
+  email VARCHAR(150),
+  status VARCHAR(20) DEFAULT 'active',
+  "criadoPorId" INTEGER,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Inserir condomínio padrão
+INSERT INTO condominios (id, nome, status) VALUES ('default', 'Condomínio Padrão', 'active')
+ON CONFLICT (id) DO NOTHING;
+
 -- Criar tabela users
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -54,8 +72,12 @@ CREATE TABLE IF NOT EXISTS invites (
 );
 
 -- Criar índices para melhor performance
+CREATE INDEX IF NOT EXISTS idx_condominios_status ON condominios(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_googleId ON users("googleId");
+CREATE INDEX IF NOT EXISTS idx_users_condominioId ON users("condominioId");
+CREATE INDEX IF NOT EXISTS idx_users_unidadeId ON users("unidadeId");
+CREATE INDEX IF NOT EXISTS idx_invites_condominioId ON invites("condominioId");
 
 -- Conectar ao banco mora (portaria) para criar as tabelas de estrutura física
 \c mora;

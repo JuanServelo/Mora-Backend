@@ -44,15 +44,22 @@ public class ApartamentoService {
         apartamento.setQuartos(request.getQuartos());
         apartamento.setAreaMxComTotal(request.getAreaMxComTotal());
         apartamento.setObservacoes(request.getObservacoes());
+        apartamento.setCondominioId(bloco.getCondominioId());
 
         return apartamentoRepository.save(apartamento);
     }
 
-    public List<Apartamento> listarTodos() {
+    public List<Apartamento> listarTodos(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return apartamentoRepository.findByCondominioId(condominioId);
+        }
         return apartamentoRepository.findAll();
     }
 
-    public List<Apartamento> listarAtivos() {
+    public List<Apartamento> listarAtivos(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return apartamentoRepository.findByCondominioIdAndAtivo(condominioId, true);
+        }
         return apartamentoRepository.findByAtivo(true);
     }
 

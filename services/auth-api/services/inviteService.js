@@ -232,13 +232,25 @@ export async function residentOwnerAtivoNaUnidade(unidadeId, excludeUserId = nul
 }
 
 export async function lesseeAtivoNaUnidade(unidadeId, excludeUserId = null) {
-  const where = {
+  const whereUser = {
     unidadeId,
     perfil: 'LESSEE',
     status: STATUS_USUARIO.ACTIVE,
   };
-  if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
-  return User.findOne({ where });
+  if (excludeUserId) whereUser.id = { [Op.ne]: excludeUserId };
+  const ativo = await User.findOne({ where: whereUser });
+  if (ativo) return ativo;
+
+  // Também bloqueia se já existe convite PENDENTE para Lessee nesta unidade
+  const convitePendente = await Invite.findOne({
+    where: {
+      unidadeId,
+      perfil: 'LESSEE',
+      status: STATUS_CONVITE.PENDING,
+      expiresAt: { [Op.gt]: new Date() },
+    },
+  });
+  return convitePendente || null;
 }
 
 export async function ativarConta({
@@ -257,6 +269,15 @@ export async function ativarConta({
   const { invite } = resultado;
   const emailNorm = email.toLowerCase().trim();
   const cpfNorm = normalizarCpf(cpf);
+
+  // Impede que o código do convite seja usado como nome
+  if (nome.trim().toUpperCase() === invite.codigo.toUpperCase()) {
+    return {
+      sucesso: false,
+      mensagem: 'O nome informado parece ser o código do convite. Por favor, informe seu nome completo.',
+      status: 400,
+    };
+  }
 
   if (invite.nomePrecadastro && invite.nomePrecadastro.trim() !== nome.trim()) {
     return {

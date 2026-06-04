@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    username: ${POSTGRES_SUPERUSER:postgres}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  cloud:
+    consul:
+      discovery:
+        register: false
+        enabled: false
+      config:
+        enabled: false
+      health-indicator:
+        enabled: false
+
+management:
+  health:
+    consul:
+      enabled: false
+    diskspace:
+      enabled: false

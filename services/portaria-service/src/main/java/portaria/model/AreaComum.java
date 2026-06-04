@@ -15,8 +15,10 @@ public class AreaComum {
     private String id;
 
     @NotBlank(message = "Nome da área comum é obrigatório")
-    @Column(unique = true)
     private String nome;
+
+    @Column(name = "`condominioId`")
+    private String condominioId;
 
     @NotBlank(message = "Tipo é obrigatório")
     private String tipo;

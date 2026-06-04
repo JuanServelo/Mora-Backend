@@ -186,6 +186,15 @@ export async function cadastrarOccupant(ator, unidadeId, dados) {
   const bloqueio = await assertAcessoUnidade(ator, unidadeId);
   if (bloqueio) return bloqueio;
 
+  // CA-04: Absent Owner não pode cadastrar Occupant
+  if (ator.getPerfilEfetivo() === PERFIS.ABSENT_OWNER) {
+    return {
+      sucesso: false,
+      mensagem: 'Somente Resident Owner ou Lessee podem cadastrar Occupants.',
+      status: 403,
+    };
+  }
+
   const campos = validarCampos(dados, ['nome', 'cpf', 'email', 'dataNascimento']);
   if (campos) return campos;
 
