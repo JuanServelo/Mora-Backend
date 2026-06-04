@@ -19,8 +19,10 @@ public class Bloco {
     private UUID id;
 
     @NotBlank(message = "Nome do bloco é obrigatório")
-    @Column(unique = true)
     private String nome;
+
+    @Column(name = "`condominioId`")
+    private String condominioId;
 
     @NotBlank(message = "Descrição é obrigatória")
     private String descricao;

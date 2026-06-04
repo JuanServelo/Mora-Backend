@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/meetings")
 @RequiredArgsConstructor
@@ -26,6 +28,13 @@ public class MeetingController {
     public ResponseEntity<MeetingResponseDTO> createMeeting(@Valid @RequestBody MeetingRequestDTO dto) {
         MeetingResponseDTO novaReuniaoDTO = meetingService.createMeeting(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novaReuniaoDTO);
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar reuniões", description = "Lista todas as reuniões, opcionalmente filtrando por usuário.")
+    public ResponseEntity<List<MeetingResponseDTO>> listMeetings(@RequestParam(required = false) Long usuarioId) {
+        List<MeetingResponseDTO> reunioes = meetingService.listMeetings(usuarioId);
+        return ResponseEntity.ok(reunioes);
     }
 
     @GetMapping("/{id}")

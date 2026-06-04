@@ -262,12 +262,15 @@ Os bancos são criados automaticamente pelo script `docker/init-databases.sql` n
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/auth/register` | Cadastro de usuário |
 | `POST` | `/api/auth/login` | Login com e-mail e senha |
+| `POST` | `/api/invites/validate` | Validar código de convite |
+| `POST` | `/api/invites/activate` | Ativar conta via convite |
 | `GET` | `/api/auth/me` | Dados do usuário autenticado |
-| `POST` | `/api/auth/google` | Login com Google |
-| `GET` | `/api/users` | Listar usuários (admin) |
+| `PUT` | `/api/auth/me` | Atualizar perfil |
+| `POST` | `/api/user-management/invites` | Emitir convite (gestores) |
 | `GET` | `/api/health` | Health check |
+
+Fluxo invite-only: registro público desabilitado. Ver [AUTH-README.md](services/auth-api/AUTH-README.md).
 
 ### Portaria Service — Swagger UI
 

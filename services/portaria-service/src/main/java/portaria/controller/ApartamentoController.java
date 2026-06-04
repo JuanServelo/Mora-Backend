@@ -27,15 +27,15 @@ public class ApartamentoController {
     }
 
     @GetMapping
-    public List<ApartamentoResponseDTO> listarAtivos() {
-        return apartamentoService.listarAtivos().stream()
+    public List<ApartamentoResponseDTO> listarAtivos(@RequestParam(required = false) String condominioId) {
+        return apartamentoService.listarAtivos(condominioId).stream()
                 .map(ApartamentoResponseDTO::fromEntity)
                 .toList();
     }
 
     @GetMapping("/todos")
-    public List<ApartamentoResponseDTO> listarTodos() {
-        return apartamentoService.listarTodos().stream()
+    public List<ApartamentoResponseDTO> listarTodos(@RequestParam(required = false) String condominioId) {
+        return apartamentoService.listarTodos(condominioId).stream()
                 .map(ApartamentoResponseDTO::fromEntity)
                 .toList();
     }

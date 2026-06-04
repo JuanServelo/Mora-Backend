@@ -1,88 +1,221 @@
-# Sistema de Autenticação JWT + MongoDB
+# Auth API — Autenticação e Gestão de Usuários (RF03/RF04)
 
-Sistema de autenticação com **Node.js** (backend), **React** (frontend) e **MongoDB**, utilizando JWT para tokens.
 
-## Estrutura
 
-- `services/auth-api/` – API Node.js com Express, JWT e Mongoose
-- `services/auth-frontend/` – Aplicação React com Vite
+API Node.js + Express + PostgreSQL (Sequelize) com fluxo **invite-only**, JWT, perfis granulares e gestão de usuários.
 
-## Como testar
 
-### 1. Subir o MongoDB
 
-```bash
-docker compose -f docker/docker-compose.auth.yml up -d
+## Fluxo principal
+
+
+
+1. Gestor emite convite (`POST /api/user-management/invites`) → e-mail com código (48h)
+
+2. Usuário acessa `/ativar` no frontend e valida código (`POST /api/invites/validate`)
+
+3. Usuário preenche dados e ativa conta (`POST /api/invites/activate`) → JWT + redirect por perfil
+
+4. Login subsequente via `POST /api/auth/login` ou Google OAuth
+
+
+
+Registro público (`POST /api/auth/register`) está **desabilitado**.
+
+
+
+## E-mails (convite + esqueci senha)
+
+
+
+O sistema envia e-mails via **Gmail SMTP** quando `MAIL_USER` e `MAIL_PASS` estão configurados no `.env`.
+
+
+
+### Configurar Gmail SMTP
+
+
+
+1. Ative verificação em 2 etapas na conta Google
+
+2. Crie uma App Password em https://myaccount.google.com/apppasswords
+
+3. No `.env` do auth-api:
+
+
+
+```env
+
+MAIL_USER=seuemail@gmail.com
+
+MAIL_PASS=xxxx xxxx xxxx xxxx
+
+MAIL_FROM=Mora <seuemail@gmail.com>
+
+FRONTEND_URL=http://localhost:5173
+
 ```
 
-Ou, se já usar o compose principal:
 
-```bash
-docker compose -f docker/docker-compose.yml up -d mongodb
+
+4. Reinicie o auth-api (`npm run dev`)
+
+
+
+**Convite:** e-mail com código + link `/ativar?codigo=XXXX`  
+
+**Esqueci senha:** e-mail com link `/reset-password?token=XXXX`
+
+
+
+Se o SMTP falhar ao emitir convite, o convite ainda é criado e a API retorna `emailEnviado: false` com o código para uso manual.
+
+
+
+## Google OAuth
+
+
+
+### Configurar no Google Cloud Console
+
+
+
+1. Crie um projeto em https://console.cloud.google.com/
+
+2. Configure OAuth consent screen
+
+3. Crie credenciais OAuth 2.0 (tipo **Web application**)
+
+4. Authorized redirect URI: `http://localhost:3001/api/auth/google/callback`
+
+5. No `.env`:
+
+
+
+```env
+
+GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com
+
+GOOGLE_CLIENT_SECRET=seu-client-secret
+
+GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
+
 ```
 
-### 2. Iniciar o backend
 
-```bash
-cd services/auth-api
-npm install
-npm run dev
-```
 
-O backend deve iniciar em **http://localhost:3001**.
+6. Reinicie o auth-api
 
-### 3. Iniciar o frontend
 
-```bash
-cd services/auth-frontend
-npm install
-npm run dev
-```
 
-O frontend deve iniciar em **http://localhost:5173**.
+No frontend, o botão **Entrar com Google** redireciona para `/api/auth/google` e retorna via `/auth/callback?token=...`.
 
-## Fluxo de testes
 
-1. **Registrar um usuário**
-   - Acesse http://localhost:5173/registrar
-   - Preencha nome, email e senha (mín. 6 caracteres)
-   - Clique em "Registrar"
 
-2. **Login**
-   - Acesse http://localhost:5173
-   - Use email e senha do usuário criado
-   - Clique em "Entrar"
+**Nota:** OAuth só funciona para contas já existentes e ativas (não substitui fluxo de convite para novos usuários).
 
-3. **Rota protegida**
-   - Após o login, você será redirecionado para o Dashboard
-   - Clique em "Testar rota protegida /api/auth/me"
-   - A resposta indica que o token JWT foi validado corretamente
 
-4. **Logout**
-   - Clique em "Sair" no Dashboard
 
-## Endpoints da API
+## Endpoints
+
+
+
+### Autenticação — `/api/auth`
+
+
 
 | Método | Rota | Descrição |
+
 |--------|------|-----------|
-| POST | `/api/auth/register` | Registro de usuário |
-| POST | `/api/auth/login` | Login |
-| GET | `/api/auth/me` | Dados do usuário (requer token) |
-| GET | `/api/health` | Status da API |
 
-O frontend usa proxy para `/api` → `http://localhost:3001`, então as requisições não precisam da URL completa.
+| POST | `/login` | Login e-mail/senha (mensagens RF04) |
 
-## Variáveis de ambiente
+| POST | `/register` | Desabilitado (403) |
 
-Crie um arquivo `.env` em `services/auth-api/` (há um `.env.example`):
+| GET | `/me` | Perfil autenticado |
+
+| PUT | `/me` | Atualizar nome, telefone, e-mail, senha |
+
+| POST | `/me/foto` | Upload avatar JPG/PNG ≤5MB |
+
+| POST | `/forgot-password` | Recuperação de senha (envia e-mail) |
+
+| POST | `/reset-password/:token` | Redefinir senha |
+
+| GET | `/google` | Inicia OAuth Google |
+
+| GET | `/google/callback` | Callback OAuth → redirect frontend |
+
+
+
+### Convites — `/api/invites`
+
+
+
+| Método | Rota | Descrição |
+
+|--------|------|-----------|
+
+| POST | `/validate` | Validar código de convite |
+
+| POST | `/activate` | Criar conta e obter JWT |
+
+
+
+### Gestão — `/api/user-management` (autenticado + perfil gestor)
+
+
+
+| Método | Rota | Descrição |
+
+|--------|------|-----------|
+
+| GET | `/users` | Listar usuários e convites pendentes |
+
+| POST | `/invites` | Emitir convite (retorna `emailEnviado`) |
+
+| POST | `/invites/:id/resend` | Reenviar convite expirado |
+
+| PATCH | `/users/:id/deactivate` | Desativar usuário (+ cascata) |
+
+
+
+## Frontend (Mora-Frontend)
+
+
+
+| Rota | Descrição |
+
+|------|-----------|
+
+| `/login` | Login e-mail/senha + botão Google |
+
+| `/auth/callback` | Recebe token OAuth |
+
+| `/esqueceu-senha` | Solicitar reset por e-mail |
+
+| `/reset-password` | Definir nova senha (link do e-mail) |
+
+| `/ativar` | Ativação por código de convite |
+
+
+
+## Scripts
+
+
+
+```bash
+
+npm run dev          # servidor com hot-reload
+
+npm test             # testes unitários
+
+node make-admin.js email@exemplo.com  # promove usuário existente a ADMINISTRATOR
 
 ```
-PORT=3001
-MONGODB_URI=mongodb://localhost:27017/auth_db
-JWT_SECRET=sua-chave-secreta-mudar-em-producao
-FRONTEND_URL=http://localhost:5173
-```
 
-## Token JWT
 
-O token é enviado no header `Authorization: Bearer <token>` e é armazenado no `localStorage` do navegador após login ou registro.
+
+Para o **primeiro usuário** (banco vazio), insira manualmente no PostgreSQL ou use script de seed.
+
+

@@ -17,17 +17,29 @@ public class AreaComunService {
     private final AreaComunRepository areaComunRepository;
 
     public AreaComum cadastrar(AreaComum areaComum) {
-        areaComunRepository.findByNome(areaComum.getNome()).ifPresent(a -> {
-            throw new OperacaoInvalidaException("Já existe uma área comum cadastrada com o nome: " + areaComum.getNome());
-        });
+        if (areaComum.getCondominioId() != null) {
+            areaComunRepository.findByNomeAndCondominioId(areaComum.getNome(), areaComum.getCondominioId()).ifPresent(a -> {
+                throw new OperacaoInvalidaException("Já existe uma área comum com o nome '" + areaComum.getNome() + "' neste cliente.");
+            });
+        } else {
+            areaComunRepository.findByNome(areaComum.getNome()).ifPresent(a -> {
+                throw new OperacaoInvalidaException("Já existe uma área comum cadastrada com o nome: " + areaComum.getNome());
+            });
+        }
         return areaComunRepository.save(areaComum);
     }
 
-    public List<AreaComum> listarTodas() {
+    public List<AreaComum> listarTodas(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return areaComunRepository.findByCondominioId(condominioId);
+        }
         return areaComunRepository.findAll();
     }
 
-    public List<AreaComum> listarAtivas() {
+    public List<AreaComum> listarAtivas(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return areaComunRepository.findByCondominioIdAndAtivo(condominioId, true);
+        }
         return areaComunRepository.findByAtivo(true);
     }
 
@@ -36,8 +48,7 @@ public class AreaComunService {
     }
 
     public List<AreaComum> listarPorTipoAtivas(String tipo) {
-        List<AreaComum> areas = areaComunRepository.findByTipo(tipo);
-        return areas.stream().filter(AreaComum::isAtivo).toList();
+        return areaComunRepository.findByTipo(tipo).stream().filter(AreaComum::isAtivo).toList();
     }
 
     public AreaComum buscarPorId(String id) {
@@ -47,15 +58,21 @@ public class AreaComunService {
 
     public AreaComum atualizar(String id, AreaComum dados) {
         AreaComum areaComum = buscarPorId(id);
-        
-        // Valida se o novo nome já existe (excluindo a área atual)
+        String condId = areaComum.getCondominioId();
+
         if (!areaComum.getNome().equals(dados.getNome())) {
-            areaComunRepository.findByNome(dados.getNome()).ifPresent(a -> {
-                throw new OperacaoInvalidaException("Já existe uma área comum com o nome: " + dados.getNome());
-            });
+            if (condId != null) {
+                areaComunRepository.findByNomeAndCondominioId(dados.getNome(), condId).ifPresent(a -> {
+                    throw new OperacaoInvalidaException("Já existe uma área comum com o nome: " + dados.getNome());
+                });
+            } else {
+                areaComunRepository.findByNome(dados.getNome()).ifPresent(a -> {
+                    throw new OperacaoInvalidaException("Já existe uma área comum com o nome: " + dados.getNome());
+                });
+            }
             areaComum.setNome(dados.getNome());
         }
-        
+
         areaComum.setTipo(dados.getTipo());
         areaComum.setDescricao(dados.getDescricao());
         areaComum.setLocalizacao(dados.getLocalizacao());
@@ -64,7 +81,7 @@ public class AreaComunService {
         areaComum.setPodeReservar(dados.isPodeReservar());
         areaComum.setObservacoes(dados.getObservacoes());
         areaComum.setAtualizadoEm(LocalDateTime.now());
-        
+
         return areaComunRepository.save(areaComum);
     }
 
