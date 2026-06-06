@@ -1,3 +1,27 @@
+export function validarCpf(cpf) {
+  const digits = normalizarCpf(cpf);
+  if (!digits || digits.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(digits)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) sum += parseInt(digits[i], 10) * (10 - i);
+  let d1 = (sum * 10) % 11;
+  if (d1 >= 10) d1 = 0;
+  if (d1 !== parseInt(digits[9], 10)) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i += 1) sum += parseInt(digits[i], 10) * (11 - i);
+  let d2 = (sum * 10) % 11;
+  if (d2 >= 10) d2 = 0;
+  return d2 === parseInt(digits[10], 10);
+}
+
+export function validarTelefone(telefone) {
+  if (!telefone) return false;
+  const digits = String(telefone).replace(/\D/g, '');
+  return digits.length === 10 || digits.length === 11;
+}
+
 /** Campos do usuário expostos nas APIs (sem senha / tokens). */
 export function usuarioPublico(usuario) {
   if (!usuario) return null;
@@ -10,6 +34,7 @@ export function usuarioPublico(usuario) {
     cpf: usuario.cpf ?? null,
     fotoUrl: usuario.fotoUrl ?? null,
     provider: usuario.provider,
+    role: usuario.role ?? 'user',
     perfil,
     status: usuario.status,
     condominioId: usuario.condominioId ?? null,
@@ -19,6 +44,7 @@ export function usuarioPublico(usuario) {
     vaga: usuario.vaga ?? null,
     responsavelFinanceiro: usuario.responsavelFinanceiro ?? false,
     semAcessoSistema: usuario.semAcessoSistema ?? false,
+    entradaPermitida: usuario.entradaPermitida ?? false,
     dataNascimento: usuario.dataNascimento ?? null,
     ...(usuario.createdAt && { createdAt: usuario.createdAt }),
     ...(usuario.activatedAt && { activatedAt: usuario.activatedAt }),

@@ -19,10 +19,12 @@ import userManagementRoutes from './routes/user-management.js';
 import reclamacoesRoutes from './routes/reclamacoes.js';
 import condominiosRoutes from './routes/condominios.js';
 import perfisRoutes from './routes/perfis.js';
+import portariaRoutes from './routes/portaria.js';
 import { garantirColunasNovas, migrarUsuariosLegados } from './migrations/migrate-rf03.js';
 import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
 import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
-import { STATUS_USUARIO } from './constants/perfis.js';
+import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
+import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
 import { googleOAuthConfigurado } from './utils/oauthConfig.js';
 
 dotenv.config();
@@ -112,21 +114,39 @@ app.use('/api/users', usersRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
 app.use('/api/condominios', condominiosRoutes);
 app.use('/api/perfis', perfisRoutes);
+app.use('/api/portaria', portariaRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auth API funcionando' });
 });
 
+const seedAdminUser = async () => {
+  const adminEmail = 'admin@mora.com';
+  const existing = await User.scope('withPassword').findOne({ where: { role: 'admin' } });
+  if (existing) return;
+  await User.create({
+    nome: 'Admin',
+    email: adminEmail,
+    senha: 'Vibers@2112',
+    role: 'admin',
+    perfil: PERFIS.CONTRACTING_PROPERTY_MANAGER,
+    status: STATUS_USUARIO.ACTIVE,
+    activatedAt: new Date(),
+  });
+  console.log(`Usuário admin criado: ${adminEmail}`);
+};
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log('PostgreSQL conectado');
-    await sequelize.sync({ alter: true });
     await garantirColunasNovas();
     await garantirColunasRf07();
     await garantirTabelaCondominios();
+    await garantirTabelaPortaria();
     await migrarUsuariosLegados();
     console.log('Tabelas sincronizadas e migrações RF03/RF07/Condomínios aplicadas');
+    await seedAdminUser();
   } catch (err) {
     console.error('Erro ao sincronizar tabelas:', err.message);
   }

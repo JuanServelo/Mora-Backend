@@ -58,7 +58,6 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 
     if (nome) usuario.nome = nome;
     if (email) usuario.email = email;
-    if (perfil) usuario.perfil = perfil;
     if (senha) usuario.senha = senha;
     if (bloco !== undefined) usuario.bloco = normalizarVinculo(bloco);
     if (apartamento !== undefined) usuario.apartamento = normalizarVinculo(apartamento);

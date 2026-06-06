@@ -104,6 +104,13 @@ export async function emailEmUsoNaUnidade(email, unidadeId, excludeUserId = null
   return !!existe;
 }
 
+export async function emailExisteGlobalmente(email, excludeUserId = null) {
+  const where = { email: email.toLowerCase().trim() };
+  if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
+  const existe = await User.findOne({ where });
+  return !!existe;
+}
+
 export async function criarConvite({
   email,
   perfil,
@@ -206,16 +213,9 @@ export async function validarDadosConviteAdmin({
 
   const emailNorm = email.toLowerCase().trim();
 
-  if (unidadeId) {
-    const emUsoUnidade = await emailEmUsoNaUnidade(emailNorm, unidadeId);
-    if (emUsoUnidade) {
-      return { sucesso: false, mensagem: 'Já existe um usuário cadastrado com este e-mail nesta unidade.' };
-    }
-  } else {
-    const emUso = await emailEmUsoNoCondominio(emailNorm, condominioId);
-    if (emUso) {
-      return { sucesso: false, mensagem: 'Já existe um usuário cadastrado com este e-mail.' };
-    }
+  const emUsoGlobal = await emailExisteGlobalmente(emailNorm);
+  if (emUsoGlobal) {
+    return { sucesso: false, mensagem: 'Já existe um usuário cadastrado com este e-mail.' };
   }
 
   return { sucesso: true };
@@ -294,14 +294,11 @@ export async function ativarConta({
     };
   }
 
-  const emUso = invite.unidadeId
-    ? await emailEmUsoNaUnidade(emailNorm, invite.unidadeId)
-    : await emailEmUsoNoCondominio(emailNorm, invite.condominioId);
-
+  const emUso = await emailExisteGlobalmente(emailNorm);
   if (emUso) {
     return {
       sucesso: false,
-      mensagem: 'Este e-mail já está em uso. Use um e-mail diferente ou entre em contato com ao Administrator .',
+      mensagem: 'Este e-mail já está em uso. Use um e-mail diferente ou entre em contato com o Administrador.',
       status: 400,
     };
   }
@@ -343,7 +340,7 @@ export async function ativarConta({
     await transaction.commit();
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion, usuario.email);
 
     return {
       sucesso: true,

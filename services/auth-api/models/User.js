@@ -119,6 +119,11 @@ const User = sequelize.define('User', {
     defaultValue: false,
   },
 
+  entradaPermitida: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+
   tokenVersion: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

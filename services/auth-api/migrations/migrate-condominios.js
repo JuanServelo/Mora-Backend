@@ -16,7 +16,35 @@ export async function garantirTabelaCondominios() {
     )
   `);
 
-  // Inserir condomínios a partir dos condominioId distintos já existentes nos usuários
+  // Criar ENUM type antes dos INSERTs
+  await sequelize.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_condominios_status') THEN
+        CREATE TYPE "enum_condominios_status" AS ENUM ('active', 'inactive');
+      END IF;
+    END$$;
+  `);
+
+  // Converter coluna status de VARCHAR para ENUM (deve rodar antes dos INSERTs)
+  await sequelize.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'condominios'
+          AND column_name = 'status'
+          AND data_type = 'character varying'
+      ) THEN
+        ALTER TABLE condominios ALTER COLUMN status DROP DEFAULT;
+        ALTER TABLE condominios ALTER COLUMN status TYPE "enum_condominios_status"
+          USING status::"enum_condominios_status";
+        ALTER TABLE condominios ALTER COLUMN status SET DEFAULT 'active'::"enum_condominios_status";
+      END IF;
+    END$$;
+  `);
+
+  // INSERTs com cast explícito para ENUM
   await sequelize.query(`
     INSERT INTO condominios (id, nome, status, "createdAt", "updatedAt")
     SELECT DISTINCT
@@ -25,7 +53,7 @@ export async function garantirTabelaCondominios() {
         WHEN "condominioId" = 'default' THEN 'Condomínio Padrão'
         ELSE CONCAT('Condomínio ', "condominioId")
       END,
-      'active',
+      'active'::"enum_condominios_status",
       NOW(),
       NOW()
     FROM users
@@ -34,22 +62,25 @@ export async function garantirTabelaCondominios() {
     ON CONFLICT (id) DO NOTHING
   `);
 
-  // Garantir que o condomínio padrão exista mesmo sem usuários
   await sequelize.query(`
     INSERT INTO condominios (id, nome, status, "createdAt", "updatedAt")
-    VALUES ('default', 'Condomínio Padrão', 'active', NOW(), NOW())
+    VALUES ('default', 'Condomínio Padrão', 'active'::"enum_condominios_status", NOW(), NOW())
     ON CONFLICT (id) DO NOTHING
   `);
 
-  // Adicionar ENUM status ao tipo se ainda não existir (PostgreSQL)
+  // Criar tabela reclamacoes se não existir (não está no init-databases.sql)
   await sequelize.query(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_type WHERE typname = 'enum_condominios_status'
-      ) THEN
-        CREATE TYPE "enum_condominios_status" AS ENUM ('active', 'inactive');
-      END IF;
-    END$$;
-  `).catch(() => {});
+    CREATE TABLE IF NOT EXISTS reclamacoes (
+      id SERIAL PRIMARY KEY,
+      "userId" INTEGER NOT NULL REFERENCES users(id),
+      "protocolNumber" VARCHAR(255) NOT NULL UNIQUE,
+      category VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL,
+      "attachmentUrl" VARCHAR(255),
+      status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
+      interactions JSON NOT NULL DEFAULT '[]',
+      "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }

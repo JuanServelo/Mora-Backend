@@ -10,7 +10,9 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "blocos")
+@Table(name = "blocos", uniqueConstraints = {
+    @UniqueConstraint(name = "blocos_nome_condominioId_key", columnNames = {"nome", "condominioId"})
+})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Bloco {
 

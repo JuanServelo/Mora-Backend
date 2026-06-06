@@ -66,8 +66,8 @@ function loginComErroRedirect(codigo, extra = '') {
   return `${getFrontendUrl()}/login?erro=${codigo}${extra}`;
 }
 
-export const signToken = (userId, perfil, tokenVersion = 0) =>
-  jwt.sign({ id: userId, perfil, tokenVersion }, getJwtSecret(), { expiresIn: '7d' });
+export const signToken = (userId, perfil, tokenVersion = 0, email = undefined) =>
+  jwt.sign({ id: userId, perfil, tokenVersion, ...(email != null && { email }) }, getJwtSecret(), { expiresIn: '7d' });
 
 router.post('/register', authLimiter, (_req, res) => {
   res.status(403).json({
@@ -113,7 +113,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email);
 
     res.json({
       sucesso: true,
@@ -351,7 +351,7 @@ router.get('/google/callback', (req, res) => {
     }
 
     const perfil = user.getPerfilEfetivo();
-    const token = signToken(user.id, perfil, user.tokenVersion || 0);
+    const token = signToken(user.id, perfil, user.tokenVersion || 0, user.email);
     res.redirect(`${getFrontendUrl()}/auth/callback?token=${token}`);
   })(req, res);
 });

@@ -86,13 +86,15 @@ CREATE INDEX IF NOT EXISTS idx_invites_condominioId ON invites("condominioId");
 -- Criar tabela blocos
 CREATE TABLE IF NOT EXISTS blocos (
   id UUID PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL UNIQUE,
+  nome VARCHAR(255) NOT NULL,
+  "condominioId" VARCHAR(50),
   descricao TEXT,
   andares INTEGER,
   "apartamentosPorAndar" INTEGER,
   ativo BOOLEAN DEFAULT true,
   "criadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(nome, "condominioId")
 );
 
 -- Criar tabela apartamentos

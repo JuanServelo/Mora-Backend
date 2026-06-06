@@ -42,7 +42,8 @@ export async function listarUsuariosEscopo(ator) {
 
 export async function emitirConvite(ator, dados) {
   const perfilAtor = ator.getPerfilEfetivo();
-  const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro } = dados;
+  const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro, condominioId: condominioIdDados } = dados;
+  const condominioId = condominioIdDados || ator.condominioId;
 
   if (!podeCadastrarPerfil(perfilAtor, perfil)) {
     return {
@@ -93,7 +94,7 @@ export async function emitirConvite(ator, dados) {
     unidadeId: unidadeEfetiva,
     nomePrecadastro,
     cpfPrecadastro,
-    condominioId: ator.condominioId,
+    condominioId,
   });
 
   if (!validacao.sucesso) {
@@ -104,7 +105,7 @@ export async function emitirConvite(ator, dados) {
     email,
     perfil,
     cadastradoPorId: ator.id,
-    condominioId: ator.condominioId,
+    condominioId,
     unidadeId: unidadeEfetiva,
     nomePrecadastro,
     cpfPrecadastro,

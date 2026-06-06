@@ -2,7 +2,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { validarConvite, ativarConta } from '../services/inviteService.js';
 import { validarSenha } from '../utils/passwordValidation.js';
-import { usuarioPublico } from '../utils/usuarioPublico.js';
+import { usuarioPublico, validarCpf, validarTelefone } from '../utils/usuarioPublico.js';
 import { redirectPorPerfil } from '../utils/redirectPorPerfil.js';
 import jwt from 'jsonwebtoken';
 
@@ -18,8 +18,8 @@ const authLimiter = rateLimit({
 
 const getJwtSecret = () => process.env.JWT_SECRET;
 
-export const signToken = (userId, perfil, tokenVersion = 0) =>
-  jwt.sign({ id: userId, perfil, tokenVersion }, getJwtSecret(), { expiresIn: '7d' });
+export const signToken = (userId, perfil, tokenVersion = 0, email = undefined) =>
+  jwt.sign({ id: userId, perfil, tokenVersion, ...(email != null && { email }) }, getJwtSecret(), { expiresIn: '7d' });
 
 function validarCamposObrigatorios(body, campos) {
   const erros = {};
@@ -86,6 +86,22 @@ router.post('/activate', authLimiter, async (req, res) => {
         sucesso: false,
         mensagem: errosSenha[0],
         errosSenha,
+      });
+    }
+
+    if (!validarCpf(cpf)) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'CPF inválido. Verifique o número informado.',
+        erros: { cpf: 'CPF inválido.' },
+      });
+    }
+
+    if (!validarTelefone(telefone)) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'Telefone inválido. Informe um número com DDD (10 ou 11 dígitos).',
+        erros: { telefone: 'Telefone inválido.' },
       });
     }
 

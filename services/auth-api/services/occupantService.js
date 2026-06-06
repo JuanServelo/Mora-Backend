@@ -10,7 +10,7 @@ import {
   podeGerenciarOcupantes,
 } from '../constants/perfis.js';
 import { validarUnidadeExiste } from '../utils/portariaClient.js';
-import { normalizarCpf } from '../utils/usuarioPublico.js';
+import { normalizarCpf, validarCpf } from '../utils/usuarioPublico.js';
 import { temIdadeMinima } from '../utils/ageValidation.js';
 import { criarConvite, lesseeAtivoNaUnidade } from './inviteService.js';
 import { desativarUsuario } from './userManagementService.js';
@@ -141,6 +141,10 @@ async function emitirConviteOcupante(ator, unidadeId, perfil, dados) {
   }
 
   const cpfNorm = normalizarCpf(dados.cpf);
+  if (!validarCpf(cpfNorm)) {
+    return { sucesso: false, mensagem: 'CPF inválido. Verifique o número informado.', status: 400 };
+  }
+
   if (await cpfEmUsoNaUnidade(cpfNorm, unidadeId)) {
     return { sucesso: false, mensagem: MSG.CPF_EM_USO, status: 400 };
   }
@@ -218,6 +222,10 @@ export async function cadastrarGuest(ator, unidadeId, dados) {
   if (campos) return campos;
 
   const cpfNorm = normalizarCpf(dados.cpf);
+  if (!validarCpf(cpfNorm)) {
+    return { sucesso: false, mensagem: 'CPF inválido. Verifique o número informado.', status: 400 };
+  }
+
   if (await cpfEmUsoNaUnidade(cpfNorm, unidadeId)) {
     return { sucesso: false, mensagem: MSG.CPF_EM_USO, status: 400 };
   }

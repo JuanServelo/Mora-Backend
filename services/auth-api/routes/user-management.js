@@ -70,12 +70,25 @@ router.get('/users', async (req, res) => {
 
 router.post('/invites', async (req, res) => {
   try {
-    const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro } = req.body;
+    const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro, condominioId } = req.body;
 
     if (!email || !perfil) {
       return res.status(400).json({
         sucesso: false,
         mensagem: 'E-mail e perfil são obrigatórios.',
+      });
+    }
+
+    // Admin (role: 'admin') pode criar convites para qualquer condomínio.
+    // Demais perfis ficam restritos ao seu próprio condominioId.
+    const condominioEfetivo = req.user.role === 'admin'
+      ? (condominioId || req.user.condominioId || null)
+      : (req.user.condominioId || condominioId || null);
+
+    if (!condominioEfetivo) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'Selecione o condomínio para o qual o convite será emitido.',
       });
     }
 
@@ -85,6 +98,7 @@ router.post('/invites', async (req, res) => {
       unidadeId,
       nomePrecadastro,
       cpfPrecadastro,
+      condominioId: condominioEfetivo,
     });
 
     if (!resultado.sucesso) {
