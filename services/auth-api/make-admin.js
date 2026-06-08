@@ -1,23 +1,49 @@
 import dotenv from 'dotenv';
 import sequelize from './config/database.js';
 import User from './models/User.js';
+import { PERFIS, STATUS_USUARIO, CONDOMINIO_DEFAULT } from './constants/perfis.js';
 
 dotenv.config();
 
-const email = process.argv[2];
+const [,, email, senha = 'Admin@123'] = process.argv;
+
 if (!email) {
-  console.error('Uso: node make-admin.js <email>');
+  console.error('Uso: node make-admin.js <email> [senha]');
+  console.error('Exemplo: node make-admin.js admin@mora.com Admin@123');
   process.exit(1);
 }
 
 await sequelize.authenticate();
 
-const [count] = await User.update({ role: 'admin' }, { where: { email } });
+const emailNorm = email.toLowerCase().trim();
+let usuario = await User.findOne({ where: { email: emailNorm } });
 
-if (count === 0) {
-  console.error(`Usuário não encontrado: ${email}`);
+if (usuario) {
+  await User.update(
+    {
+      perfil: PERFIS.CONTRACTING_PROPERTY_MANAGER,
+      status: STATUS_USUARIO.ACTIVE,
+      condominioId: CONDOMINIO_DEFAULT,
+      semAcessoSistema: false,
+    },
+    { where: { email: emailNorm } },
+  );
+  console.log(`✓ ${emailNorm} atualizado para CONTRACTING_PROPERTY_MANAGER`);
 } else {
-  console.log(`${email} agora é admin`);
+  await User.create({
+    nome: 'Administrador',
+    email: emailNorm,
+    senha,
+    perfil: PERFIS.CONTRACTING_PROPERTY_MANAGER,
+    status: STATUS_USUARIO.ACTIVE,
+    condominioId: CONDOMINIO_DEFAULT,
+    provider: 'local',
+    semAcessoSistema: false,
+    tokenVersion: 0,
+    activatedAt: new Date(),
+  });
+  console.log(`✓ Usuário criado: ${emailNorm} / senha: ${senha}`);
+  console.log('  Perfil: CONTRACTING_PROPERTY_MANAGER (acesso total)');
 }
 
 await sequelize.close();

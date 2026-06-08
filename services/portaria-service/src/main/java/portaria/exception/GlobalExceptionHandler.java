@@ -1,5 +1,6 @@
 package portaria.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,6 +17,11 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AcessoNegadoException.class)
+    public ResponseEntity<Map<String, Object>> handleAcessoNegado(AcessoNegadoException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
 
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<Map<String, Object>> handleRecursoNaoEncontrado(RecursoNaoEncontradoException ex) {
@@ -54,6 +60,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST,
                 "Valor inválido para o parâmetro '" + ex.getName() + "': " + ex.getValue());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String msg = ex.getMostSpecificCause().getMessage();
+        if (msg != null && (msg.contains("blocos_nome_key") || msg.contains("blocos_nome_condominioId_key")))
+            return buildResponse(HttpStatus.CONFLICT, "Já existe um bloco com este nome neste condomínio.");
+        if (msg != null && msg.contains("apartamentos_numero_blocoid_key"))
+            return buildResponse(HttpStatus.CONFLICT, "Já existe um apartamento com este número neste bloco.");
+        if (msg != null && msg.contains("areas_comuns_nome_key"))
+            return buildResponse(HttpStatus.CONFLICT, "Já existe uma área comum com este nome.");
+        return buildResponse(HttpStatus.CONFLICT, "Registro duplicado — verifique os dados informados.");
     }
 
     @ExceptionHandler(Exception.class)

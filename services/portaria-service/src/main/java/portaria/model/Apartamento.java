@@ -45,6 +45,9 @@ public class Apartamento {
     @OneToMany(mappedBy = "apartamento", fetch = FetchType.LAZY)
     private List<Morador> moradores;
 
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     private String observacoes;
 
     private boolean ativo = true;

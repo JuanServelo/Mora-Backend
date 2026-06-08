@@ -4,15 +4,32 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import session from 'express-session';
 import passport from 'passport';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import sequelize from './config/database.js';
+import './models/index.js';
 import User from './models/User.js';
+import Condominio from './models/Condominio.js';
 import Reclamacao from './models/Reclamacao.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
+import invitesRoutes from './routes/invites.js';
+import userManagementRoutes from './routes/user-management.js';
 import reclamacoesRoutes from './routes/reclamacoes.js';
+import condominiosRoutes from './routes/condominios.js';
+import perfisRoutes from './routes/perfis.js';
+import portariaRoutes from './routes/portaria.js';
+import { garantirColunasNovas, migrarUsuariosLegados } from './migrations/migrate-rf03.js';
+import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
+import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
+import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
+import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
+import { googleOAuthConfigurado } from './utils/oauthConfig.js';
 
 dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 Reclamacao.belongsTo(User, { foreignKey: 'userId', as: 'usuario' });
 User.hasMany(Reclamacao, { foreignKey: 'userId', as: 'reclamacoes' });
@@ -32,7 +49,7 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (googleOAuthConfigurado()) {
   passport.use(new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
@@ -48,16 +65,17 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
           usuario = await User.findOne({ where: { email } });
           if (usuario) {
+            if (usuario.status === STATUS_USUARIO.INACTIVE) {
+              return done(new Error('Conta desativada'), null);
+            }
+            if (usuario.status === STATUS_USUARIO.PENDING_ACTIVATION) {
+              return done(new Error('Cadastro pendente'), null);
+            }
             usuario.googleId = profile.id;
             usuario.provider = 'google';
             await usuario.save();
           } else {
-            usuario = await User.create({
-              nome: profile.displayName,
-              email,
-              googleId: profile.id,
-              provider: 'google',
-            });
+            return done(new Error('Conta não encontrada. Ative via convite.'), null);
           }
         }
         return done(null, usuario);
@@ -74,7 +92,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(session({
@@ -86,34 +104,51 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+const uploadDir = process.env.STORAGE_PATH || path.join(__dirname, 'uploads', 'avatars');
+app.use('/uploads/avatars', express.static(uploadDir));
+
 app.use('/api/auth', authRoutes);
+app.use('/api/invites', invitesRoutes);
+app.use('/api/user-management', userManagementRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
+app.use('/api/condominios', condominiosRoutes);
+app.use('/api/perfis', perfisRoutes);
+app.use('/api/portaria', portariaRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auth API funcionando' });
 });
 
+const seedAdminUser = async () => {
+  const adminEmail = 'admin@mora.com';
+  const existing = await User.scope('withPassword').findOne({ where: { role: 'admin' } });
+  if (existing) return;
+  await User.create({
+    nome: 'Admin',
+    email: adminEmail,
+    senha: 'Vibers@2112',
+    role: 'admin',
+    perfil: PERFIS.CONTRACTING_PROPERTY_MANAGER,
+    status: STATUS_USUARIO.ACTIVE,
+    activatedAt: new Date(),
+  });
+  console.log(`Usuário admin criado: ${adminEmail}`);
+};
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log('PostgreSQL conectado');
-    await sequelize.sync({ alter: true });
-    console.log('Tabelas sincronizadas');
+    await garantirColunasNovas();
+    await garantirColunasRf07();
+    await garantirTabelaCondominios();
+    await garantirTabelaPortaria();
+    await migrarUsuariosLegados();
+    console.log('Tabelas sincronizadas e migrações RF03/RF07/Condomínios aplicadas');
+    await seedAdminUser();
   } catch (err) {
     console.error('Erro ao sincronizar tabelas:', err.message);
-  }
-
-  try {
-    await sequelize.query(`
-      ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS bloco       VARCHAR(50),
-        ADD COLUMN IF NOT EXISTS apartamento VARCHAR(50),
-        ADD COLUMN IF NOT EXISTS vaga        VARCHAR(50)
-    `);
-    console.log('Colunas de vínculo garantidas');
-  } catch (err) {
-    console.error('Aviso ao garantir colunas de vínculo:', err.message);
   }
 
   const server = app.listen(PORT, () => {
@@ -122,9 +157,7 @@ const startServer = async () => {
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(
-        `Porta ${PORT} em uso. Feche o outro \`npm run dev\` ou defina outra PORT no .env (ex.: 3002). No Windows: netstat -ano | findstr :${PORT} e encerre o PID.`
-      );
+      console.error(`Porta ${PORT} em uso.`);
       process.exit(1);
     }
     throw err;

@@ -70,6 +70,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      - TZ=America/Sao_Paulo
 
   # 5. Microservice 2: Vagas de Estacionamento (Java)
   vagas-service:
@@ -111,6 +112,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      - TZ=America/Sao_Paulo
 
   # 7. Auth API (Node.js)
   auth-api:
@@ -136,6 +138,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+      - TZ=America/Sao_Paulo
 
   # 8. pgAdmin (visualizador do banco de dados)
   pgadmin:

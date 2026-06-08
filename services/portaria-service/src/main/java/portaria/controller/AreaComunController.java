@@ -23,13 +23,13 @@ public class AreaComunController {
     }
 
     @GetMapping
-    public List<AreaComum> listarAtivas() {
-        return areaComunService.listarAtivas();
+    public List<AreaComum> listarAtivas(@RequestParam(required = false) String condominioId) {
+        return areaComunService.listarAtivas(condominioId);
     }
 
     @GetMapping("/todas")
-    public List<AreaComum> listarTodas() {
-        return areaComunService.listarTodas();
+    public List<AreaComum> listarTodas(@RequestParam(required = false) String condominioId) {
+        return areaComunService.listarTodas(condominioId);
     }
 
     @GetMapping("/{id}")

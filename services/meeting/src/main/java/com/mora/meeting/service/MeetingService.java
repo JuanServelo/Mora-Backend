@@ -90,6 +90,19 @@ public class MeetingService {
         return responseDTO;
     }
 
+    @Transactional(readOnly = true)
+    public List<MeetingResponseDTO> listMeetings(Long usuarioId) {
+        List<Meeting> meetings;
+        if (usuarioId != null) {
+            meetings = meetingRepository.findByOrganizadorOrConvidado(usuarioId);
+        } else {
+            meetings = meetingRepository.findAll();
+        }
+        return meetings.stream()
+                .map(meetingMapper::toResponseDto)
+                .toList();
+    }
+
     @Transactional
     public MeetingResponseDTO updateMeeting(@NotNull Long id, @NotNull MeetingRequestDTO dto) {
         if (dto.getDataHoraFim().isBefore(dto.getDataHoraInicio())) {
@@ -103,7 +116,19 @@ public class MeetingService {
         meetingExistente.setDataHoraInicio(dto.getDataHoraInicio());
         meetingExistente.setDataHoraFim(dto.getDataHoraFim());
 
-        // todo: atualizar a lista de usuários
+        // Atualiza a lista de convidados mantendo o status dos que já estavam presentes
+        List<com.mora.meeting.entity.MeetingGuests> novosConvidados = dto.getIdConvidados().stream()
+                .map(convidadoId -> {
+                    com.mora.meeting.entity.MeetingGuests anterior = meetingExistente.getConvidados().stream()
+                            .filter(c -> c.getUsuarioId().equals(convidadoId))
+                            .findFirst()
+                            .orElse(null);
+                    return new com.mora.meeting.entity.MeetingGuests(convidadoId, anterior != null ? anterior.getStatus() : com.mora.meeting.enums.AttendanceStatus.PENDENTE);
+                })
+                .toList();
+        
+        meetingExistente.getConvidados().clear();
+        meetingExistente.getConvidados().addAll(novosConvidados);
 
         Meeting meetingAtualizado = meetingRepository.save(meetingExistente);
 
