@@ -68,6 +68,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
@@ -133,7 +134,7 @@ services:
       - POSTGRES_DB=auth_db
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-troque-por-uma-chave-secreta}
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}

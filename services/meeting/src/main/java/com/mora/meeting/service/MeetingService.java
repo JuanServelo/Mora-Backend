@@ -35,6 +35,10 @@ public class MeetingService {
             throw new IllegalArgumentException("A data de término deve ser posterior à data de início.");
         }
 
+        if (dto.getIdConvidados() == null || dto.getIdConvidados().isEmpty()) {
+            throw new IllegalArgumentException("Uma reunião deve ter pelo menos um convidado.");
+        }
+
         Meeting meeting = meetingMapper.toEntity(dto);
 
         //todo: alterar para microsserviço de usuários
@@ -107,6 +111,10 @@ public class MeetingService {
     public MeetingResponseDTO updateMeeting(@NotNull Long id, @NotNull MeetingRequestDTO dto) {
         if (dto.getDataHoraFim().isBefore(dto.getDataHoraInicio())) {
             throw new IllegalArgumentException("A data de término deve ser posterior à data de início.");
+        }
+
+        if (dto.getIdConvidados() == null || dto.getIdConvidados().isEmpty()) {
+            throw new IllegalArgumentException("Uma reunião deve ter pelo menos um convidado.");
         }
         Meeting meetingExistente = meetingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
