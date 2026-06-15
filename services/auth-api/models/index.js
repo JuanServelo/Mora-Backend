@@ -1,7 +1,7 @@
 import User from './User.js';
 import Invite from './Invite.js';
-import Condominio from './Condominio.js';
-import RegistroAcesso from './RegistroAcesso.js';
+import Plan from './Plan.js';
+import Tenant from './Tenant.js';
 
 User.hasMany(Invite, { foreignKey: 'cadastradoPorId', as: 'convitesEmitidos' });
 Invite.belongsTo(User, { foreignKey: 'cadastradoPorId', as: 'cadastradoPor' });
@@ -10,16 +10,8 @@ Invite.belongsTo(User, { foreignKey: 'usedByUserId', as: 'usadoPor' });
 
 User.belongsTo(User, { foreignKey: 'cadastradoPorId', as: 'cadastradoPor' });
 
-// Associações com Condominio
-Condominio.hasMany(User, { foreignKey: 'condominioId', as: 'usuarios' });
-User.belongsTo(Condominio, { foreignKey: 'condominioId', as: 'condominio' });
+// RF01 / RF02 — Plataforma
+Plan.hasMany(Tenant, { foreignKey: 'planId', as: 'tenants' });
+Tenant.belongsTo(Plan, { foreignKey: 'planId', as: 'plano' });
 
-Condominio.hasMany(Invite, { foreignKey: 'condominioId', as: 'convites' });
-Invite.belongsTo(Condominio, { foreignKey: 'condominioId', as: 'condominio' });
-
-User.hasMany(RegistroAcesso, { foreignKey: 'usuarioId', as: 'registrosAcesso' });
-RegistroAcesso.belongsTo(User, { foreignKey: 'usuarioId', as: 'usuario' });
-
-RegistroAcesso.belongsTo(User, { foreignKey: 'registradoPorId', as: 'registradoPor' });
-
-export { User, Invite, Condominio, RegistroAcesso };
+export { User, Invite, Plan, Tenant };

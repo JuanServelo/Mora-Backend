@@ -1,6 +1,7 @@
 import { PERFIS } from '../constants/perfis.js';
 
 const REDIRECT_MAP = {
+  [PERFIS.SUPER_ADMIN]: '/adm/tenants',
   [PERFIS.DOORMAN]: '/portaria',
   [PERFIS.RESIDENT_OWNER]: '/inicio',
   [PERFIS.LESSEE]: '/inicio',

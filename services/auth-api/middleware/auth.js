@@ -1,6 +1,11 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { STATUS_USUARIO, podeAcessarAdmin, podeGerenciarUsuarios } from '../constants/perfis.js';
+import {
+  STATUS_USUARIO,
+  podeAcessarAdmin,
+  podeGerenciarUsuarios,
+  isSuperAdmin,
+} from '../constants/perfis.js';
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -57,6 +62,16 @@ export const adminMiddleware = (req, res, next) => {
     return res.status(403).json({
       sucesso: false,
       mensagem: 'Acesso negado — apenas administradores',
+    });
+  }
+  next();
+};
+
+export const superAdminMiddleware = (req, res, next) => {
+  if (!isSuperAdmin(req.userPerfil)) {
+    return res.status(403).json({
+      sucesso: false,
+      mensagem: 'Acesso negado — apenas Super Admin.',
     });
   }
   next();

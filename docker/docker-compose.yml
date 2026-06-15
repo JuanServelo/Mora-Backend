@@ -9,6 +9,16 @@ services:
     command: agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0
     networks:
       - microservices-net
+    # Descoberta de serviços em dev não precisa persistir estado. Manter o
+    # data-dir efêmero evita o erro "refusing to rejoin cluster" após o container
+    # ficar parado por mais de server_rejoin_age_max (7 dias).
+    tmpfs:
+      - /consul/data
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   # 2. API Gateway (Traefik)
   traefik:
@@ -34,7 +44,27 @@ services:
       - "--providers.consul.endpoints=consul:8500"
       - "--providers.consul.rootkey=traefik/config"
 
-  # 3. Banco de Dados PostgreSQL (unico para todos os servicos)
+  # 3. Message Broker (RabbitMQ) — pub/sub entre auth_db e mora_db
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-mora}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-mora}
+    ports:
+      - "5672:5672"    # protocolo AMQP
+      - "15672:15672"  # painel de gerenciamento (http://localhost:15672)
+    networks:
+      - microservices-net
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # 4. Banco de Dados PostgreSQL (unico para todos os servicos)
   postgres:
     image: postgres:16-alpine
     container_name: postgres
@@ -43,12 +73,20 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
     ports:
-      - "5432:5432"
+      # Host 5432 costuma estar ocupado por um PostgreSQL nativo (Windows).
+      # Publicamos em 5544 no host para nao conflitar; dentro da rede docker
+      # os servicos continuam usando "postgres:5432".
+      - "5544:5432"
     networks:
       - microservices-net
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-mora}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   # 4. Microservice 1: Portaria (Java)
   portaria-service:
@@ -57,8 +95,12 @@ services:
       dockerfile: Dockerfile
     container_name: portaria-service
     depends_on:
-      - consul
-      - postgres
+      consul:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - microservices-net
     ports:
@@ -71,6 +113,10 @@ services:
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-mora}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-mora}
       - TZ=America/Sao_Paulo
 
   # 5. Microservice 2: Vagas de Estacionamento (Java)
@@ -101,14 +147,16 @@ services:
       dockerfile: Dockerfile
     container_name: meeting-service
     depends_on:
-      - consul
-      - postgres
+      consul:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - microservices-net
     ports:
       - "8091:8091"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - SPRING_CLOUD_CONSUL_HOST=consul
@@ -143,8 +191,10 @@ services:
       dockerfile: Dockerfile
     container_name: auth-api
     depends_on:
-      - consul
-      - postgres
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - microservices-net
     ports:
@@ -155,7 +205,8 @@ services:
       - POSTGRES_DB=auth_db
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-mora}:${RABBITMQ_PASSWORD:-mora}@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-troque-por-uma-chave-secreta}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
@@ -178,6 +229,7 @@ services:
 
 volumes:
   postgres_data:
+  rabbitmq_data:
 
 networks:
   microservices-net:

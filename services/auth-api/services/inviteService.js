@@ -13,6 +13,7 @@ import { gerarCodigoConvite, normalizarCodigo } from '../utils/inviteCode.js';
 import { enviarEmailConvite, AVISO_EMAIL_FALHOU } from '../utils/emailService.js';
 import { validarUnidadeExiste } from '../utils/portariaClient.js';
 import { normalizarCpf } from '../utils/usuarioPublico.js';
+import { publicarEvento } from '../utils/eventPublisher.js';
 
 const HORAS_VALIDADE = 48;
 
@@ -338,6 +339,18 @@ export async function ativarConta({
     await inviteLocked.save({ transaction });
 
     await transaction.commit();
+
+    // Sincroniza o user_cache do Banco MORA (docs/assincrona.md).
+    // A falha de mensageria não desfaz a ativação: a consistência é eventual.
+    await publicarEvento('user.created', {
+      userId: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      perfil: usuario.perfil,
+      condominioId: usuario.condominioId,
+      unidadeId: usuario.unidadeId,
+      status: usuario.status,
+    });
 
     const perfil = usuario.getPerfilEfetivo();
     const token = signToken(usuario.id, perfil, usuario.tokenVersion, usuario.email);

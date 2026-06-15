@@ -1,4 +1,5 @@
 export const PERFIS = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
   CONTRACTING_PROPERTY_MANAGER: 'CONTRACTING_PROPERTY_MANAGER',
   CONTRACTING_SYNDIC: 'CONTRACTING_SYNDIC',
   OPERATIONAL_SYNDIC: 'OPERATIONAL_SYNDIC',
@@ -79,6 +80,13 @@ export const PERFIS_EXIGEM_UNIDADE = [
   PERFIS.GUEST,
 ];
 
+/** Perfis de nível unidade que exigem nome completo + CPF no pré-cadastro (US-03.5) */
+export const PERFIS_REQUEREM_PRECADASTRO = [
+  PERFIS.LESSEE,
+  PERFIS.OCCUPANT,
+  PERFIS.GUEST,
+];
+
 export const STATUS_USUARIO = {
   PENDING_ACTIVATION: 'pending_activation',
   ACTIVE: 'active',
@@ -104,7 +112,7 @@ export function perfilExigeUnidade(perfil) {
 }
 
 export function perfilRequerPrecadastro(perfil) {
-  return PERFIS_UNIDADE.includes(perfil);
+  return PERFIS_REQUEREM_PRECADASTRO.includes(perfil);
 }
 
 export const PERFIS_ACESSO_ADMIN = [
@@ -153,3 +161,44 @@ export function isPerfilCondominio(perfil) {
     PERFIS.REAL_ESTATE_AGENCY,
   ].includes(perfil);
 }
+
+export function isSuperAdmin(perfil) {
+  return perfil === PERFIS.SUPER_ADMIN;
+}
+
+/* ===== RF01 / RF02 — Plataforma (Super Admin) ===== */
+
+/** Catálogo de slugs de módulos que um plano SaaS pode habilitar (RF01 — active_modules). */
+export const MODULOS_VALIDOS = [
+  'property',
+  'access',
+  'amenity',
+  'complaint',
+  'financial',
+  'governance',
+  'chat',
+  'content',
+  'notification',
+  'reporting',
+];
+
+export function modulosSaoValidos(modulos) {
+  if (!Array.isArray(modulos)) return false;
+  return modulos.every((m) => MODULOS_VALIDOS.includes(m));
+}
+
+/** Tipos de tenant (RF02) — categorias de contratante da plataforma. */
+export const TIPOS_TENANT = {
+  PROPERTY_MANAGER: 'PROPERTY_MANAGER',
+  SYNDIC: 'SYNDIC',
+};
+
+export const TIPOS_TENANT_VALUES = Object.values(TIPOS_TENANT);
+
+/** Status do tenant (RF02). */
+export const STATUS_TENANT = {
+  ACTIVE: 'active',
+  SUSPENDED: 'suspended',
+};
+
+export const STATUS_TENANT_VALUES = Object.values(STATUS_TENANT);

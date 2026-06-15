@@ -17,15 +17,15 @@ import usersRoutes from './routes/users.js';
 import invitesRoutes from './routes/invites.js';
 import userManagementRoutes from './routes/user-management.js';
 import reclamacoesRoutes from './routes/reclamacoes.js';
-import condominiosRoutes from './routes/condominios.js';
-import perfisRoutes from './routes/perfis.js';
-import portariaRoutes from './routes/portaria.js';
+import plansRoutes from './routes/plans.js';
+import tenantsRoutes from './routes/tenants.js';
 import { garantirColunasNovas, migrarUsuariosLegados } from './migrations/migrate-rf03.js';
 import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
 import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
 import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
 import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
 import { googleOAuthConfigurado } from './utils/oauthConfig.js';
+import { conectarBroker, fecharBroker } from './utils/messageBroker.js';
 
 dotenv.config();
 
@@ -112,9 +112,8 @@ app.use('/api/invites', invitesRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
-app.use('/api/condominios', condominiosRoutes);
-app.use('/api/perfis', perfisRoutes);
-app.use('/api/portaria', portariaRoutes);
+app.use('/api/plans', plansRoutes);
+app.use('/api/tenants', tenantsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auth API funcionando' });
@@ -151,6 +150,9 @@ const startServer = async () => {
     console.error('Erro ao sincronizar tabelas:', err.message);
   }
 
+  // Conecta ao broker de mensageria (não bloqueia o boot se indisponível).
+  await conectarBroker();
+
   const server = app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
   });
@@ -162,6 +164,14 @@ const startServer = async () => {
     }
     throw err;
   });
+
+  const encerrar = async (sinal) => {
+    console.log(`\n[${sinal}] encerrando servidor...`);
+    await fecharBroker();
+    server.close(() => process.exit(0));
+  };
+  process.on('SIGINT', () => encerrar('SIGINT'));
+  process.on('SIGTERM', () => encerrar('SIGTERM'));
 };
 
 startServer();

@@ -1,9 +1,8 @@
--- Cria bancos adicionais para os microservicos
--- O banco 'mora' (portaria) e criado automaticamente pela variavel POSTGRES_DB
+-- Arquitetura de 2 bancos (docs/assincrona.md):
+--   auth_db -> Banco AUTH (auth-api)
+--   mora    -> Banco MORA (portaria-service + meeting-service)
+-- O banco 'mora' e criado automaticamente pela variavel POSTGRES_DB.
 CREATE DATABASE auth_db;
-CREATE DATABASE mora_meeting;
-CREATE DATABASE vagas_db;
-CREATE DATABASE mora_plan;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;

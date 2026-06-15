@@ -1,15 +1,25 @@
-# Docker Compose para testar o sistema de autenticação
+# Docker Compose para testar o sistema de autenticação de forma ISOLADA
+# (apenas um PostgreSQL, sem Consul/Traefik/RabbitMQ/serviços Java).
+#
+# IMPORTANTE: usa um nome de projeto próprio (mora-auth-test) para NÃO colidir
+# com a stack principal (docker-compose.yml). Sem isso, o Compose trataria o
+# serviço "postgres" como o mesmo e substituiria o container principal.
+#
 # Uso: docker compose -f docker/docker-compose.auth.yml up -d
+#   - banco exposto em localhost:5433
+#   - para usar, aponte services/auth-api/.env para POSTGRES_PORT=5433
+name: mora-auth-test
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: auth-postgres
+    container_name: auth-postgres-test
     environment:
-      - POSTGRES_DB=auth_db
+      - POSTGRES_DB=mora
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=Vibers@2112
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql

@@ -7,7 +7,8 @@ import {
   STATUS_CONVITE,
   podeCadastrarPerfil,
 } from '../constants/perfis.js';
-import { MSG_RF07 } from '../constants/occupantMessages.js';
+import { possuiCobrancasEmAberto } from '../utils/financialGuardService.js';
+import { publicarEvento } from '../utils/eventPublisher.js';
 import {
   criarConvite,
   reenviarConvite,
@@ -132,6 +133,13 @@ async function desativarUsuarioRecursivo(usuario) {
   usuario.status = STATUS_USUARIO.INACTIVE;
   usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
   await usuario.save();
+
+  // Propaga a desativação para o user_cache do Banco MORA (consistência eventual).
+  await publicarEvento('user.deactivated', {
+    userId: usuario.id,
+    condominioId: usuario.condominioId,
+    unidadeId: usuario.unidadeId,
+  });
 }
 
 export async function desativarUsuario(ator, alvoId, opts = {}) {

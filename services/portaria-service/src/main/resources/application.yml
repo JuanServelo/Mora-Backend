@@ -8,6 +8,19 @@ spring:
   application:
     name: portaria-service
 
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:mora}
+    password: ${SPRING_RABBITMQ_PASSWORD:mora}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          initial-interval: 3s
+          max-attempts: 3
+
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora}
     username: ${POSTGRES_USER:admin}
@@ -51,3 +64,9 @@ management:
     web:
       exposure:
         include: health
+
+# Mensageria pub/sub (Banco MORA consome eventos do Banco AUTH).
+# Defina como false para subir o serviço sem depender do broker.
+mora:
+  messaging:
+    enabled: ${MORA_MESSAGING_ENABLED:true}
