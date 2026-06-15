@@ -115,6 +115,27 @@ services:
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
 
+  # 7.5. Microservice 4: Planos SaaS (Java)
+  plan-service:
+    build:
+      context: ../services/plan-service
+      dockerfile: Dockerfile
+    container_name: plan-service
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - microservices-net
+    ports:
+      - "8093:8093"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_plan
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+      - TZ=America/Sao_Paulo
+
   # 7. Auth API (Node.js)
   auth-api:
     build:
