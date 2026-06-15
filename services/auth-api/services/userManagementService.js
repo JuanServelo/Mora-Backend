@@ -16,21 +16,55 @@ import {
   residentOwnerAtivoNaUnidade,
   lesseeAtivoNaUnidade,
 } from './inviteService.js';
+import {
+  escopoTenantDoAtor,
+  condominioPertenceAoTenant,
+  isGerenteTenant,
+} from '../utils/tenantScope.js';
 
 export async function listarUsuariosEscopo(ator) {
   const perfil = ator.getPerfilEfetivo();
-  const condominioId = ator.condominioId;
+  const escopoTenant = await escopoTenantDoAtor(ator);
 
-  let whereUsers = { condominioId };
-  let whereInvites = {
-    condominioId,
-    status: STATUS_CONVITE.PENDING,
-    expiresAt: { [Op.gt]: new Date() },
-  };
+  let whereUsers;
+  let whereInvites;
 
-  if ([PERFIS.RESIDENT_OWNER, PERFIS.ABSENT_OWNER, PERFIS.LESSEE].includes(perfil)) {
-    whereUsers = { ...whereUsers, unidadeId: ator.unidadeId };
-    whereInvites = { ...whereInvites, unidadeId: ator.unidadeId };
+  if (escopoTenant) {
+    const { tenantId, condIds } = escopoTenant;
+    const orEscopo = [{ tenantId }];
+    if (condIds.length) {
+      orEscopo.push({ condominioId: { [Op.in]: condIds } });
+    }
+
+    whereUsers = {
+      perfil: { [Op.notIn]: [PERFIS.SUPER_ADMIN] },
+      [Op.or]: orEscopo,
+    };
+
+    whereInvites = condIds.length
+      ? {
+          condominioId: { [Op.in]: condIds },
+          status: STATUS_CONVITE.PENDING,
+          expiresAt: { [Op.gt]: new Date() },
+        }
+      : {
+          id: -1,
+          status: STATUS_CONVITE.PENDING,
+        };
+  } else {
+    const condominioId = ator.condominioId;
+
+    whereUsers = { condominioId };
+    whereInvites = {
+      condominioId,
+      status: STATUS_CONVITE.PENDING,
+      expiresAt: { [Op.gt]: new Date() },
+    };
+
+    if ([PERFIS.RESIDENT_OWNER, PERFIS.ABSENT_OWNER, PERFIS.LESSEE].includes(perfil)) {
+      whereUsers = { ...whereUsers, unidadeId: ator.unidadeId };
+      whereInvites = { ...whereInvites, unidadeId: ator.unidadeId };
+    }
   }
 
   const [usuarios, convitesPendentes] = await Promise.all([
@@ -45,6 +79,17 @@ export async function emitirConvite(ator, dados) {
   const perfilAtor = ator.getPerfilEfetivo();
   const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro, condominioId: condominioIdDados } = dados;
   const condominioId = condominioIdDados || ator.condominioId;
+
+  if (isGerenteTenant(perfilAtor) && ator.tenantId) {
+    const pertence = await condominioPertenceAoTenant(condominioId, ator.tenantId);
+    if (!pertence) {
+      return {
+        sucesso: false,
+        mensagem: 'Condomínio fora do escopo do seu tenant.',
+        status: 403,
+      };
+    }
+  }
 
   if (!podeCadastrarPerfil(perfilAtor, perfil)) {
     return {
@@ -163,7 +208,7 @@ export async function desativarUsuario(ator, alvoId, opts = {}) {
   const perfilAtor = ator.getPerfilEfetivo();
   const perfilAlvo = alvo.getPerfilEfetivo();
 
-  if (!podeDesativar(perfilAtor, perfilAlvo, ator, alvo)) {
+  if (!(await podeDesativar(perfilAtor, perfilAlvo, ator, alvo))) {
     return {
       sucesso: false,
       mensagem: opts.mensagemRemocao
@@ -205,7 +250,7 @@ export async function desativarUsuario(ator, alvoId, opts = {}) {
   };
 }
 
-function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
+async function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
   const escopoCondominio = [
     PERFIS.CONTRACTING_PROPERTY_MANAGER,
     PERFIS.CONTRACTING_SYNDIC,
@@ -214,6 +259,10 @@ function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
   ];
 
   if (escopoCondominio.includes(perfilAtor)) {
+    if (ator.tenantId && isGerenteTenant(perfilAtor)) {
+      if (alvo.tenantId === ator.tenantId) return true;
+      return condominioPertenceAoTenant(alvo.condominioId, ator.tenantId);
+    }
     return ator.condominioId === alvo.condominioId;
   }
 

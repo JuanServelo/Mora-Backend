@@ -44,6 +44,12 @@ const Condominio = sequelize.define('Condominio', {
     allowNull: true,
   },
 
+  tenantId: {
+    type: DataTypes.INTEGER,
+    field: 'tenant_id',
+    allowNull: true,
+  },
+
 }, {
   tableName: 'condominios',
   timestamps: true,

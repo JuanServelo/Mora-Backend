@@ -9,7 +9,7 @@ export const PERFIS_DESCRICAO = {
       'Visualizar todos os usuários da plataforma',
       'Gerenciar todas as configurações do sistema',
     ],
-    podeCadastrar: ['OPERATIONAL_SYNDIC', 'ADMINISTRATOR', 'DOORMAN', 'REAL_ESTATE_AGENCY', 'RESIDENT_OWNER'],
+    podeCadastrar: ['OPERATIONAL_SYNDIC', 'ADMINISTRATOR', 'DOORMAN', 'REAL_ESTATE_AGENCY', 'RESIDENT_OWNER', 'ABSENT_OWNER', 'LESSEE', 'OCCUPANT'],
   },
 
   CONTRACTING_SYNDIC: {

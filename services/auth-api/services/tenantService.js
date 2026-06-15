@@ -1,14 +1,26 @@
 import { Op } from 'sequelize';
-import { Tenant, Plan } from '../models/index.js';
+import sequelize from '../config/database.js';
+import { Tenant, Plan, User } from '../models/index.js';
 import {
+  TIPOS_TENANT,
   TIPOS_TENANT_VALUES,
   STATUS_TENANT,
+  PERFIS,
+  STATUS_USUARIO,
 } from '../constants/perfis.js';
 import { planoPublico } from './planService.js';
 import { publicarEvento } from '../utils/eventPublisher.js';
+import { validarSenha } from '../utils/passwordValidation.js';
+import { usuarioPublico } from '../utils/usuarioPublico.js';
+
+function perfilContratantePorTipo(type) {
+  return type === TIPOS_TENANT.SYNDIC
+    ? PERFIS.CONTRACTING_SYNDIC
+    : PERFIS.CONTRACTING_PROPERTY_MANAGER;
+}
 
 /** Representação pública de um tenant para as respostas da API. */
-export function tenantPublico(tenant) {
+export function tenantPublico(tenant, usuarioContratante = null) {
   if (!tenant) return null;
   return {
     id: tenant.id,
@@ -22,6 +34,7 @@ export function tenantPublico(tenant) {
     provisioned: tenant.provisioned,
     provisionedAt: tenant.provisionedAt,
     condominiumCount: tenant.condominiumCount,
+    usuarioContratante: usuarioContratante ? usuarioPublico(usuarioContratante) : undefined,
     createdAt: tenant.createdAt,
     updatedAt: tenant.updatedAt,
   };
@@ -29,6 +42,20 @@ export function tenantPublico(tenant) {
 
 function campoVazio(valor) {
   return valor === undefined || valor === null || String(valor).trim() === '';
+}
+
+async function mapUsuariosContratantes(tenants) {
+  if (!tenants.length) return new Map();
+  const ids = tenants.map((t) => t.id);
+  const usuarios = await User.findAll({
+    where: {
+      tenantId: { [Op.in]: ids },
+      perfil: {
+        [Op.in]: [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC],
+      },
+    },
+  });
+  return new Map(usuarios.map((u) => [u.tenantId, u]));
 }
 
 /**
@@ -39,7 +66,11 @@ export async function listarTenants() {
     include: [{ model: Plan, as: 'plano' }],
     order: [['createdAt', 'DESC']],
   });
-  return { sucesso: true, tenants: tenants.map(tenantPublico) };
+  const usuariosMap = await mapUsuariosContratantes(tenants);
+  return {
+    sucesso: true,
+    tenants: tenants.map((t) => tenantPublico(t, usuariosMap.get(t.id))),
+  };
 }
 
 /**
@@ -52,14 +83,27 @@ export async function buscarTenant(id) {
   if (!tenant) {
     return { sucesso: false, mensagem: 'Tenant não encontrado.', status: 404 };
   }
-  return { sucesso: true, tenant: tenantPublico(tenant) };
+  const usuariosMap = await mapUsuariosContratantes([tenant]);
+  return {
+    sucesso: true,
+    tenant: tenantPublico(tenant, usuariosMap.get(tenant.id)),
+  };
 }
 
 /**
- * US-02.1 — Cadastro de novo tenant.
+ * US-02.1 — Cadastro de novo tenant + usuário contratante (CPM ou Síndico Contratante).
  */
 export async function criarTenant(dados) {
-  const { name, type, cnpj, schemaName, planId } = dados;
+  const {
+    name,
+    type,
+    cnpj,
+    schemaName,
+    planId,
+    cpmNome,
+    cpmEmail,
+    cpmSenha,
+  } = dados;
 
   // CA-04 — plano não selecionado
   if (campoVazio(planId)) {
@@ -72,8 +116,16 @@ export async function criarTenant(dados) {
   if (campoVazio(type)) erros.type = 'Este campo é obrigatório.';
   if (campoVazio(cnpj)) erros.cnpj = 'Este campo é obrigatório.';
   if (campoVazio(schemaName)) erros.schemaName = 'Este campo é obrigatório.';
+  if (campoVazio(cpmNome)) erros.cpmNome = 'Este campo é obrigatório.';
+  if (campoVazio(cpmEmail)) erros.cpmEmail = 'Este campo é obrigatório.';
+  if (campoVazio(cpmSenha)) erros.cpmSenha = 'Este campo é obrigatório.';
   if (Object.keys(erros).length > 0) {
     return { sucesso: false, mensagem: 'Este campo é obrigatório.', erros, status: 400 };
+  }
+
+  const errosSenha = validarSenha(String(cpmSenha));
+  if (errosSenha.length > 0) {
+    return { sucesso: false, mensagem: errosSenha[0], status: 400 };
   }
 
   if (!TIPOS_TENANT_VALUES.includes(type)) {
@@ -107,25 +159,58 @@ export async function criarTenant(dados) {
     };
   }
 
-  const tenant = await Tenant.create({
-    name,
-    type,
-    cnpj: String(cnpj).trim(),
-    schemaName,
-    planId,
-    status: STATUS_TENANT.ACTIVE,
-    provisioned: false,
-  });
+  const emailNorm = String(cpmEmail).trim().toLowerCase();
+  const emailExistente = await User.findOne({ where: { email: emailNorm } });
+  if (emailExistente) {
+    return {
+      sucesso: false,
+      mensagem: 'Já existe um usuário cadastrado com este e-mail.',
+      status: 400,
+    };
+  }
 
-  const completo = await Tenant.findByPk(tenant.id, {
-    include: [{ model: Plan, as: 'plano' }],
-  });
+  const perfilContratante = perfilContratantePorTipo(type);
+  const transaction = await sequelize.transaction();
 
-  return {
-    sucesso: true,
-    mensagem: 'Tenant cadastrado com sucesso.',
-    tenant: tenantPublico(completo),
-  };
+  try {
+    const tenant = await Tenant.create({
+      name,
+      type,
+      cnpj: String(cnpj).trim(),
+      schemaName,
+      planId,
+      status: STATUS_TENANT.ACTIVE,
+      provisioned: false,
+    }, { transaction });
+
+    const usuarioContratante = await User.create({
+      nome: String(cpmNome).trim(),
+      email: emailNorm,
+      senha: String(cpmSenha),
+      perfil: perfilContratante,
+      status: STATUS_USUARIO.ACTIVE,
+      tenantId: tenant.id,
+      provider: 'local',
+      semAcessoSistema: false,
+      tokenVersion: 0,
+      activatedAt: new Date(),
+    }, { transaction });
+
+    await transaction.commit();
+
+    const completo = await Tenant.findByPk(tenant.id, {
+      include: [{ model: Plan, as: 'plano' }],
+    });
+
+    return {
+      sucesso: true,
+      mensagem: 'Tenant cadastrado com sucesso.',
+      tenant: tenantPublico(completo, usuarioContratante),
+    };
+  } catch (err) {
+    await transaction.rollback();
+    throw err;
+  }
 }
 
 /**
@@ -184,11 +269,12 @@ export async function editarTenant(id, dados) {
   const completo = await Tenant.findByPk(tenant.id, {
     include: [{ model: Plan, as: 'plano' }],
   });
+  const usuariosMap = await mapUsuariosContratantes([completo]);
 
   return {
     sucesso: true,
     mensagem: 'Alteração salva com sucesso.',
-    tenant: tenantPublico(completo),
+    tenant: tenantPublico(completo, usuariosMap.get(completo.id)),
   };
 }
 
@@ -227,10 +313,12 @@ export async function provisionarTenant(id) {
   tenant.provisionedAt = new Date();
   await tenant.save();
 
+  const usuariosMap = await mapUsuariosContratantes([tenant]);
+
   return {
     sucesso: true,
     mensagem: 'Tenant provisionado com sucesso.',
-    tenant: tenantPublico(tenant),
+    tenant: tenantPublico(tenant, usuariosMap.get(tenant.id)),
   };
 }
 
@@ -257,10 +345,12 @@ export async function suspenderTenant(id) {
     schemaName: tenant.schemaName,
   });
 
+  const usuariosMap = await mapUsuariosContratantes([tenant]);
+
   return {
     sucesso: true,
     mensagem: 'Tenant suspenso com sucesso.',
-    tenant: tenantPublico(tenant),
+    tenant: tenantPublico(tenant, usuariosMap.get(tenant.id)),
   };
 }
 
@@ -277,10 +367,13 @@ export async function reativarTenant(id) {
   }
   tenant.status = STATUS_TENANT.ACTIVE;
   await tenant.save();
+
+  const usuariosMap = await mapUsuariosContratantes([tenant]);
+
   return {
     sucesso: true,
     mensagem: 'Tenant reativado com sucesso.',
-    tenant: tenantPublico(tenant),
+    tenant: tenantPublico(tenant, usuariosMap.get(tenant.id)),
   };
 }
 
@@ -322,10 +415,11 @@ export async function alterarPlanoTenant(id, planId) {
   const completo = await Tenant.findByPk(tenant.id, {
     include: [{ model: Plan, as: 'plano' }],
   });
+  const usuariosMap = await mapUsuariosContratantes([completo]);
 
   return {
     sucesso: true,
     mensagem: 'Plano alterado com sucesso.',
-    tenant: tenantPublico(completo),
+    tenant: tenantPublico(completo, usuariosMap.get(completo.id)),
   };
 }

@@ -37,6 +37,7 @@ export function usuarioPublico(usuario) {
     role: usuario.role ?? 'user',
     perfil,
     status: usuario.status,
+    tenantId: usuario.tenantId ?? null,
     condominioId: usuario.condominioId ?? null,
     unidadeId: usuario.unidadeId ?? null,
     bloco: usuario.bloco ?? null,

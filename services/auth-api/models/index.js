@@ -13,5 +13,7 @@ User.belongsTo(User, { foreignKey: 'cadastradoPorId', as: 'cadastradoPor' });
 // RF01 / RF02 — Plataforma
 Plan.hasMany(Tenant, { foreignKey: 'planId', as: 'tenants' });
 Tenant.belongsTo(Plan, { foreignKey: 'planId', as: 'plano' });
+Tenant.hasMany(User, { foreignKey: 'tenantId', as: 'usuarios' });
+User.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
 
 export { User, Invite, Plan, Tenant };

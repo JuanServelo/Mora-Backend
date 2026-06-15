@@ -18,15 +18,11 @@ public class BlocoService {
     private final BlocoRepository blocoRepository;
 
     public Bloco cadastrar(Bloco bloco) {
-        if (bloco.getCondominioId() != null) {
-            blocoRepository.findByNomeAndCondominioId(bloco.getNome(), bloco.getCondominioId()).ifPresent(b -> {
-                throw new OperacaoInvalidaException("Já existe um bloco com o nome '" + bloco.getNome() + "' neste cliente.");
-            });
-        } else {
-            blocoRepository.findByNome(bloco.getNome()).ifPresent(b -> {
-                throw new OperacaoInvalidaException("Já existe um bloco cadastrado com o nome: " + bloco.getNome());
-            });
-        }
+        validarCondominioObrigatorio(bloco.getCondominioId());
+        blocoRepository.findByNomeAndCondominioId(bloco.getNome(), bloco.getCondominioId()).ifPresent(b -> {
+            throw new OperacaoInvalidaException(
+                    "Já existe um bloco com o nome '" + bloco.getNome() + "' neste condomínio.");
+        });
         return blocoRepository.save(bloco);
     }
 
@@ -52,17 +48,15 @@ public class BlocoService {
     public Bloco atualizar(UUID id, Bloco dados) {
         Bloco bloco = buscarPorId(id);
         String condId = bloco.getCondominioId();
+        validarCondominioObrigatorio(condId);
 
         if (!bloco.getNome().equals(dados.getNome())) {
-            if (condId != null) {
-                blocoRepository.findByNomeAndCondominioId(dados.getNome(), condId).ifPresent(b -> {
-                    throw new OperacaoInvalidaException("Já existe um bloco com o nome: " + dados.getNome());
-                });
-            } else {
-                blocoRepository.findByNome(dados.getNome()).ifPresent(b -> {
-                    throw new OperacaoInvalidaException("Já existe um bloco com o nome: " + dados.getNome());
-                });
-            }
+            blocoRepository.findByNomeAndCondominioId(dados.getNome(), condId).ifPresent(b -> {
+                if (!b.getId().equals(bloco.getId())) {
+                    throw new OperacaoInvalidaException(
+                            "Já existe um bloco com o nome '" + dados.getNome() + "' neste condomínio.");
+                }
+            });
             bloco.setNome(dados.getNome());
         }
 
@@ -93,5 +87,11 @@ public class BlocoService {
             throw new RecursoNaoEncontradoException("Bloco não encontrado com id: " + id);
         }
         blocoRepository.deleteById(id);
+    }
+
+    private void validarCondominioObrigatorio(String condominioId) {
+        if (condominioId == null || condominioId.isBlank()) {
+            throw new OperacaoInvalidaException("Condomínio é obrigatório para cadastrar ou alterar bloco.");
+        }
     }
 }

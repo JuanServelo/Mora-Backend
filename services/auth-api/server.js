@@ -19,8 +19,10 @@ import userManagementRoutes from './routes/user-management.js';
 import reclamacoesRoutes from './routes/reclamacoes.js';
 import plansRoutes from './routes/plans.js';
 import tenantsRoutes from './routes/tenants.js';
+import condominiosRoutes from './routes/condominios.js';
 import { garantirColunasNovas, migrarUsuariosLegados } from './migrations/migrate-rf03.js';
 import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
+import { garantirColunaTenantIdUsuarios } from './migrations/migrate-rf02-tenant-user.js';
 import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
 import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
 import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
@@ -114,6 +116,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/tenants', tenantsRoutes);
+app.use('/api/condominios', condominiosRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Auth API funcionando' });
@@ -141,6 +144,7 @@ const startServer = async () => {
     console.log('PostgreSQL conectado');
     await garantirColunasNovas();
     await garantirColunasRf07();
+    await garantirColunaTenantIdUsuarios();
     await garantirTabelaCondominios();
     await garantirTabelaPortaria();
     await migrarUsuariosLegados();

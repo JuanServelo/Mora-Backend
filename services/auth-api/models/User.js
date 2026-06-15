@@ -89,6 +89,12 @@ const User = sequelize.define('User', {
     defaultValue: STATUS_USUARIO.PENDING_ACTIVATION,
   },
 
+  tenantId: {
+    type: DataTypes.INTEGER,
+    field: 'tenant_id',
+    allowNull: true,
+  },
+
   condominioId: {
     type: DataTypes.STRING(50),
     allowNull: true,

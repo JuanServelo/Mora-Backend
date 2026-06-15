@@ -11,9 +11,25 @@ export async function garantirTabelaCondominios() {
       email VARCHAR(150),
       status VARCHAR(20) DEFAULT 'active',
       "criadoPorId" INTEGER,
+      tenant_id INTEGER REFERENCES tenants(id) ON DELETE SET NULL,
       "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+
+  await sequelize.query(`
+    ALTER TABLE condominios
+      ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id) ON DELETE SET NULL
+  `);
+
+  // Vincula condomínios existentes ao tenant de quem os criou
+  await sequelize.query(`
+    UPDATE condominios c
+    SET tenant_id = u.tenant_id
+    FROM users u
+    WHERE c."criadoPorId" = u.id
+      AND u.tenant_id IS NOT NULL
+      AND c.tenant_id IS NULL
   `);
 
   // Criar ENUM type antes dos INSERTs

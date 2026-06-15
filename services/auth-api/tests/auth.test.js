@@ -38,6 +38,10 @@ describe('perfis', () => {
     expect(podeCadastrarPerfil(PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.ADMINISTRATOR)).toBe(true);
   });
 
+  test('CPM não pode cadastrar Síndico Contratante', () => {
+    expect(podeCadastrarPerfil(PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC)).toBe(false);
+  });
+
   test('Lessee não pode cadastrar Lessee', () => {
     expect(podeCadastrarPerfil(PERFIS.LESSEE, PERFIS.LESSEE)).toBe(false);
   });

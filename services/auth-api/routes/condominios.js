@@ -24,7 +24,12 @@ router.get('/', async (req, res) => {
     const isPM = req.userPerfil === PERFIS.CONTRACTING_PROPERTY_MANAGER
       || req.userPerfil === PERFIS.CONTRACTING_SYNDIC;
 
-    const where = isPM ? {} : { id: req.user.condominioId };
+    let where = {};
+    if (isPM && req.user.tenantId) {
+      where = { tenantId: req.user.tenantId };
+    } else if (!isPM) {
+      where = { id: req.user.condominioId };
+    }
 
     const condominios = await Condominio.findAll({
       where,
@@ -44,6 +49,9 @@ router.get('/:id', async (req, res) => {
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
     const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    if (isPM && req.user.tenantId && cond.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
+    }
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
@@ -79,6 +87,7 @@ router.post('/', adminMiddleware, gerenteMiddleware, async (req, res) => {
       email: email || null,
       status: 'active',
       criadoPorId: req.user.id,
+      tenantId: req.user.tenantId || null,
     });
 
     res.status(201).json({ sucesso: true, condominio });
@@ -94,6 +103,9 @@ router.put('/:id', adminMiddleware, async (req, res) => {
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
     const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    if (isPM && req.user.tenantId && cond.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
+    }
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
@@ -147,6 +159,9 @@ router.get('/:id/users', adminMiddleware, async (req, res) => {
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
     const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    if (isPM && req.user.tenantId && cond.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
+    }
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
@@ -169,6 +184,9 @@ router.patch('/:id/assign-user', adminMiddleware, async (req, res) => {
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
     const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    if (isPM && req.user.tenantId && cond.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
+    }
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
