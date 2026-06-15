@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import authMiddleware, { adminMiddleware } from '../middleware/auth.js';
 import { PERFIS, STATUS_USUARIO } from '../constants/perfis.js';
 import { usuarioPublico } from '../utils/usuarioPublico.js';
+import { aplicarEnderecoCondominio, extrairDadosEndereco, montarEndereco } from '../utils/enderecoCondominio.js';
 
 const router = express.Router();
 
@@ -65,7 +66,7 @@ router.get('/:id', async (req, res) => {
 // Criar condomínio (apenas CONTRACTING_PROPERTY_MANAGER)
 router.post('/', adminMiddleware, gerenteMiddleware, async (req, res) => {
   try {
-    const { id, nome, cnpj, endereco, telefone, email } = req.body;
+    const { id, nome, cnpj, telefone, email, endereco: _enderecoLegado, ...restoEndereco } = req.body;
 
     if (!id || !nome) {
       return res.status(400).json({ sucesso: false, mensagem: 'ID e nome são obrigatórios.' });
@@ -78,13 +79,15 @@ router.post('/', adminMiddleware, gerenteMiddleware, async (req, res) => {
     const existe = await Condominio.findByPk(id);
     if (existe) return res.status(409).json({ sucesso: false, mensagem: 'Já existe um condomínio com este ID.' });
 
+    const enderecoDados = extrairDadosEndereco(restoEndereco);
     const condominio = await Condominio.create({
       id,
       nome,
       cnpj: cnpj || null,
-      endereco: endereco || null,
       telefone: telefone || null,
       email: email || null,
+      ...enderecoDados,
+      endereco: montarEndereco(enderecoDados),
       status: 'active',
       criadoPorId: req.user.id,
       tenantId: req.user.tenantId || null,
@@ -110,12 +113,12 @@ router.put('/:id', adminMiddleware, async (req, res) => {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
 
-    const { nome, cnpj, endereco, telefone, email } = req.body;
+    const { nome, cnpj, telefone, email } = req.body;
     if (nome) cond.nome = nome;
     if (cnpj !== undefined) cond.cnpj = cnpj;
-    if (endereco !== undefined) cond.endereco = endereco;
     if (telefone !== undefined) cond.telefone = telefone;
     if (email !== undefined) cond.email = email;
+    aplicarEnderecoCondominio(cond, req.body);
 
     await cond.save();
     res.json({ sucesso: true, condominio: cond });

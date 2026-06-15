@@ -85,6 +85,33 @@ export async function garantirTabelaCondominios() {
   `);
 
   // Criar tabela reclamacoes se não existir (não está no init-databases.sql)
+  await garantirColunasEnderecoCondominio();
+}
+
+export async function garantirColunasEnderecoCondominio() {
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS cep VARCHAR(9)
+  `);
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS logradouro VARCHAR(200)
+  `);
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS numero VARCHAR(20)
+  `);
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS complemento VARCHAR(100)
+  `);
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS bairro VARCHAR(100)
+  `);
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS cidade VARCHAR(100)
+  `);
+  await sequelize.query(`
+    ALTER TABLE condominios ADD COLUMN IF NOT EXISTS uf VARCHAR(2)
+  `);
+
+  // Criar tabela reclamacoes se não existir (não está no init-databases.sql)
   await sequelize.query(`
     CREATE TABLE IF NOT EXISTS reclamacoes (
       id SERIAL PRIMARY KEY,

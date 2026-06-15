@@ -20,3 +20,16 @@ BEGIN
       ADD CONSTRAINT blocos_nome_condominioId_key UNIQUE (nome, "condominioId");
   END IF;
 END$$;
+
+-- Mesma regra para áreas comuns.
+ALTER TABLE areas_comuns DROP CONSTRAINT IF EXISTS areas_comuns_nome_key;
+ALTER TABLE areas_comuns DROP CONSTRAINT IF EXISTS "areas_comuns_nome_key";
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'areas_comuns_nome_condominioId_key'
+  ) THEN
+    ALTER TABLE areas_comuns
+      ADD CONSTRAINT areas_comuns_nome_condominioId_key UNIQUE (nome, "condominioId");
+  END IF;
+END$$;

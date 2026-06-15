@@ -19,6 +19,7 @@ import {
 import { validarUnidadeExiste } from '../utils/portariaClient.js';
 import User from '../models/User.js';
 import { usuarioPublico } from '../utils/usuarioPublico.js';
+import { isGerenteTenant } from '../utils/tenantScope.js';
 
 const router = express.Router();
 
@@ -57,6 +58,7 @@ router.get('/users', async (req, res) => {
         email: c.email,
         perfil: c.perfil,
         unidadeId: c.unidadeId,
+        nomePrecadastro: c.nomePrecadastro,
         status: c.status,
         expiresAt: c.expiresAt,
         createdAt: c.createdAt,
@@ -79,9 +81,12 @@ router.post('/invites', async (req, res) => {
       });
     }
 
-    // Admin (role: 'admin') pode criar convites para qualquer condomínio.
-    // Demais perfis ficam restritos ao seu próprio condominioId.
-    const condominioEfetivo = req.user.role === 'admin'
+    const perfilAtor = req.user.getPerfilEfetivo();
+    const gerenteTenant = isGerenteTenant(perfilAtor) && req.user.tenantId;
+
+    // Super Admin e CPM/Síndico contratante usam o condomínio escolhido no formulário.
+    // Demais perfis ficam restritos ao próprio condomínio.
+    const condominioEfetivo = (req.user.role === 'admin' || gerenteTenant)
       ? (condominioId || req.user.condominioId || null)
       : (req.user.condominioId || condominioId || null);
 

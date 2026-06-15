@@ -24,6 +24,41 @@ const Condominio = sequelize.define('Condominio', {
     allowNull: true,
   },
 
+  cep: {
+    type: DataTypes.STRING(9),
+    allowNull: true,
+  },
+
+  logradouro: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+  },
+
+  numero: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+  },
+
+  complemento: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+
+  bairro: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+
+  cidade: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+
+  uf: {
+    type: DataTypes.STRING(2),
+    allowNull: true,
+  },
+
   telefone: {
     type: DataTypes.STRING(20),
     allowNull: true,
