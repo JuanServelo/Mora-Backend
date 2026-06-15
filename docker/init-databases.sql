@@ -3,6 +3,7 @@
 CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
 CREATE DATABASE vagas_db;
+CREATE DATABASE mora_plan;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;
