@@ -1,0 +1,17 @@
+package com.mora.vagas.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.mora.vagas.entity.Vaga;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface VagaRepository extends JpaRepository<Vaga, String> {
+    Optional<Vaga> findByNumero(String numero);
+    List<Vaga> findByApartamentoId(UUID apartamentoId);
+    List<Vaga> findByAtiva(boolean ativa);
+}
+
+

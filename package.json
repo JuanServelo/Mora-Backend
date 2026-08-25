@@ -2,13 +2,9 @@
   "name": "mora",
   "private": true,
   "workspaces": [
-    "services/auth-api",
-    "services/auth-frontend",
-    "services/portaria-frontend"
+    "services/auth-service"
   ],
   "scripts": {
-    "dev:auth-api": "npm run dev -w auth-api",
-    "dev:auth-frontend": "npm run dev -w auth-frontend",
-    "dev:portaria": "npm run dev -w portaria-frontend"
+    "dev:auth": "npm run dev -w auth-service"
   }
 }

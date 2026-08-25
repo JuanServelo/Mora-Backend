@@ -1,0 +1,17 @@
+package com.mora.portaria.dto.chave;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import com.mora.portaria.enums.TipoResponsavel;
+
+@Data
+public class RetirarChaveRequest {
+
+    @NotBlank(message = "ID do responsável é obrigatório")
+    private String responsavelId;
+
+    @NotNull(message = "Tipo do responsável é obrigatório (MORADOR ou FUNCIONARIO)")
+    private TipoResponsavel tipoResponsavel;
+}
+

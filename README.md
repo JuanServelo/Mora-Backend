@@ -21,11 +21,15 @@ O Mora é um sistema para gestão de condomínios que oferece:
 ```
 Frontend (React + Vite — porta 5173)
         │
-        ├── Auth API (Node.js — porta 3001) ──── PostgreSQL: auth_db
+        ├── Auth Service (Node.js — porta 3001) ──── PostgreSQL: auth_db
         │
         ├── Portaria Service (Java — porta 8090) ─ PostgreSQL: mora
         │
-        └── Meeting Service (Java — porta 8091) ── PostgreSQL: mora_meeting
+        ├── Meeting Service (Java — porta 8091) ── PostgreSQL: mora_meeting
+        │
+        ├── Vagas Service (Java — porta 8092) ──── PostgreSQL: vagas_db
+        │
+        └── Plan Service (Java — porta 8093) ───── PostgreSQL: mora_plan
 
 [Consul — porta 8500]   service discovery entre os serviços
 [Traefik — porta 8080]  API gateway / roteamento
@@ -38,9 +42,11 @@ Frontend (React + Vite — porta 5173)
 
 | Serviço | Tecnologia | Porta | Banco |
 |---|---|---|---|
-| Auth API | Node.js 20 + Express + Sequelize | 3001 | auth_db |
+| Auth Service | Node.js 20 + Express + Sequelize | 3001 | auth_db |
 | Portaria Service | Java 21 + Spring Boot 3.5 | 8090 | mora |
 | Meeting Service | Java 21 + Spring Boot 3.2 | 8091 | mora_meeting |
+| Vagas Service | Java 21 + Spring Boot 3.5 | 8092 | vagas_db |
+| Plan Service | Java 21 + Spring Boot 3.5 | 8093 | mora_plan |
 | PostgreSQL | PostgreSQL 16 | 5432 | — |
 | Consul | Consul 1.15 | 8500 | — |
 | Traefik | Traefik 2.9 | 8080 / 8087 | — |
@@ -67,8 +73,7 @@ Frontend (React + Vite — porta 5173)
 ### 1. Configure as variáveis de ambiente
 
 ```bash
-cd Mora-Backend/docker
-cp .env.example .env
+cp docker/.env.example .env
 ```
 
 Edite o arquivo `.env` com seus valores:
@@ -79,7 +84,7 @@ POSTGRES_DB=mora
 POSTGRES_USER=admin
 POSTGRES_PASSWORD=sua_senha_segura
 
-# Auth API
+# Auth Service
 JWT_SECRET=chave-secreta-longa-e-aleatoria
 FRONTEND_URL=http://localhost:5173
 
@@ -97,7 +102,6 @@ MAIL_FROM=Mora <seuemail@gmail.com>
 ### 2. Suba todos os serviços
 
 ```bash
-cd Mora-Backend/docker
 docker compose up -d
 ```
 
@@ -114,7 +118,7 @@ docker compose ps
 docker compose logs -f
 
 # Serviço específico
-docker compose logs -f auth-api
+docker compose logs -f auth-service
 docker compose logs -f portaria-service
 docker compose logs -f meeting-service
 ```
@@ -140,10 +144,10 @@ CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
 ```
 
-### Auth API
+### Auth Service
 
 ```bash
-cd Mora-Backend/services/auth-api
+cd Mora-Backend/services/auth-service
 
 # Crie o arquivo de variáveis de ambiente
 cp .env.example .env  # ajuste os valores
@@ -181,7 +185,7 @@ Disponível em: **http://localhost:8090**
 ### Meeting Service
 
 ```bash
-cd Mora-Backend/services/meeting
+cd Mora-Backend/services/meeting-service
 
 mvn spring-boot:run
 ```
@@ -192,7 +196,7 @@ Disponível em: **http://localhost:8091**
 
 ## Variáveis de ambiente
 
-### Auth API
+### Auth Service
 
 | Variável | Padrão | Descrição |
 |---|---|---|
@@ -258,7 +262,7 @@ Os bancos são criados automaticamente pelo script `docker/init-databases.sql` n
 
 ## Endpoints e documentação
 
-### Auth API — principais rotas
+### Auth Service — principais rotas
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -270,7 +274,7 @@ Os bancos são criados automaticamente pelo script `docker/init-databases.sql` n
 | `POST` | `/api/user-management/invites` | Emitir convite (gestores) |
 | `GET` | `/api/health` | Health check |
 
-Fluxo invite-only: registro público desabilitado. Ver [AUTH-README.md](services/auth-api/AUTH-README.md).
+Fluxo invite-only: registro público desabilitado. Ver [AUTH-README.md](services/auth-service/AUTH-README.md).
 
 ### Portaria Service — Swagger UI
 
@@ -286,14 +290,15 @@ Disponível em **http://localhost:8091/swagger-ui.html**.
 
 ```
 Mora-Backend/
+├── docker-compose.yml        # Orquestração de todos os serviços (na raiz)
 ├── docker/
-│   ├── docker-compose.yml    # Orquestração de todos os serviços
 │   ├── init-databases.sql    # Criação dos bancos de dados
 │   └── .env.example          # Modelo de variáveis de ambiente
 ├── docs/                     # Documentação adicional
 └── services/
-    ├── auth-api/             # Node.js — autenticação e usuários
+    ├── auth-service/         # Node.js — autenticação e usuários
     │   ├── config/
+    │   ├── controllers/
     │   ├── middleware/
     │   ├── models/
     │   ├── routes/
@@ -301,22 +306,30 @@ Mora-Backend/
     │   ├── Dockerfile
     │   └── server.js
     ├── portaria-service/     # Java — portaria e estruturas do condomínio
-    │   ├── src/main/java/portaria/
+    │   ├── src/main/java/com/mora/portaria/
     │   │   ├── controller/
     │   │   ├── dto/
     │   │   ├── exception/
-    │   │   ├── model/
+    │   │   ├── entity/
     │   │   ├── repository/
     │   │   └── service/
     │   ├── Dockerfile
     │   └── pom.xml
-    └── meeting/              # Java — reuniões, atas e enquetes
-        ├── src/main/java/com/mora/meeting/
-        │   ├── controller/
-        │   ├── dto/
-        │   ├── entity/
-        │   ├── mapper/
-        │   └── repository/
+    ├── meeting-service/      # Java — reuniões, atas e enquetes
+    │   ├── src/main/java/com/mora/meeting/
+    │   │   ├── controller/
+    │   │   ├── dto/
+    │   │   ├── entity/
+    │   │   ├── mapper/
+    │   │   └── repository/
+    │   ├── Dockerfile
+    │   └── pom.xml
+    ├── vagas-service/        # Java — gestão de vagas
+    │   ├── src/main/java/com/mora/vagas/
+    │   ├── Dockerfile
+    │   └── pom.xml
+    └── plan-service/         # Java — controle de planos SaaS
+        ├── src/main/java/com/mora/plan/
         ├── Dockerfile
         └── pom.xml
 ```

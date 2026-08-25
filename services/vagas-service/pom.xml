@@ -8,7 +8,7 @@
         <version>3.5.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.example</groupId>
+    <groupId>com.mora</groupId>
     <artifactId>vagas-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>vagas-service</name>
@@ -107,7 +107,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>vagas.VagasServiceApplication</mainClass>
+                    <mainClass>com.mora.vagas.VagasServiceApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

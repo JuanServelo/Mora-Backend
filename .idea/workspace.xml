@@ -5,19 +5,290 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd97cf75-044d-480d-bf8c-acba57e56d65" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/Mora-Backend.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/meeting/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/services/meeting/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/config/GoogleMeetConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/config/GoogleMeetConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/service/MeetingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/service/MeetingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/services/meeting/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker/docker-compose.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/.env.example" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/AUTH-README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/config/database.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/constants/occupantMessages.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/constants/perfis.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/constants/perfisInfo.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/make-admin.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/middleware/auth.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/migrations/migrate-condominios.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/migrations/migrate-portaria.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/migrations/migrate-rf03.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/migrations/migrate-rf07.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/models/Condominio.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/models/Invite.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/models/Reclamacao.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/models/RegistroAcesso.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/models/User.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/models/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/auth.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/condominios.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/invites.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/perfis.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/portaria.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/reclamacoes.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/user-management.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/routes/users.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/server.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/services/inviteService.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/services/occupantService.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/services/userManagementService.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/tests/auth.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/tests/occupants.test.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/ageValidation.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/emailService.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/financialGuardService.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/inviteCode.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/oauthConfig.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/passwordValidation.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/portariaClient.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/redirectPorPerfil.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/auth-api/utils/usuarioPublico.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/.gitattributes" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/mvnw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/mvnw.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/MeetingApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/config/GoogleMeetConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/config/WebConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/controller/AtaController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/controller/MeetingController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/controller/PollController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/ErrorResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/ata/AtaRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/ata/AtaResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/meeting/MeetingDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/meeting/MeetingEvaluationRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/meeting/MeetingRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/meeting/MeetingResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/poll/PollOptionDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/poll/PollRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/poll/PollResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/dto/poll/VoteRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/entity/Ata.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/entity/Meeting.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/entity/MeetingGuests.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/entity/Poll.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/entity/PollOption.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/entity/PollVote.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/enums/AttendanceStatus.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/enums/MeetingStatus.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/enums/PollStatus.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/infra/GlobalExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/mapper/AtaMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/mapper/MeetingMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/mapper/PollMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/repository/AtaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/repository/MeetingRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/repository/PollRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/repository/PollVoteRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/service/AtaService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/service/MeetingService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/java/com/mora/meeting/service/PollService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/src/test/java/com/mora/meeting/MeetingApplicationTests.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/MeetingApplication.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/config/GoogleMeetConfig.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/controller/AtaController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/controller/MeetingController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/controller/PollController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/ata/AtaRequestDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/ata/AtaResponseDTO$AtaResponseDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/ata/AtaResponseDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingDTO$MeetingDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingEvaluationRequestDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingRequestDTO$MeetingRequestDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingRequestDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingResponseDTO$MeetingResponseDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/meeting/MeetingResponseDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/PollOptionDTO$PollOptionDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/PollOptionDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/PollRequestDTO$PollRequestDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/PollRequestDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/PollResponseDTO$PollResponseDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/PollResponseDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/VoteRequestDTO$VoteRequestDTOBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/dto/poll/VoteRequestDTO.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/Ata$AtaBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/Ata.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/Meeting$MeetingBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/Meeting.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/MeetingGuests.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/Poll$PollBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/Poll.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/PollOption$PollOptionBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/PollOption.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/PollVote$PollVoteBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/entity/PollVote.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/enums/AttendanceStatus.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/enums/MeetingStatus.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/enums/PollStatus.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/mapper/AtaMapper.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/mapper/AtaMapperImpl.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/mapper/MeetingMapper.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/mapper/MeetingMapperImpl.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/mapper/PollMapper.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/mapper/PollMapperImpl.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/repository/AtaRepository.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/repository/MeetingRepository.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/repository/PollRepository.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/repository/PollVoteRepository.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/service/AtaService.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/service/MeetingService.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/classes/com/mora/meeting/service/PollService.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/generated-sources/annotations/com/mora/meeting/mapper/AtaMapperImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/generated-sources/annotations/com/mora/meeting/mapper/MeetingMapperImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/meeting/target/generated-sources/annotations/com/mora/meeting/mapper/PollMapperImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/plan-service/src/main/java/com/mora/plan/dto/ErrorResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/plan-service/src/main/java/com/mora/plan/infra/GlobalExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-frontend/src/api/conhecimentoApi.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-frontend/src/pages/ArtigoDetalhe.jsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-frontend/src/pages/ArtigoForm.jsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-frontend/src/pages/BaseConhecimento.jsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/services/portaria-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/PortariaServiceApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/config/CorsConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/ApartamentoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/AreaComunController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/ArtigoConhecimentoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/AvisoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/BlocoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/CarroController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/ChaveController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/EntregaController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/FuncionarioController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/MoradorController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/TurnoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/UsuarioController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/VagaController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/VeiculoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/controller/VisitanteController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/AlterarVagaDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/ApartamentoRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/ApartamentoResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/AreaComunResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/ArtigoConhecimentoRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/ArtigoConhecimentoResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/AvisoRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/AvisoResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/BlocoResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/CriarCarroDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/CriarUsuarioDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/CriarVeiculoDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/EntregaRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/EntregaResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/RetirarChaveRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/UsuarioResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/VagaResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/VeiculoResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/dto/chave/RetirarChaveRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/exception/AcessoNegadoException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/exception/GlobalExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/exception/OperacaoInvalidaException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/exception/RecursoNaoEncontradoException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Apartamento.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/AreaComum.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/ArtigoConhecimento.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Aviso.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Bloco.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Carro.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Chave.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Entrega.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Funcionario.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Morador.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Turno.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Usuario.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Vaga.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Veiculo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/Visitante.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/enums/CategoriaArtigo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/enums/CategoriaVeiculo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/enums/PublicoAlvo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/enums/StatusAcesso.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/enums/TipoProprietario.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/model/enums/TipoResponsavel.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/ApartamentoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/AreaComunRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/ArtigoConhecimentoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/AvisoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/BlocoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/CarroRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/ChaveRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/EntregaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/FuncionarioRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/MoradorRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/TurnoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/VagaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/VeiculoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/repository/VisitanteRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/security/AuthContext.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/security/AuthFilter.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/security/JwtClaims.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/security/JwtUtil.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/ApartamentoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/AreaComunService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/ArtigoConhecimentoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/AvisoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/BlocoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/CarroService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/ChaveService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/EntregaService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/FuncionarioService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/MoradorService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/TurnoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/UsuarioService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/VagaService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/VeiculoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/portaria-service/src/main/java/portaria/service/VisitanteService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/services/vagas-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/VagasServiceApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/config/CorsConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/controller/AluguelController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/controller/VagaController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/AluguelRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/AluguelResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/ApartamentoRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/ApartamentoResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/DisponibilidadeRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/DisponibilidadeResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/RecusaRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/UsuarioResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/VagaRequestDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/dto/VagaResponseDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/exception/GlobalExceptionHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/exception/OperacaoInvalidaException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/exception/RecursoNaoEncontradoException.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/AluguelVaga.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/Apartamento.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/Bloco.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/DisponibilidadeVaga.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/Morador.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/Vaga.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/enums/ModalidadeAluguel.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/enums/StatusAluguel.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/enums/TipoProprietario.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/model/enums/TipoVaga.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/repository/AluguelVagaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/repository/ApartamentoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/repository/DisponibilidadeVagaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/repository/VagaRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/service/AluguelService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/vagas-service/src/main/java/vagas/service/VagaService.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +298,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "luana-akemi-sakurada"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/JuanServelo/Mora-Backend.git",
+    "accountId": "faf81f50-a466-42eb-a25f-665765472527"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -43,9 +326,12 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "#15 on develop",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/Projects/Mora-Backend"
+    "last_opened_file_path": "D:/Projects/Mora-Backend",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -82,5 +368,16 @@
       <updated>1774826521991</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>
