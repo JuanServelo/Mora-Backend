@@ -7,35 +7,44 @@ import { MSG_RF07 } from '../constants/occupantMessages.js';
 import { calcularIdade, temIdadeMinima, ehMenorDe16 } from '../utils/ageValidation.js';
 
 describe('RF07 — perfis e permissões', () => {
-  test('Resident Owner pode cadastrar Lessee, Occupant e Guest', () => {
-    expect(podeCadastrarPerfil(PERFIS.RESIDENT_OWNER, PERFIS.LESSEE)).toBe(true);
-    expect(podeCadastrarPerfil(PERFIS.RESIDENT_OWNER, PERFIS.OCCUPANT)).toBe(true);
-    expect(podeCadastrarPerfil(PERFIS.RESIDENT_OWNER, PERFIS.GUEST)).toBe(true);
+  test('Morador pode cadastrar Convidado', () => {
+    expect(podeCadastrarPerfil(PERFIS.MORADOR, PERFIS.CONVIDADO)).toBe(true);
   });
 
-  test('Absent Owner pode cadastrar apenas Lessee', () => {
-    expect(podeCadastrarPerfil(PERFIS.ABSENT_OWNER, PERFIS.LESSEE)).toBe(true);
-    expect(podeCadastrarPerfil(PERFIS.ABSENT_OWNER, PERFIS.OCCUPANT)).toBe(false);
-    expect(podeCadastrarPerfil(PERFIS.ABSENT_OWNER, PERFIS.GUEST)).toBe(false);
+  test('Morador não cadastra outro Morador nem perfis de gestão', () => {
+    expect(podeCadastrarPerfil(PERFIS.MORADOR, PERFIS.MORADOR)).toBe(false);
+    expect(podeCadastrarPerfil(PERFIS.MORADOR, PERFIS.ADMIN_SINDICO)).toBe(false);
+    expect(podeCadastrarPerfil(PERFIS.MORADOR, PERFIS.PORTEIRO)).toBe(false);
   });
 
-  test('Lessee pode cadastrar Occupant e Guest', () => {
-    expect(podeCadastrarPerfil(PERFIS.LESSEE, PERFIS.OCCUPANT)).toBe(true);
-    expect(podeCadastrarPerfil(PERFIS.LESSEE, PERFIS.GUEST)).toBe(true);
-    expect(podeCadastrarPerfil(PERFIS.LESSEE, PERFIS.LESSEE)).toBe(false);
+  test('Dono Aluguel cadastra o Morador que ocupa o imóvel, e Convidado', () => {
+    expect(podeCadastrarPerfil(PERFIS.DONO_ALUGUEL, PERFIS.MORADOR)).toBe(true);
+    expect(podeCadastrarPerfil(PERFIS.DONO_ALUGUEL, PERFIS.CONVIDADO)).toBe(true);
+    expect(podeCadastrarPerfil(PERFIS.DONO_ALUGUEL, PERFIS.ADMIN_SINDICO)).toBe(false);
   });
 
-  test('podeGerenciarOcupantes inclui RO, AO e Lessee', () => {
-    expect(podeGerenciarOcupantes(PERFIS.RESIDENT_OWNER)).toBe(true);
-    expect(podeGerenciarOcupantes(PERFIS.ABSENT_OWNER)).toBe(true);
-    expect(podeGerenciarOcupantes(PERFIS.LESSEE)).toBe(true);
-    expect(podeGerenciarOcupantes(PERFIS.OCCUPANT)).toBe(false);
-    expect(podeGerenciarOcupantes(PERFIS.ADMINISTRATOR)).toBe(false);
+  test('Admin Síndico cadastra todos os perfis do condomínio, menos Admin Geral', () => {
+    expect(podeCadastrarPerfil(PERFIS.ADMIN_SINDICO, PERFIS.PORTEIRO)).toBe(true);
+    expect(podeCadastrarPerfil(PERFIS.ADMIN_SINDICO, PERFIS.MORADOR)).toBe(true);
+    expect(podeCadastrarPerfil(PERFIS.ADMIN_SINDICO, PERFIS.DONO_ALUGUEL)).toBe(true);
+    expect(podeCadastrarPerfil(PERFIS.ADMIN_SINDICO, PERFIS.ADMIN_GERAL)).toBe(false);
+  });
+
+  test('Porteiro e Convidado não cadastram ninguém', () => {
+    expect(podeCadastrarPerfil(PERFIS.PORTEIRO, PERFIS.MORADOR)).toBe(false);
+    expect(podeCadastrarPerfil(PERFIS.CONVIDADO, PERFIS.CONVIDADO)).toBe(false);
+  });
+
+  test('podeGerenciarOcupantes inclui Morador e Dono Aluguel', () => {
+    expect(podeGerenciarOcupantes(PERFIS.MORADOR)).toBe(true);
+    expect(podeGerenciarOcupantes(PERFIS.DONO_ALUGUEL)).toBe(true);
+    expect(podeGerenciarOcupantes(PERFIS.CONVIDADO)).toBe(false);
+    expect(podeGerenciarOcupantes(PERFIS.PORTEIRO)).toBe(false);
   });
 });
 
 describe('RF07 — validação de idade', () => {
-  test('Occupant exige idade mínima de 16 anos', () => {
+  test('Morador exige idade mínima de 16 anos', () => {
     const hoje = new Date();
     const menor = new Date(hoje.getFullYear() - 15, hoje.getMonth(), hoje.getDate());
     const maior = new Date(hoje.getFullYear() - 20, hoje.getMonth(), hoje.getDate());
@@ -52,25 +61,25 @@ describe('RF07 — validação de idade', () => {
 });
 
 describe('RF07 — mensagens de aceitação', () => {
-  test('mensagens literais da documentação', () => {
-    expect(MSG_RF07.LESSEE_DUPLICADO).toBe('Você já possui um Lessee vinculado a esta unidade.');
-    expect(MSG_RF07.OCCUPANT_SUCESSO).toBe('Occupant cadastrado com sucesso.');
+  test('mensagens literais', () => {
+    expect(MSG_RF07.LESSEE_DUPLICADO).toBe('Esta unidade já possui um morador responsável financeiro.');
+    expect(MSG_RF07.OCCUPANT_SUCESSO).toBe('Morador cadastrado com sucesso.');
     expect(MSG_RF07.OCCUPANT_MENOR).toBe(
-      'Menores de 16 anos não podem ser cadastrados como Occupant. Use o cadastro de Guest.',
+      'Menores de 16 anos não podem ser cadastrados como Morador. Use o cadastro de Convidado.',
     );
-    expect(MSG_RF07.GUEST_SUCESSO).toBe('Guest cadastrado com sucesso.');
-    expect(MSG_RF07.GUEST_SEM_ACESSO).toBe('Guests não possuem acesso ao sistema.');
+    expect(MSG_RF07.GUEST_SUCESSO).toBe('Convidado cadastrado com sucesso.');
+    expect(MSG_RF07.GUEST_SEM_ACESSO).toBe('Convidados não possuem acesso ao sistema.');
     expect(MSG_RF07.TRANSFER_SUCESSO).toBe(
-      'Responsabilidade financeira transferida. Seu perfil foi atualizado para Absent Owner.',
+      'Responsabilidade financeira transferida. Seu perfil foi atualizado para Dono Aluguel.',
     );
     expect(MSG_RF07.TRANSFER_SEM_LESSEE).toBe(
-      'É necessário ter um Lessee ativo na unidade para realizar a transferência.',
+      'É necessário ter um morador ativo na unidade para realizar a transferência.',
     );
     expect(MSG_RF07.TRANSFER_SEM_PERMISSAO).toBe(
-      'Somente o Resident Owner responsável financeiro pode realizar esta transferência.',
+      'Somente o morador responsável financeiro pode realizar esta transferência.',
     );
     expect(MSG_RF07.TRANSFER_CADASTRE_LESSEE).toBe(
-      'Cadastre um Lessee antes de transferir a responsabilidade financeira.',
+      'Cadastre um morador antes de transferir a responsabilidade financeira.',
     );
     expect(MSG_RF07.VINCULO_REMOVIDO).toBe('Vínculo removido com sucesso.');
     expect(MSG_RF07.NENHUM_OCUPANTE).toBe('Nenhum ocupante vinculado a esta unidade.');

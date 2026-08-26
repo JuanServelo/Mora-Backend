@@ -36,16 +36,16 @@ public class VeiculoService {
 
     // ─── Grupos de perfis ──────────────────────────────────────────────────────
 
+    // Perfis emitidos pelo auth-api no claim "perfil" do JWT.
     private static final Set<String> ADMIN_PERFIS = Set.of(
-            "CONTRACTING_PROPERTY_MANAGER", "CONTRACTING_SYNDIC",
-            "OPERATIONAL_SYNDIC", "ADMINISTRATOR"
+            "ADMIN_GERAL", "ADMIN_SINDICO"
     );
     private static final Set<String> MORADOR_PERFIS = Set.of(
-            "RESIDENT_OWNER", "ABSENT_OWNER", "LESSEE", "OCCUPANT"
+            "MORADOR", "DONO_ALUGUEL"
     );
 
     private boolean isAdmin(String perfil) { return ADMIN_PERFIS.contains(perfil); }
-    private boolean isPorteiro(String perfil) { return "DOORMAN".equals(perfil); }
+    private boolean isPorteiro(String perfil) { return "PORTEIRO".equals(perfil); }
     private boolean isMorador(String perfil) { return MORADOR_PERFIS.contains(perfil); }
 
     // ─── Helpers de autenticação ───────────────────────────────────────────────

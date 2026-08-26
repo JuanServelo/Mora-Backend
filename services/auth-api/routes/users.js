@@ -17,7 +17,8 @@ router.get('/', authMiddleware, async (req, res) => {
     const usuarios = await User.findAll({ order: [['createdAt', 'DESC']] });
     res.json({ sucesso: true, usuarios: usuarios.map(usuarioPublico) });
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: err.message });
+    console.error('Erro em /api/users:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar a solicitação' });
   }
 });
 
@@ -43,7 +44,8 @@ router.post('/', authMiddleware, gestaoMiddleware, async (req, res) => {
 
     res.status(201).json(resultado);
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: err.message });
+    console.error('Erro em /api/users:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar a solicitação' });
   }
 });
 
@@ -67,7 +69,8 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 
     res.json({ sucesso: true, usuario: usuarioPublico(usuario) });
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: err.message });
+    console.error('Erro em /api/users:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar a solicitação' });
   }
 });
 
@@ -84,7 +87,8 @@ router.delete('/:id', authMiddleware, gestaoMiddleware, async (req, res) => {
 
     res.json(resultado);
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: err.message });
+    console.error('Erro em /api/users:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar a solicitação' });
   }
 });
 

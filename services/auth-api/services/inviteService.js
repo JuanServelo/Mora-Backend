@@ -3,6 +3,7 @@ import sequelize from '../config/database.js';
 import User from '../models/User.js';
 import Invite from '../models/Invite.js';
 import {
+  PERFIS,
   STATUS_CONVITE,
   STATUS_USUARIO,
   CONDOMINIO_DEFAULT,
@@ -119,6 +120,7 @@ export async function criarConvite({
   unidadeId = null,
   nomePrecadastro = null,
   cpfPrecadastro = null,
+  responsavelFinanceiro = false,
 }) {
   const codigo = await gerarCodigoUnico();
   const invite = await Invite.create({
@@ -130,6 +132,7 @@ export async function criarConvite({
     nomePrecadastro,
     cpfPrecadastro: cpfPrecadastro ? normalizarCpf(cpfPrecadastro) : null,
     cadastradoPorId,
+    responsavelFinanceiro,
     status: STATUS_CONVITE.PENDING,
     expiresAt: expiraEm48h(),
   });
@@ -157,8 +160,8 @@ export async function reenviarConvite(inviteId, cadastradoPorId) {
     return { sucesso: false, mensagem: MSG.CODIGO_USADO, status: 400 };
   }
 
-  if (invite.perfil === 'GUEST') {
-    return { sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.', status: 400 };
+  if (invite.perfil === PERFIS.CONVIDADO) {
+    return { sucesso: false, mensagem: 'Convidados não possuem acesso ao sistema.', status: 400 };
   }
 
   invite.status = STATUS_CONVITE.REVOKED;
@@ -172,6 +175,7 @@ export async function reenviarConvite(inviteId, cadastradoPorId) {
     unidadeId: invite.unidadeId,
     nomePrecadastro: invite.nomePrecadastro,
     cpfPrecadastro: invite.cpfPrecadastro,
+    responsavelFinanceiro: invite.responsavelFinanceiro ?? false,
   });
 
   return {
@@ -194,8 +198,8 @@ export async function validarDadosConviteAdmin({
     return { sucesso: false, mensagem: 'Unidade é obrigatória para este perfil.' };
   }
 
-  if (perfil === 'GUEST') {
-    return { sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.' };
+  if (perfil === PERFIS.CONVIDADO) {
+    return { sucesso: false, mensagem: 'Convidados não possuem acesso ao sistema.' };
   }
 
   if (unidadeId) {
@@ -224,28 +228,46 @@ export async function validarDadosConviteAdmin({
 export async function residentOwnerAtivoNaUnidade(unidadeId, excludeUserId = null) {
   const where = {
     unidadeId,
-    perfil: 'RESIDENT_OWNER',
+    perfil: PERFIS.MORADOR,
     status: STATUS_USUARIO.ACTIVE,
   };
   if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
   return User.findOne({ where });
 }
 
+/**
+ * Morador ativo da unidade apto a receber a responsabilidade financeira:
+ * mora lá e ainda não é o responsável. Antes da simplificação era o Lessee.
+ */
+export async function moradorSucessorNaUnidade(unidadeId, excludeUserId = null) {
+  const where = {
+    unidadeId,
+    perfil: PERFIS.MORADOR,
+    responsavelFinanceiro: false,
+    status: STATUS_USUARIO.ACTIVE,
+  };
+  if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
+  return User.findOne({ where });
+}
+
+/** Morador que responde financeiramente pela unidade (antigo Lessee). */
 export async function lesseeAtivoNaUnidade(unidadeId, excludeUserId = null) {
   const whereUser = {
     unidadeId,
-    perfil: 'LESSEE',
+    perfil: PERFIS.MORADOR,
+    responsavelFinanceiro: true,
     status: STATUS_USUARIO.ACTIVE,
   };
   if (excludeUserId) whereUser.id = { [Op.ne]: excludeUserId };
   const ativo = await User.findOne({ where: whereUser });
   if (ativo) return ativo;
 
-  // Também bloqueia se já existe convite PENDENTE para Lessee nesta unidade
+  // Também bloqueia se já existe convite PENDENTE de responsável nesta unidade
   const convitePendente = await Invite.findOne({
     where: {
       unidadeId,
-      perfil: 'LESSEE',
+      perfil: PERFIS.MORADOR,
+      responsavelFinanceiro: true,
       status: STATUS_CONVITE.PENDING,
       expiresAt: { [Op.gt]: new Date() },
     },
@@ -259,6 +281,7 @@ export async function ativarConta({
   email,
   telefone,
   cpf,
+  dataNascimento,
   senha,
 }, signToken, usuarioPublicoFn, redirectPorPerfilFn) {
   const resultado = await buscarConvitePorCodigo(codigo);
@@ -321,12 +344,15 @@ export async function ativarConta({
       email: emailNorm,
       telefone: telefone?.trim() || null,
       cpf: cpfNorm,
+      dataNascimento: dataNascimento || null,
       senha,
       perfil: invite.perfil,
       status: STATUS_USUARIO.ACTIVE,
       condominioId: invite.condominioId,
       unidadeId: invite.unidadeId,
       cadastradoPorId: invite.cadastradoPorId,
+      // Herdado do convite: é o que distingue o morador que paga a fatura.
+      responsavelFinanceiro: invite.responsavelFinanceiro ?? false,
       provider: 'local',
       activatedAt: new Date(),
       tokenVersion: 0,

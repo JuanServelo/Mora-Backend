@@ -9,7 +9,7 @@ const router = express.Router();
 
 function gerenteMiddleware(req, res, next) {
   const { userPerfil } = req;
-  const permitidos = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC];
+  const permitidos = [PERFIS.ADMIN_GERAL];
   if (!permitidos.includes(userPerfil)) {
     return res.status(403).json({ sucesso: false, mensagem: 'Apenas administradoras ou síndicos contratantes podem gerenciar clientes.' });
   }
@@ -21,8 +21,7 @@ router.use(authMiddleware);
 // Listar condomínios
 router.get('/', async (req, res) => {
   try {
-    const isPM = req.userPerfil === PERFIS.CONTRACTING_PROPERTY_MANAGER
-      || req.userPerfil === PERFIS.CONTRACTING_SYNDIC;
+    const isPM = req.userPerfil === PERFIS.ADMIN_GERAL;
 
     const where = isPM ? {} : { id: req.user.condominioId };
 
@@ -43,7 +42,7 @@ router.get('/:id', async (req, res) => {
     const cond = await Condominio.findByPk(req.params.id);
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
-    const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    const isPM = req.userPerfil === PERFIS.ADMIN_GERAL;
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
@@ -93,7 +92,7 @@ router.put('/:id', adminMiddleware, async (req, res) => {
     const cond = await Condominio.findByPk(req.params.id);
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
-    const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    const isPM = req.userPerfil === PERFIS.ADMIN_GERAL;
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
@@ -146,7 +145,7 @@ router.get('/:id/users', adminMiddleware, async (req, res) => {
     const cond = await Condominio.findByPk(req.params.id);
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
-    const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    const isPM = req.userPerfil === PERFIS.ADMIN_GERAL;
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }
@@ -168,7 +167,7 @@ router.patch('/:id/assign-user', adminMiddleware, async (req, res) => {
     const cond = await Condominio.findByPk(req.params.id);
     if (!cond) return res.status(404).json({ sucesso: false, mensagem: 'Condomínio não encontrado.' });
 
-    const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC].includes(req.userPerfil);
+    const isPM = req.userPerfil === PERFIS.ADMIN_GERAL;
     if (!isPM && req.user.condominioId !== cond.id) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }

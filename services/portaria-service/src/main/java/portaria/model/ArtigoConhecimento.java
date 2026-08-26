@@ -31,6 +31,10 @@ public class ArtigoConhecimento {
 
     private String autor;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     private boolean publicado = false;
 
     @Column(name = "criado_em")

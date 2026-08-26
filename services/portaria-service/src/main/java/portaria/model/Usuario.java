@@ -28,6 +28,10 @@ public abstract class Usuario {
 
     protected boolean ativo = true;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    protected String condominioId;
+
     @Column(name = "criado_em")
     protected LocalDateTime criadoEm = LocalDateTime.now();
 

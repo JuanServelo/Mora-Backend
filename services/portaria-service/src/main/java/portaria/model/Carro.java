@@ -23,6 +23,10 @@ public class Carro {
 
     private String modelo;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     @NotNull(message = "ID do proprietário é obrigatório")
     @Column(name = "proprietario_id")
     private String proprietarioId;

@@ -21,20 +21,20 @@ let usuario = await User.findOne({ where: { email: emailNorm } });
 if (usuario) {
   await User.update(
     {
-      perfil: PERFIS.CONTRACTING_PROPERTY_MANAGER,
+      perfil: PERFIS.ADMIN_GERAL,
       status: STATUS_USUARIO.ACTIVE,
       condominioId: CONDOMINIO_DEFAULT,
       semAcessoSistema: false,
     },
     { where: { email: emailNorm } },
   );
-  console.log(`✓ ${emailNorm} atualizado para CONTRACTING_PROPERTY_MANAGER`);
+  console.log(`✓ ${emailNorm} atualizado para ADMIN_GERAL`);
 } else {
   await User.create({
     nome: 'Administrador',
     email: emailNorm,
     senha,
-    perfil: PERFIS.CONTRACTING_PROPERTY_MANAGER,
+    perfil: PERFIS.ADMIN_GERAL,
     status: STATUS_USUARIO.ACTIVE,
     condominioId: CONDOMINIO_DEFAULT,
     provider: 'local',
@@ -43,7 +43,7 @@ if (usuario) {
     activatedAt: new Date(),
   });
   console.log(`✓ Usuário criado: ${emailNorm} / senha: ${senha}`);
-  console.log('  Perfil: CONTRACTING_PROPERTY_MANAGER (acesso total)');
+  console.log('  Perfil: ADMIN_GERAL (acesso total)');
 }
 
 await sequelize.close();

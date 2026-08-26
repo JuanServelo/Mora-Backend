@@ -43,7 +43,10 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
     ports:
-      - "5432:5432"
+      # 5433 no host: a 5432 costuma estar ocupada por uma instalacao nativa do
+      # PostgreSQL, que vence o bind e faz o host falhar a autenticacao.
+      # Os servicos em containers seguem usando postgres:5432 pela rede interna.
+      - "5433:5432"
     networks:
       - microservices-net
     volumes:
@@ -157,9 +160,35 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM}
+      - TZ=America/Sao_Paulo
+
+  # 7.9. Gestao Geral (Node) — agrega dados da plataforma para o Admin Geral
+  gestao-geral:
+    build:
+      context: ../services/gestao-geral
+      dockerfile: Dockerfile
+    container_name: gestao-geral
+    depends_on:
+      - auth-api
+    networks:
+      - microservices-net
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      # Mesmo segredo do auth-api: valida os tokens que ele emite.
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - AUTH_API_URL=http://auth-api:3001
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      - PLAN_SERVICE_URL=http://plan-service:8093
       - TZ=America/Sao_Paulo
 
   # 8. pgAdmin (visualizador do banco de dados)

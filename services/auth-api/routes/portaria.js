@@ -13,16 +13,15 @@ router.use(authMiddleware);
 
 function portariaMiddleware(req, res, next) {
   const p = req.userPerfil;
-  if (p === PERFIS.DOORMAN || podeAcessarAdmin(p)) return next();
+  if (p === PERFIS.PORTEIRO || podeAcessarAdmin(p)) return next();
   return res.status(403).json({ sucesso: false, mensagem: 'Apenas porteiros têm acesso a esta funcionalidade.' });
 }
 
 function responsavelMiddleware(req, res, next) {
   const p = req.userPerfil;
   const permitidos = [
-    PERFIS.RESIDENT_OWNER, PERFIS.LESSEE,
-    PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC,
-    PERFIS.OPERATIONAL_SYNDIC, PERFIS.ADMINISTRATOR,
+    PERFIS.MORADOR, PERFIS.DONO_ALUGUEL,
+    PERFIS.ADMIN_GERAL, PERFIS.ADMIN_SINDICO,
   ];
   if (permitidos.includes(p)) return next();
   return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão para gerenciar convidados.' });
@@ -57,7 +56,7 @@ router.get('/guests', portariaMiddleware, async (req, res) => {
   try {
     const condominioId = req.user.condominioId;
     const guests = await User.findAll({
-      where: { condominioId, perfil: PERFIS.GUEST, status: STATUS_USUARIO.ACTIVE },
+      where: { condominioId, perfil: PERFIS.CONVIDADO, status: STATUS_USUARIO.ACTIVE },
       order: [['nome', 'ASC']],
     });
     const ids = guests.map((g) => g.id);
@@ -76,7 +75,7 @@ router.get('/residentes', portariaMiddleware, async (req, res) => {
       where: {
         condominioId,
         status: STATUS_USUARIO.ACTIVE,
-        perfil: { [Op.ne]: PERFIS.GUEST },
+        perfil: { [Op.ne]: PERFIS.CONVIDADO },
         semAcessoSistema: false,
       },
       order: [['nome', 'ASC']],
@@ -128,7 +127,7 @@ router.post('/entrada/:userId', portariaMiddleware, async (req, res) => {
       return res.status(403).json({ sucesso: false, mensagem: 'Usuário não pertence a este condomínio.' });
     }
 
-    if (alvo.perfil === PERFIS.GUEST && !alvo.entradaPermitida) {
+    if (alvo.perfil === PERFIS.CONVIDADO && !alvo.entradaPermitida) {
       return res.status(403).json({
         sucesso: false,
         mensagem: 'Entrada não permitida. O responsável da unidade não autorizou a entrada deste convidado.',
@@ -179,7 +178,7 @@ router.get('/meus-guests', responsavelMiddleware, async (req, res) => {
     const { unidadeId, condominioId, id: userId } = req.user;
 
     const where = {
-      perfil: PERFIS.GUEST,
+      perfil: PERFIS.CONVIDADO,
       status: STATUS_USUARIO.ACTIVE,
       condominioId,
     };
@@ -204,7 +203,7 @@ router.get('/meus-guests', responsavelMiddleware, async (req, res) => {
 router.patch('/guests/:guestId/permissao', responsavelMiddleware, async (req, res) => {
   try {
     const guest = await User.findByPk(Number(req.params.guestId));
-    if (!guest || guest.perfil !== PERFIS.GUEST || guest.status !== STATUS_USUARIO.ACTIVE) {
+    if (!guest || guest.perfil !== PERFIS.CONVIDADO || guest.status !== STATUS_USUARIO.ACTIVE) {
       return res.status(404).json({ sucesso: false, mensagem: 'Convidado não encontrado.' });
     }
 
