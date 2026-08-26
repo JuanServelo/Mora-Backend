@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-06-06T15:27:21-0300",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
+    date = "2026-08-26T14:47:01-0300",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
 public class AtaMapperImpl implements AtaMapper {
@@ -25,12 +25,12 @@ public class AtaMapperImpl implements AtaMapper {
 
         Ata.AtaBuilder ata = Ata.builder();
 
+        ata.topicosDiscutidos( dto.getTopicosDiscutidos() );
         ata.decisoesTomadas( dto.getDecisoesTomadas() );
         List<Long> list = dto.getIdPresentes();
         if ( list != null ) {
             ata.idPresentes( new ArrayList<Long>( list ) );
         }
-        ata.topicosDiscutidos( dto.getTopicosDiscutidos() );
 
         return ata.build();
     }
@@ -44,14 +44,14 @@ public class AtaMapperImpl implements AtaMapper {
         AtaResponseDTO.AtaResponseDTOBuilder ataResponseDTO = AtaResponseDTO.builder();
 
         ataResponseDTO.meetingId( ataMeetingId( ata ) );
-        ataResponseDTO.dataPublicacao( ata.getDataPublicacao() );
-        ataResponseDTO.decisoesTomadas( ata.getDecisoesTomadas() );
         ataResponseDTO.id( ata.getId() );
+        ataResponseDTO.topicosDiscutidos( ata.getTopicosDiscutidos() );
+        ataResponseDTO.decisoesTomadas( ata.getDecisoesTomadas() );
         List<Long> list = ata.getIdPresentes();
         if ( list != null ) {
             ataResponseDTO.idPresentes( new ArrayList<Long>( list ) );
         }
-        ataResponseDTO.topicosDiscutidos( ata.getTopicosDiscutidos() );
+        ataResponseDTO.dataPublicacao( ata.getDataPublicacao() );
 
         return ataResponseDTO.build();
     }
