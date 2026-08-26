@@ -35,6 +35,11 @@ const Reclamacao = sequelize.define(
       type: DataTypes.ENUM('PENDENTE', 'EM_ANALISE', 'RESOLVIDO'),
       defaultValue: 'PENDENTE',
     },
+    /** Cliente dono do registro. Toda ocorrência pertence a um condomínio. */
+    condominioId: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
     interactions: {
       type: DataTypes.JSON,
       allowNull: false,

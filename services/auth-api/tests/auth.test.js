@@ -34,21 +34,25 @@ describe('inviteCode', () => {
 });
 
 describe('perfis', () => {
-  test('CPM pode cadastrar Administrator', () => {
-    expect(podeCadastrarPerfil(PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.ADMINISTRATOR)).toBe(true);
+  test('Admin Geral pode cadastrar Admin Síndico', () => {
+    expect(podeCadastrarPerfil(PERFIS.ADMIN_GERAL, PERFIS.ADMIN_SINDICO)).toBe(true);
   });
 
-  test('Lessee não pode cadastrar Lessee', () => {
-    expect(podeCadastrarPerfil(PERFIS.LESSEE, PERFIS.LESSEE)).toBe(false);
+  test('Morador não pode cadastrar outro Morador', () => {
+    expect(podeCadastrarPerfil(PERFIS.MORADOR, PERFIS.MORADOR)).toBe(false);
+  });
+
+  test('são exatamente 6 perfis', () => {
+    expect(Object.keys(PERFIS)).toHaveLength(6);
   });
 });
 
 describe('redirectPorPerfil', () => {
   test('porteiro vai para portaria', () => {
-    expect(redirectPorPerfil(PERFIS.DOORMAN)).toBe('/portaria');
+    expect(redirectPorPerfil(PERFIS.PORTEIRO)).toBe('/portaria');
   });
 
   test('morador vai para inicio', () => {
-    expect(redirectPorPerfil(PERFIS.RESIDENT_OWNER)).toBe('/inicio');
+    expect(redirectPorPerfil(PERFIS.MORADOR)).toBe('/inicio');
   });
 });

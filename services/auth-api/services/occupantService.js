@@ -12,7 +12,7 @@ import {
 import { validarUnidadeExiste } from '../utils/portariaClient.js';
 import { normalizarCpf, validarCpf } from '../utils/usuarioPublico.js';
 import { temIdadeMinima } from '../utils/ageValidation.js';
-import { criarConvite, lesseeAtivoNaUnidade } from './inviteService.js';
+import { criarConvite, lesseeAtivoNaUnidade, moradorSucessorNaUnidade } from './inviteService.js';
 import { desativarUsuario } from './userManagementService.js';
 
 import { MSG_RF07 as MSG } from '../constants/occupantMessages.js';
@@ -84,7 +84,7 @@ export async function listarOcupantesUnidade(ator, unidadeId) {
       where: {
         unidadeId,
         status: STATUS_USUARIO.ACTIVE,
-        perfil: { [Op.in]: [...PERFIS_OCUPANTE_UNIDADE, PERFIS.RESIDENT_OWNER, PERFIS.ABSENT_OWNER] },
+        perfil: { [Op.in]: [...PERFIS_OCUPANTE_UNIDADE, PERFIS.DONO_ALUGUEL] },
       },
       order: [['nome', 'ASC']],
     }),
@@ -93,7 +93,7 @@ export async function listarOcupantesUnidade(ator, unidadeId) {
         unidadeId,
         status: STATUS_CONVITE.PENDING,
         expiresAt: { [Op.gt]: new Date() },
-        perfil: { [Op.in]: [PERFIS.LESSEE, PERFIS.OCCUPANT] },
+        perfil: PERFIS.MORADOR,
       },
       order: [['createdAt', 'DESC']],
     }),
@@ -124,16 +124,14 @@ export async function listarOcupantesUnidade(ator, unidadeId) {
   };
 }
 
-async function emitirConviteOcupante(ator, unidadeId, perfil, dados) {
+async function emitirConviteOcupante(ator, unidadeId, perfil, dados, responsavelFinanceiro = false) {
   const perfilAtor = ator.getPerfilEfetivo();
   if (!podeCadastrarPerfil(perfilAtor, perfil)) {
     return { sucesso: false, mensagem: MSG.SEM_PERMISSAO_CADASTRO, status: 403 };
   }
 
-  if (
-    perfil === PERFIS.LESSEE
-    && (perfilAtor === PERFIS.ABSENT_OWNER || perfilAtor === PERFIS.RESIDENT_OWNER)
-  ) {
+  // Só pode haver um morador responsável financeiro por unidade.
+  if (responsavelFinanceiro && perfilAtor === PERFIS.DONO_ALUGUEL) {
     const lesseeExistente = await lesseeAtivoNaUnidade(unidadeId);
     if (lesseeExistente) {
       return { sucesso: false, mensagem: MSG.LESSEE_DUPLICADO, status: 400 };
@@ -157,9 +155,10 @@ async function emitirConviteOcupante(ator, unidadeId, perfil, dados) {
     unidadeId,
     nomePrecadastro: dados.nome.trim(),
     cpfPrecadastro: cpfNorm,
+    responsavelFinanceiro,
   });
 
-  const mensagemSucesso = perfil === PERFIS.LESSEE ? MSG.LESSEE_SUCESSO : MSG.OCCUPANT_SUCESSO;
+  const mensagemSucesso = responsavelFinanceiro ? MSG.LESSEE_SUCESSO : MSG.OCCUPANT_SUCESSO;
 
   return {
     sucesso: true,
@@ -183,7 +182,7 @@ export async function cadastrarLessee(ator, unidadeId, dados) {
   const campos = validarCampos(dados, ['nome', 'cpf', 'email']);
   if (campos) return campos;
 
-  return emitirConviteOcupante(ator, unidadeId, PERFIS.LESSEE, dados);
+  return emitirConviteOcupante(ator, unidadeId, PERFIS.MORADOR, dados, true);
 }
 
 export async function cadastrarOccupant(ator, unidadeId, dados) {
@@ -191,7 +190,7 @@ export async function cadastrarOccupant(ator, unidadeId, dados) {
   if (bloqueio) return bloqueio;
 
   // CA-04: Absent Owner não pode cadastrar Occupant
-  if (ator.getPerfilEfetivo() === PERFIS.ABSENT_OWNER) {
+  if (ator.getPerfilEfetivo() === PERFIS.DONO_ALUGUEL) {
     return {
       sucesso: false,
       mensagem: 'Somente Resident Owner ou Lessee podem cadastrar Occupants.',
@@ -206,7 +205,7 @@ export async function cadastrarOccupant(ator, unidadeId, dados) {
     return { sucesso: false, mensagem: MSG.OCCUPANT_MENOR, status: 400 };
   }
 
-  return emitirConviteOcupante(ator, unidadeId, PERFIS.OCCUPANT, dados);
+  return emitirConviteOcupante(ator, unidadeId, PERFIS.MORADOR, dados, false);
 }
 
 export async function cadastrarGuest(ator, unidadeId, dados) {
@@ -214,7 +213,7 @@ export async function cadastrarGuest(ator, unidadeId, dados) {
   if (bloqueio) return bloqueio;
 
   const perfilAtor = ator.getPerfilEfetivo();
-  if (!podeCadastrarPerfil(perfilAtor, PERFIS.GUEST)) {
+  if (!podeCadastrarPerfil(perfilAtor, PERFIS.CONVIDADO)) {
     return { sucesso: false, mensagem: MSG.SEM_PERMISSAO_CADASTRO, status: 403 };
   }
 
@@ -235,7 +234,7 @@ export async function cadastrarGuest(ator, unidadeId, dados) {
     email: null,
     cpf: cpfNorm,
     dataNascimento: dados.dataNascimento || null,
-    perfil: PERFIS.GUEST,
+    perfil: PERFIS.CONVIDADO,
     status: STATUS_USUARIO.ACTIVE,
     semAcessoSistema: true,
     condominioId: ator.condominioId,
@@ -258,9 +257,9 @@ export async function verificarElegibilidadeTransferencia(ator, unidadeId) {
   if (bloqueio) return bloqueio;
 
   const perfil = ator.getPerfilEfetivo();
-  const lessee = await lesseeAtivoNaUnidade(unidadeId);
+  const lessee = await moradorSucessorNaUnidade(unidadeId, ator.id);
 
-  const podeTransferir = perfil === PERFIS.RESIDENT_OWNER
+  const podeTransferir = perfil === PERFIS.MORADOR
     && ator.responsavelFinanceiro
     && ator.unidadeId === unidadeId;
 
@@ -301,13 +300,13 @@ export async function transferirResponsabilidadeFinanceira(ator, unidadeId) {
     return { sucesso: false, mensagem: msg, status: 400 };
   }
 
-  const lessee = await lesseeAtivoNaUnidade(unidadeId);
+  const lessee = await moradorSucessorNaUnidade(unidadeId, ator.id);
   if (!lessee) {
     return { sucesso: false, mensagem: MSG.TRANSFER_SEM_LESSEE, status: 400 };
   }
 
   ator.responsavelFinanceiro = false;
-  ator.perfil = PERFIS.ABSENT_OWNER;
+  ator.perfil = PERFIS.DONO_ALUGUEL;
   await ator.save();
 
   lessee.responsavelFinanceiro = true;
@@ -318,7 +317,7 @@ export async function transferirResponsabilidadeFinanceira(ator, unidadeId) {
       unidadeId,
       cadastradoPorId: ator.id,
       status: STATUS_USUARIO.ACTIVE,
-      perfil: { [Op.in]: [PERFIS.OCCUPANT, PERFIS.GUEST] },
+      perfil: PERFIS.CONVIDADO,
     },
   });
 

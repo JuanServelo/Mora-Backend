@@ -24,6 +24,10 @@ public class DisponibilidadeVaga {
     @Column(name = "proprietario_id", nullable = false)
     private UUID proprietarioId;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     @NotNull
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "vaga_id", nullable = false)

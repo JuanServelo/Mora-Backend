@@ -29,6 +29,10 @@ public class Chave {
     @Column(name = "nome_responsavel")
     private String nomeResponsavel;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     private LocalDateTime retirada;
 
     private LocalDateTime devolucao;

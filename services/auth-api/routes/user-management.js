@@ -47,7 +47,9 @@ router.use(authMiddleware, gestaoMiddleware);
 
 router.get('/users', async (req, res) => {
   try {
-    const { usuarios, convitesPendentes } = await listarUsuariosEscopo(req.user);
+    const { usuarios, convitesPendentes } = await listarUsuariosEscopo(req.user, {
+      condominioId: req.query.condominioId,
+    });
 
     res.json({
       sucesso: true,
@@ -294,7 +296,7 @@ router.get('/units/:unidadeId/residents', async (req, res) => {
     const { unidadeId } = req.params;
 
     const perfil = req.userPerfil;
-    const isPM = [PERFIS.CONTRACTING_PROPERTY_MANAGER, PERFIS.CONTRACTING_SYNDIC, PERFIS.OPERATIONAL_SYNDIC, PERFIS.ADMINISTRATOR].includes(perfil);
+    const isPM = [PERFIS.ADMIN_GERAL, PERFIS.ADMIN_SINDICO].includes(perfil);
     if (!isPM && req.user.unidadeId !== unidadeId) {
       return res.status(403).json({ sucesso: false, mensagem: 'Acesso negado.' });
     }

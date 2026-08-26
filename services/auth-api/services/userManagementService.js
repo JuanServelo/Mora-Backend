@@ -12,22 +12,30 @@ import {
   criarConvite,
   reenviarConvite,
   validarDadosConviteAdmin,
-  residentOwnerAtivoNaUnidade,
   lesseeAtivoNaUnidade,
 } from './inviteService.js';
 
-export async function listarUsuariosEscopo(ator) {
+export async function listarUsuariosEscopo(ator, filtros = {}) {
   const perfil = ator.getPerfilEfetivo();
-  const condominioId = ator.condominioId;
 
-  let whereUsers = { condominioId };
+  /**
+   * O Admin Geral opera a plataforma e tem `condominioId` nulo. Sem este ramo,
+   * a consulta virava `WHERE "condominioId" IS NULL` e ele não via usuário
+   * algum. Ele enxerga tudo, ou um cliente específico via ?condominioId=.
+   */
+  const ehAdminGeral = perfil === PERFIS.ADMIN_GERAL;
+  const escopo = ehAdminGeral
+    ? (filtros.condominioId ? { condominioId: filtros.condominioId } : {})
+    : { condominioId: ator.condominioId };
+
+  let whereUsers = { ...escopo };
   let whereInvites = {
-    condominioId,
+    ...escopo,
     status: STATUS_CONVITE.PENDING,
     expiresAt: { [Op.gt]: new Date() },
   };
 
-  if ([PERFIS.RESIDENT_OWNER, PERFIS.ABSENT_OWNER, PERFIS.LESSEE].includes(perfil)) {
+  if ([PERFIS.MORADOR, PERFIS.DONO_ALUGUEL].includes(perfil)) {
     whereUsers = { ...whereUsers, unidadeId: ator.unidadeId };
     whereInvites = { ...whereInvites, unidadeId: ator.unidadeId };
   }
@@ -53,7 +61,7 @@ export async function emitirConvite(ator, dados) {
     };
   }
 
-  if (perfil === PERFIS.GUEST) {
+  if (perfil === PERFIS.CONVIDADO) {
     return {
       sucesso: false,
       mensagem: MSG_RF07.GUEST_SEM_ACESSO,
@@ -63,26 +71,13 @@ export async function emitirConvite(ator, dados) {
 
   const unidadeEfetiva = unidadeId || ator.unidadeId || null;
 
-  if (
-    perfil === PERFIS.LESSEE
-    && (perfilAtor === PERFIS.ABSENT_OWNER || perfilAtor === PERFIS.RESIDENT_OWNER)
-  ) {
+  // Só um morador responsável financeiro por unidade.
+  if (perfil === PERFIS.MORADOR && perfilAtor === PERFIS.DONO_ALUGUEL) {
     const lesseeExistente = await lesseeAtivoNaUnidade(unidadeEfetiva);
     if (lesseeExistente) {
       return {
         sucesso: false,
         mensagem: MSG_RF07.LESSEE_DUPLICADO,
-        status: 400,
-      };
-    }
-  }
-
-  if (perfil === PERFIS.RESIDENT_OWNER && unidadeEfetiva) {
-    const roAtivo = await residentOwnerAtivoNaUnidade(unidadeEfetiva);
-    if (roAtivo) {
-      return {
-        sucesso: false,
-        mensagem: 'Esta unidade já possui um Resident Owner ativo. Desative o atual antes de cadastrar um novo.',
         status: 400,
       };
     }
@@ -182,10 +177,10 @@ export async function desativarUsuario(ator, alvoId, opts = {}) {
   }
 
   let mensagem = opts.mensagemRemocao ? MSG_RF07.VINCULO_REMOVIDO : 'Usuário desativado com sucesso.';
-  if (perfilAlvo === PERFIS.LESSEE && totalCascata > 0) {
+  if (perfilAlvo === PERFIS.MORADOR && totalCascata > 0) {
     mensagem = opts.mensagemRemocao
-      ? `Lessee removido. ${totalCascata} usuários vinculados também foram desativados.`
-      : `Lessee desativado. ${totalCascata} usuários vinculados também foram desativados.`;
+      ? `Morador removido. ${totalCascata} usuários vinculados também foram desativados.`
+      : `Morador desativado. ${totalCascata} usuários vinculados também foram desativados.`;
   } else if (totalCascata > 0 && !opts.mensagemRemocao) {
     mensagem = `Usuário desativado. ${totalCascata} usuários vinculados também foram desativados.`;
   }
@@ -198,27 +193,17 @@ export async function desativarUsuario(ator, alvoId, opts = {}) {
 }
 
 function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
-  const escopoCondominio = [
-    PERFIS.CONTRACTING_PROPERTY_MANAGER,
-    PERFIS.CONTRACTING_SYNDIC,
-    PERFIS.ADMINISTRATOR,
-    PERFIS.OPERATIONAL_SYNDIC,
-  ];
+  const escopoCondominio = [PERFIS.ADMIN_GERAL, PERFIS.ADMIN_SINDICO];
 
   if (escopoCondominio.includes(perfilAtor)) {
     return ator.condominioId === alvo.condominioId;
   }
 
-  if (perfilAtor === PERFIS.RESIDENT_OWNER || perfilAtor === PERFIS.ABSENT_OWNER) {
+  if (perfilAtor === PERFIS.MORADOR || perfilAtor === PERFIS.DONO_ALUGUEL) {
     if (alvo.cadastradoPorId !== ator.id && alvo.unidadeId !== ator.unidadeId) {
       return false;
     }
-    return [PERFIS.LESSEE, PERFIS.OCCUPANT, PERFIS.GUEST].includes(perfilAlvo);
-  }
-
-  if (perfilAtor === PERFIS.LESSEE) {
-    return alvo.cadastradoPorId === ator.id
-      && [PERFIS.OCCUPANT, PERFIS.GUEST].includes(perfilAlvo);
+    return [PERFIS.MORADOR, PERFIS.CONVIDADO].includes(perfilAlvo);
   }
 
   return false;
@@ -228,18 +213,19 @@ async function buscarUsuariosCascata(alvo) {
   const perfil = alvo.getPerfilEfetivo();
   const desativados = [];
 
-  if (perfil === PERFIS.LESSEE) {
+  if (perfil === PERFIS.MORADOR) {
     const vinculados = await User.findAll({
       where: {
         cadastradoPorId: alvo.id,
         status: STATUS_USUARIO.ACTIVE,
-        perfil: { [Op.in]: [PERFIS.OCCUPANT, PERFIS.GUEST] },
+        perfil: PERFIS.CONVIDADO,
       },
     });
     desativados.push(...vinculados);
   }
 
-  if (perfil === PERFIS.RESIDENT_OWNER && alvo.responsavelFinanceiro) {
+  // Desativar o responsável financeiro derruba a unidade inteira.
+  if (perfil === PERFIS.MORADOR && alvo.responsavelFinanceiro) {
     const vinculados = await User.findAll({
       where: {
         unidadeId: alvo.unidadeId,

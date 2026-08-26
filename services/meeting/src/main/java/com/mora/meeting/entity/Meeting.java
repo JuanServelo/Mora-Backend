@@ -26,6 +26,10 @@ public class Meeting {
     @Column(length = 500)
     private String descricao;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "condominio_id")
+    private String condominioId;
+
     @Column(nullable = false)
     private LocalDateTime dataHoraInicio;
 

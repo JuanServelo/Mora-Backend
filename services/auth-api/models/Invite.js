@@ -56,6 +56,17 @@ const Invite = sequelize.define('Invite', {
     allowNull: false,
   },
 
+  /**
+   * Marca o convite do morador que responde financeiramente pela unidade.
+   * Com a simplificação de perfis, é o que distingue o antigo Lessee do
+   * Occupant — ambos viram MORADOR.
+   */
+  responsavelFinanceiro: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+
   status: {
     type: DataTypes.ENUM(...STATUS_VALUES),
     defaultValue: STATUS_CONVITE.PENDING,

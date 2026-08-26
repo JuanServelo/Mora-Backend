@@ -1,15 +1,24 @@
 import sequelize from '../config/database.js';
-import { PERFIS, STATUS_USUARIO, CONDOMINIO_DEFAULT } from '../constants/perfis.js';
+import { STATUS_USUARIO, CONDOMINIO_DEFAULT } from '../constants/perfis.js';
+import { usaEnumPerfilLegado } from './perfilEnumVersao.js';
+
+// Valores anteriores a migrate-perfis-v2: esta migracao roda sobre o enum
+// antigo e por isso usa os rotulos legados como literais.
+const LEGADO_ADMIN = 'ADMINISTRATOR';
+const LEGADO_MORADOR = 'RESIDENT_OWNER';
 
 function roleParaPerfil(role) {
-  if (role === 'admin') return PERFIS.ADMINISTRATOR;
-  return PERFIS.RESIDENT_OWNER;
+  if (role === 'admin') return LEGADO_ADMIN;
+  return LEGADO_MORADOR;
 }
 
 /**
  * Migra usuários legados: role → perfil, status → active.
  */
 export async function migrarUsuariosLegados() {
+  // Escreve rótulos de perfil antigos; após migrate-perfis-v2 não se aplica.
+  if (!(await usaEnumPerfilLegado())) return;
+
   const [rows] = await sequelize.query(`
     SELECT id, role, perfil, status FROM users
   `);
@@ -42,10 +51,10 @@ export async function migrarUsuariosLegados() {
   // Usuários admin legados → ADMINISTRATOR ativo
   await sequelize.query(`
     UPDATE users
-    SET perfil = '${PERFIS.ADMINISTRATOR}',
+    SET perfil = '${LEGADO_ADMIN}',
         status = '${STATUS_USUARIO.ACTIVE}',
         "activatedAt" = COALESCE("activatedAt", "createdAt")
-    WHERE role = 'admin' AND (perfil IS NULL OR perfil = '${PERFIS.RESIDENT_OWNER}')
+    WHERE role = 'admin' AND (perfil IS NULL OR perfil = '${LEGADO_MORADOR}')
   `);
 
   await sequelize.query(`

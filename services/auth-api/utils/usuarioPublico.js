@@ -25,7 +25,7 @@ export function validarTelefone(telefone) {
 /** Campos do usuário expostos nas APIs (sem senha / tokens). */
 export function usuarioPublico(usuario) {
   if (!usuario) return null;
-  const perfil = usuario.getPerfilEfetivo?.() ?? usuario.perfil ?? 'RESIDENT_OWNER';
+  const perfil = usuario.getPerfilEfetivo?.() ?? usuario.perfil ?? 'MORADOR';
   return {
     id: usuario.id,
     nome: usuario.nome,

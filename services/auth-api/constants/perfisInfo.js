@@ -1,131 +1,94 @@
+import { PERFIS } from './perfis.js';
+
+/**
+ * Descrição de cada perfil, consumida pela tela de perfis (routes/perfis.js).
+ * A fonte de verdade das permissões é constants/perfis.js — aqui é a versão
+ * legível para o usuário final.
+ */
 export const PERFIS_DESCRICAO = {
-  CONTRACTING_PROPERTY_MANAGER: {
-    label: 'Administradora Contratante',
+  [PERFIS.ADMIN_GERAL]: {
+    label: 'Admin Geral',
     categoria: 'plataforma',
-    descricao: 'Empresa administradora de imóveis. Nível mais alto da plataforma.',
+    descricao: 'Responsável pela plataforma. Cadastra e configura condomínios e empresas.',
     permissoes: [
-      'Criar e gerenciar clientes (condomínios)',
-      'Cadastrar síndicos e administradores em qualquer condomínio',
+      'Cadastrar e configurar condomínios e empresas',
+      'Cadastrar síndicos em qualquer condomínio',
       'Visualizar todos os usuários da plataforma',
-      'Gerenciar todas as configurações do sistema',
+      'Gerenciar as configurações do sistema',
     ],
-    podeCadastrar: ['OPERATIONAL_SYNDIC', 'ADMINISTRATOR', 'DOORMAN', 'REAL_ESTATE_AGENCY', 'RESIDENT_OWNER'],
+    podeCadastrar: [
+      PERFIS.ADMIN_GERAL,
+      PERFIS.ADMIN_SINDICO,
+      PERFIS.PORTEIRO,
+      PERFIS.MORADOR,
+      PERFIS.DONO_ALUGUEL,
+      PERFIS.CONVIDADO,
+    ],
   },
 
-  CONTRACTING_SYNDIC: {
-    label: 'Síndico Contratante',
-    categoria: 'plataforma',
-    descricao: 'Síndico profissional contratado pela administradora. Gerencia múltiplos condomínios.',
-    permissoes: [
-      'Gerenciar usuários do seu condomínio',
-      'Cadastrar síndicos operacionais, administradores e porteiros',
-      'Visualizar todos os usuários do condomínio',
-    ],
-    podeCadastrar: ['OPERATIONAL_SYNDIC', 'ADMINISTRATOR', 'DOORMAN', 'REAL_ESTATE_AGENCY', 'RESIDENT_OWNER'],
-  },
-
-  OPERATIONAL_SYNDIC: {
-    label: 'Síndico Operacional',
+  [PERFIS.ADMIN_SINDICO]: {
+    label: 'Admin Síndico',
     categoria: 'condominio',
-    descricao: 'Síndico eleito pelos moradores. Gerencia o condomínio no dia a dia.',
+    descricao: 'Síndico responsável pela gestão de um condomínio e pelo envio de convites.',
     permissoes: [
-      'Gerenciar usuários do condomínio',
-      'Cadastrar porteiros e imobiliárias',
-      'Visualizar moradores e estrutura do condomínio',
-      'Aprovar e gerenciar reclamações',
+      'Enviar convites e gerenciar os usuários do condomínio',
+      'Cadastrar blocos, apartamentos e áreas comuns',
+      'Publicar avisos e convocar assembleias',
+      'Acompanhar a operação da portaria',
     ],
-    podeCadastrar: ['ADMINISTRATOR', 'DOORMAN', 'REAL_ESTATE_AGENCY', 'RESIDENT_OWNER'],
+    podeCadastrar: [
+      PERFIS.PORTEIRO,
+      PERFIS.MORADOR,
+      PERFIS.DONO_ALUGUEL,
+      PERFIS.CONVIDADO,
+    ],
   },
 
-  ADMINISTRATOR: {
-    label: 'Administrador',
-    categoria: 'condominio',
-    descricao: 'Administrador do condomínio. Apoia o síndico na gestão.',
-    permissoes: [
-      'Gerenciar usuários do condomínio',
-      'Cadastrar porteiros e proprietários',
-      'Visualizar moradores e estrutura',
-    ],
-    podeCadastrar: ['DOORMAN', 'REAL_ESTATE_AGENCY', 'RESIDENT_OWNER'],
-  },
-
-  DOORMAN: {
+  [PERFIS.PORTEIRO]: {
     label: 'Porteiro',
     categoria: 'condominio',
-    descricao: 'Porteiro do condomínio. Controla o acesso de moradores e visitantes.',
+    descricao: 'Opera a guarita: controla entradas, saídas e o que passa pela portaria.',
     permissoes: [
-      'Registrar entrada e saída de visitantes',
-      'Consultar dados básicos de moradores',
-      'Registrar entregas',
-      'Gerenciar chaves',
+      'Registrar entradas e saídas de acesso',
+      'Registrar visitantes e conferir pré-autorizações',
+      'Receber e dar baixa em encomendas',
+      'Controlar veículos, vagas e retirada de chaves',
     ],
     podeCadastrar: [],
   },
 
-  REAL_ESTATE_AGENCY: {
-    label: 'Imobiliária',
-    categoria: 'condominio',
-    descricao: 'Imobiliária parceira do condomínio. Gerencia contratos de locação.',
+  [PERFIS.MORADOR]: {
+    label: 'Morador',
+    categoria: 'unidade',
+    descricao: 'Mora em uma unidade do condomínio, como proprietário residente ou inquilino.',
     permissoes: [
-      'Visualizar unidades disponíveis',
-      'Consultar dados de locatários',
-      'Gerenciar contratos relacionados ao condomínio',
+      'Consultar avisos, atas e a base de conhecimento',
+      'Reservar áreas comuns',
+      'Abrir e acompanhar ocorrências',
+      'Pré-autorizar visitantes da sua unidade',
+      'Consultar as faturas da unidade',
     ],
-    podeCadastrar: [],
+    podeCadastrar: [PERFIS.CONVIDADO],
   },
 
-  RESIDENT_OWNER: {
-    label: 'Proprietário Residente',
+  [PERFIS.DONO_ALUGUEL]: {
+    label: 'Dono Aluguel',
     categoria: 'unidade',
-    descricao: 'Proprietário que mora no imóvel. Responsável financeiro da unidade.',
+    descricao: 'Proprietário que não mora no condomínio e aluga o imóvel a um morador.',
     permissoes: [
-      'Cadastrar locatário (Lessee) na sua unidade',
-      'Cadastrar ocupantes e hóspedes',
-      'Transferir responsabilidade financeira ao locatário',
-      'Visualizar dados da sua unidade',
+      'Cadastrar o morador que ocupa o imóvel',
+      'Acompanhar as faturas da unidade',
+      'Consultar avisos e atas',
     ],
-    podeCadastrar: ['LESSEE', 'OCCUPANT', 'GUEST'],
+    podeCadastrar: [PERFIS.MORADOR, PERFIS.CONVIDADO],
   },
 
-  ABSENT_OWNER: {
-    label: 'Proprietário Ausente',
+  [PERFIS.CONVIDADO]: {
+    label: 'Convidado',
     categoria: 'unidade',
-    descricao: 'Proprietário que não mora no imóvel. Transferiu a responsabilidade ao locatário.',
+    descricao: 'Visitante recorrente pré-autorizado por um morador. Não acessa o sistema.',
     permissoes: [
-      'Cadastrar locatário na sua unidade',
-      'Visualizar dados da sua unidade',
-    ],
-    podeCadastrar: ['LESSEE'],
-  },
-
-  LESSEE: {
-    label: 'Locatário',
-    categoria: 'unidade',
-    descricao: 'Inquilino da unidade. Pode ser o responsável financeiro.',
-    permissoes: [
-      'Cadastrar ocupantes e hóspedes na sua unidade',
-      'Visualizar dados da sua unidade',
-    ],
-    podeCadastrar: ['OCCUPANT', 'GUEST'],
-  },
-
-  OCCUPANT: {
-    label: 'Ocupante',
-    categoria: 'unidade',
-    descricao: 'Pessoa que mora na unidade sem ser proprietário ou locatário (familiar, dependente).',
-    permissoes: [
-      'Visualizar dados da sua unidade',
-      'Registrar visitantes',
-    ],
-    podeCadastrar: [],
-  },
-
-  GUEST: {
-    label: 'Hóspede',
-    categoria: 'unidade',
-    descricao: 'Hóspede temporário da unidade. Sem acesso ao sistema.',
-    permissoes: [
-      'Identificação para controle de acesso pela portaria',
+      'Entrada liberada na portaria durante a validade da autorização',
     ],
     podeCadastrar: [],
     semAcessoSistema: true,

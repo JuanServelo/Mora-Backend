@@ -6,6 +6,24 @@ import { PERFIS, STATUS_USUARIO } from '../constants/perfis.js';
 const PERFIS_VALUES = Object.values(PERFIS);
 const STATUS_VALUES = Object.values(STATUS_USUARIO);
 
+/** Campos sensíveis: nunca saem do banco sem um scope explícito. */
+const SEGREDOS = [
+  'senha',
+  'resetToken',
+  'resetTokenExpira',
+  'oauthCode',
+  'oauthCodeExpira',
+];
+
+/**
+ * Monta um scope por exclusão. Listar o que sai — em vez de `include`, que
+ * depende da ordem de merge com o defaultScope — deixa determinístico quais
+ * campos a consulta traz.
+ */
+const semSegredosExceto = (...manter) => ({
+  attributes: { exclude: SEGREDOS.filter((campo) => !manter.includes(campo)) },
+});
+
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,
@@ -170,25 +188,30 @@ const User = sequelize.define('User', {
     allowNull: true,
   },
 
+  // Código de uso único trocado por JWT no fim do fluxo OAuth, para que o
+  // token não trafegue na URL do redirect.
+  oauthCode: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+
+  oauthCodeExpira: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+
 }, {
   tableName: 'users',
   timestamps: true,
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
 
-  defaultScope: {
-    attributes: {
-      exclude: ['senha', 'resetToken', 'resetTokenExpira'],
-    },
-  },
+  defaultScope: semSegredosExceto(),
 
   scopes: {
-    withPassword: {
-      attributes: { include: ['senha'] },
-    },
-    withResetToken: {
-      attributes: { include: ['resetToken', 'resetTokenExpira'] },
-    },
+    withPassword: semSegredosExceto('senha'),
+    withResetToken: semSegredosExceto('resetToken', 'resetTokenExpira'),
+    withOauthCode: semSegredosExceto('oauthCode', 'oauthCodeExpira'),
   },
 
   hooks: {
@@ -206,7 +229,17 @@ User.prototype.compararSenha = async function compararSenha(senhaDigitada) {
 };
 
 User.prototype.getPerfilEfetivo = function getPerfilEfetivo() {
-  return this.perfil || PERFIS.RESIDENT_OWNER;
+  return this.perfil || PERFIS.MORADOR;
+};
+
+/**
+ * Revoga todos os JWT já emitidos para este usuário. O middleware compara a
+ * claim `tokenVersion` com esta coluna, então incrementar derruba as sessões.
+ */
+User.prototype.revogarTokens = async function revogarTokens() {
+  this.tokenVersion = (this.tokenVersion || 0) + 1;
+  await this.save({ validate: false });
+  return this.tokenVersion;
 };
 
 export default User;

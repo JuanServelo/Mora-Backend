@@ -25,6 +25,10 @@ public class Veiculo {
 
     private String modelo;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     @NotNull(message = "Categoria do veículo é obrigatória")
     @Enumerated(EnumType.STRING)
     private CategoriaVeiculo categoria;

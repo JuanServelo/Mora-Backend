@@ -21,6 +21,10 @@ public class Vaga {
 
     private String localizacao;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     private String tipo; // Coberta, Descoberta, etc
 
     private boolean ativa = true;
