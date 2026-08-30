@@ -13,4 +13,7 @@ public interface VeiculoRepository extends JpaRepository<Veiculo, String> {
     List<Veiculo> findByStatus(StatusAcesso status);
     List<Veiculo> findByProprietarioId(String proprietarioId);
     List<Veiculo> findByVagaId(String vagaId);
+    List<Veiculo> findByCondominioId(String condominioId);
+    List<Veiculo> findByCondominioIdAndStatus(String condominioId, StatusAcesso status);
+    List<Veiculo> findByCondominioIdAndProprietarioId(String condominioId, String proprietarioId);
 }

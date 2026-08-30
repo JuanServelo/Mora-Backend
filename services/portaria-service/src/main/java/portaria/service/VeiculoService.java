@@ -2,6 +2,7 @@ package portaria.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import portaria.dto.AlterarVagaDTO;
 import portaria.dto.CriarVeiculoDTO;
 import portaria.dto.VeiculoResponseDTO;
@@ -18,6 +19,7 @@ import portaria.repository.MoradorRepository;
 import portaria.repository.VagaRepository;
 import portaria.repository.VeiculoRepository;
 import portaria.security.AuthContext;
+import portaria.security.CondominioUtils;
 import portaria.security.JwtClaims;
 
 import java.time.LocalDateTime;
@@ -28,6 +30,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class VeiculoService {
 
     private final VeiculoRepository veiculoRepository;
@@ -136,6 +139,9 @@ public class VeiculoService {
         veiculo.setStatus(StatusAcesso.SAIU);
         veiculo.setCriadoEm(LocalDateTime.now());
         veiculo.setAtualizadoEm(LocalDateTime.now());
+        if (claims.condominioId() != null && !"default".equals(claims.condominioId())) {
+            veiculo.setCondominioId(claims.condominioId());
+        }
 
         if (dto.getCategoria() != CategoriaVeiculo.VEICULO_SERVICO) {
             if (dto.getProprietarioId() == null || dto.getProprietarioId().isBlank()) {
@@ -269,17 +275,23 @@ public class VeiculoService {
 
     public List<VeiculoResponseDTO> listarTodos() {
         JwtClaims claims = authRequired();
+        String condominioId = CondominioUtils.condominioIdEfetivo();
         if (isMorador(claims.perfil())) {
             return moradorDoClaims(claims)
                     .map(m -> veiculoRepository.findByProprietarioId(m.getId())
                             .stream().map(VeiculoResponseDTO::fromEntity).toList())
                     .orElse(List.of());
         }
+        if (condominioId != null) {
+            return veiculoRepository.findByCondominioId(condominioId).stream()
+                    .map(VeiculoResponseDTO::fromEntity).toList();
+        }
         return veiculoRepository.findAll().stream().map(VeiculoResponseDTO::fromEntity).toList();
     }
 
     public List<VeiculoResponseDTO> listarDentro() {
         JwtClaims claims = authRequired();
+        String condominioId = CondominioUtils.condominioIdEfetivo();
         if (isMorador(claims.perfil())) {
             return moradorDoClaims(claims)
                     .map(m -> veiculoRepository.findByProprietarioId(m.getId())
@@ -287,6 +299,10 @@ public class VeiculoService {
                             .filter(v -> v.getStatus() == StatusAcesso.DENTRO)
                             .map(VeiculoResponseDTO::fromEntity).toList())
                     .orElse(List.of());
+        }
+        if (condominioId != null) {
+            return veiculoRepository.findByCondominioIdAndStatus(condominioId, StatusAcesso.DENTRO).stream()
+                    .map(VeiculoResponseDTO::fromEntity).toList();
         }
         return veiculoRepository.findByStatus(StatusAcesso.DENTRO).stream().map(VeiculoResponseDTO::fromEntity).toList();
     }

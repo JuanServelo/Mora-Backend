@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import portaria.model.AreaComum;
+import portaria.security.CondominioUtils;
 import portaria.service.AreaComunService;
 
 import java.util.List;
@@ -23,13 +24,13 @@ public class AreaComunController {
     }
 
     @GetMapping
-    public List<AreaComum> listarAtivas(@RequestParam(required = false) String condominioId) {
-        return areaComunService.listarAtivas(condominioId);
+    public List<AreaComum> listarAtivas() {
+        return areaComunService.listarAtivas(CondominioUtils.condominioIdEfetivo());
     }
 
     @GetMapping("/todas")
-    public List<AreaComum> listarTodas(@RequestParam(required = false) String condominioId) {
-        return areaComunService.listarTodas(condominioId);
+    public List<AreaComum> listarTodas() {
+        return areaComunService.listarTodas(CondominioUtils.condominioIdEfetivo());
     }
 
     @GetMapping("/{id}")

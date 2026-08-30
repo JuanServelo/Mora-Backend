@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import portaria.dto.chave.RetirarChaveRequest;
 import portaria.model.Chave;
+import portaria.security.CondominioUtils;
 import portaria.service.ChaveService;
 
 import java.util.List;
@@ -41,12 +42,12 @@ public class ChaveController {
 
     @GetMapping
     public List<Chave> listarTodas() {
-        return chaveService.listarTodas();
+        return chaveService.listarTodas(CondominioUtils.condominioIdEfetivo());
     }
 
     @GetMapping("/disponiveis")
     public List<Chave> listarDisponiveis() {
-        return chaveService.listarDisponiveis();
+        return chaveService.listarDisponiveis(CondominioUtils.condominioIdEfetivo());
     }
 
     @GetMapping("/{id}")

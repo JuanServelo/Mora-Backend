@@ -2,18 +2,21 @@ package portaria.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import portaria.dto.chave.RetirarChaveRequest;
 import portaria.exception.OperacaoInvalidaException;
 import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Chave;
 import portaria.model.enums.TipoResponsavel;
 import portaria.repository.ChaveRepository;
+import portaria.security.AuthContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ChaveService {
 
     private final ChaveRepository chaveRepository;
@@ -22,6 +25,10 @@ public class ChaveService {
 
     public Chave cadastrar(Chave chave) {
         chave.setDisponivel(true);
+        var claims = AuthContext.get();
+        if (claims != null && claims.condominioId() != null && !"default".equals(claims.condominioId())) {
+            chave.setCondominioId(claims.condominioId());
+        }
         return chaveRepository.save(chave);
     }
 
@@ -63,11 +70,17 @@ public class ChaveService {
         return chaveRepository.save(chave);
     }
 
-    public List<Chave> listarTodas() {
+    public List<Chave> listarTodas(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return chaveRepository.findByCondominioId(condominioId);
+        }
         return chaveRepository.findAll();
     }
 
-    public List<Chave> listarDisponiveis() {
+    public List<Chave> listarDisponiveis(String condominioId) {
+        if (condominioId != null && !condominioId.isBlank()) {
+            return chaveRepository.findByCondominioIdAndDisponivel(condominioId, true);
+        }
         return chaveRepository.findByDisponivel(true);
     }
 

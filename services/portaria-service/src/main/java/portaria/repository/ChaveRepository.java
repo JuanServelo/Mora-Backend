@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ChaveRepository extends JpaRepository<Chave, String> {
     List<Chave> findByDisponivel(boolean disponivel);
+    List<Chave> findByCondominioId(String condominioId);
+    List<Chave> findByCondominioIdAndDisponivel(String condominioId, boolean disponivel);
 }

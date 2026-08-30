@@ -39,6 +39,10 @@ spring:
           - "traefik.http.routers.portaria.entrypoints=web"
           - "traefik.http.middlewares.portaria-stripprefix.stripprefix.prefixes=/api/portaria"
           - "traefik.http.routers.portaria.middlewares=portaria-stripprefix"
+          - "traefik.http.routers.vagas-compat.rule=PathPrefix(`/api/vagas`)"
+          - "traefik.http.routers.vagas-compat.entrypoints=web"
+          - "traefik.http.middlewares.vagas-compat-stripprefix.stripprefix.prefixes=/api/vagas"
+          - "traefik.http.routers.vagas-compat.middlewares=vagas-compat-stripprefix"
 
         health-check-path: /actuator/health
         health-check-interval: 15s

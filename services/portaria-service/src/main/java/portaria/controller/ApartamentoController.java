@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import portaria.dto.ApartamentoRequestDTO;
 import portaria.dto.ApartamentoResponseDTO;
 import portaria.model.Apartamento;
+import portaria.security.CondominioUtils;
 import portaria.service.ApartamentoService;
 
 import java.util.List;
@@ -27,15 +28,15 @@ public class ApartamentoController {
     }
 
     @GetMapping
-    public List<ApartamentoResponseDTO> listarAtivos(@RequestParam(required = false) String condominioId) {
-        return apartamentoService.listarAtivos(condominioId).stream()
+    public List<ApartamentoResponseDTO> listarAtivos() {
+        return apartamentoService.listarAtivos(CondominioUtils.condominioIdEfetivo()).stream()
                 .map(ApartamentoResponseDTO::fromEntity)
                 .toList();
     }
 
     @GetMapping("/todos")
-    public List<ApartamentoResponseDTO> listarTodos(@RequestParam(required = false) String condominioId) {
-        return apartamentoService.listarTodos(condominioId).stream()
+    public List<ApartamentoResponseDTO> listarTodos() {
+        return apartamentoService.listarTodos(CondominioUtils.condominioIdEfetivo()).stream()
                 .map(ApartamentoResponseDTO::fromEntity)
                 .toList();
     }

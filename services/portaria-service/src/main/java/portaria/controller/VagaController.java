@@ -7,7 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import portaria.dto.VagaResponseDTO;
 import portaria.model.Vaga;
+import portaria.security.CondominioUtils;
 import portaria.service.VagaService;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -28,14 +30,14 @@ public class VagaController {
 
     @GetMapping
     public List<VagaResponseDTO> listarApenasAtivas() {
-        return vagaService.listarApenasAtivas().stream()
+        return vagaService.listarApenasAtivas(CondominioUtils.condominioIdEfetivo()).stream()
                 .map(VagaResponseDTO::fromEntity)
                 .toList();
     }
 
     @GetMapping("/todas")
     public List<VagaResponseDTO> listarTodas() {
-        return vagaService.listarTodas().stream()
+        return vagaService.listarTodas(CondominioUtils.condominioIdEfetivo()).stream()
                 .map(VagaResponseDTO::fromEntity)
                 .toList();
     }

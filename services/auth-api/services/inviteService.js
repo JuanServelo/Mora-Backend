@@ -366,7 +366,7 @@ export async function ativarConta({
     await transaction.commit();
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion, usuario.email);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion, usuario.email, usuario.condominioId);
 
     return {
       sucesso: true,
