@@ -1,49 +1,44 @@
 package com.mora.plan.entity;
 
+import com.mora.plan.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "tb_plans")
+@Table(name = "tb_subscriptions")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Plan {
+public class Subscription {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100, unique = true)
-    private String name;
+    @Column(name = "condominio_id", nullable = false)
+    private String condominioId;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "plan_id", nullable = false)
+    private Plan plan;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Integer maxCondominiums;
+    private SubscriptionStatus status;
 
-    @Column(nullable = false)
-    private Integer maxUsersPerCondominium;
+    @Column(name = "start_date", nullable = false)
+    private LocalDateTime startDate;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal monthlyPrice;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "tb_plan_modules", joinColumns = @JoinColumn(name = "plan_id"))
-    @Column(name = "module_slug")
-    private List<String> activeModules;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
 
     @Column(nullable = false, updatable = false)
     @Builder.Default
@@ -74,8 +69,8 @@ public class Plan {
         if (this.updatedAt == null) {
             this.updatedAt = LocalDateTime.now();
         }
-        if (this.isActive == null) {
-            this.isActive = true;
+        if (this.status == null) {
+            this.status = SubscriptionStatus.ACTIVE;
         }
     }
 }
