@@ -28,6 +28,7 @@ import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
 import { garantirColunasOauthCode } from './migrations/migrate-oauth-code.js';
 import { migrarPerfisV2 } from './migrations/migrate-perfis-v2.js';
 import { garantirCondominioIdReclamacoes } from './migrations/migrate-condominio-id.js';
+import { removerColunasLegado } from './migrations/migrate-remover-legado.js';
 import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
 import { ehProducao } from './config/regras.js';
 
@@ -101,7 +102,7 @@ app.get('/api/health', (req, res) => {
  * é obrigatório, e em desenvolvimento apenas avisa.
  */
 const seedAdminUser = async () => {
-  const existing = await User.findOne({ where: { role: 'admin' } });
+  const existing = await User.findOne({ where: { perfil: PERFIS.ADMIN_GERAL } });
   if (existing) return;
 
   const adminEmail = process.env.ADMIN_SEED_EMAIL;
@@ -119,7 +120,6 @@ const seedAdminUser = async () => {
     nome: process.env.ADMIN_SEED_NOME || 'Admin',
     email: adminEmail,
     senha: adminSenha,
-    role: 'admin',
     perfil: PERFIS.ADMIN_GERAL,
     status: STATUS_USUARIO.ACTIVE,
     activatedAt: new Date(),
@@ -140,6 +140,8 @@ const startServer = async () => {
     // Depois das legadas: converte os 11 perfis antigos para os 6 atuais.
     await migrarPerfisV2();
     await garantirCondominioIdReclamacoes();
+    // Por último: as anteriores ainda leem as colunas que esta remove.
+    await removerColunasLegado();
     console.log('Tabelas sincronizadas e migrações RF03/RF07/Condomínios aplicadas');
     await seedAdminUser();
   } catch (err) {

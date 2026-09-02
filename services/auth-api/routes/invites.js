@@ -57,11 +57,11 @@ router.post('/validate', authLimiter, async (req, res) => {
 
 router.post('/activate', authLimiter, async (req, res) => {
   try {
-    const { codigo, nome, email, telefone, cpf, senha, confirmacaoSenha } = req.body;
+    const { codigo, nome, email, telefone, cpf, dataNascimento, senha, confirmacaoSenha } = req.body;
 
     const erros = validarCamposObrigatorios(
-      { codigo, nome, email, telefone, cpf, senha, confirmacaoSenha },
-      ['codigo', 'nome', 'email', 'telefone', 'cpf', 'senha', 'confirmacaoSenha'],
+      { codigo, nome, email, telefone, cpf, dataNascimento, senha, confirmacaoSenha },
+      ['codigo', 'nome', 'email', 'telefone', 'cpf', 'dataNascimento', 'senha', 'confirmacaoSenha'],
     );
 
     if (Object.keys(erros).length > 0) {
@@ -105,8 +105,17 @@ router.post('/activate', authLimiter, async (req, res) => {
       });
     }
 
+    const dataNasc = new Date(dataNascimento);
+    if (isNaN(dataNasc.getTime()) || dataNasc >= new Date()) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'Data de nascimento inválida.',
+        erros: { dataNascimento: 'Data de nascimento inválida.' },
+      });
+    }
+
     const resultado = await ativarConta(
-      { codigo, nome, email, telefone, cpf, senha },
+      { codigo, nome, email, telefone, cpf, dataNascimento, senha },
       signToken,
       usuarioPublico,
       redirectPorPerfil,

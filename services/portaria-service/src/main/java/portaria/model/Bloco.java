@@ -23,6 +23,8 @@ public class Bloco {
     @NotBlank(message = "Nome do bloco é obrigatório")
     private String nome;
 
+    private String sigla;
+
     @Column(name = "`condominioId`")
     private String condominioId;
 

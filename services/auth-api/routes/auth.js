@@ -66,9 +66,20 @@ function loginComErroRedirect(codigo, extra = '') {
   return `${getFrontendUrl()}/login?erro=${codigo}${extra}`;
 }
 
-export const signToken = (userId, perfil, tokenVersion = 0, email = undefined) =>
+/**
+ * `condominioId` viaja na claim para que os demais serviços saibam o escopo do
+ * usuário sem precisar consultar o auth-api a cada requisição. É nulo para o
+ * ADMIN_GERAL, que opera sobre todos os condomínios.
+ */
+export const signToken = (userId, perfil, tokenVersion = 0, email = undefined, condominioId = null) =>
   jwt.sign(
-    { id: userId, perfil, tokenVersion, ...(email != null && { email }) },
+    {
+      id: userId,
+      perfil,
+      tokenVersion,
+      ...(email != null && { email }),
+      ...(condominioId != null && { condominioId }),
+    },
     getJwtSecret(),
     { expiresIn: JWT_EXPIRES_IN },
   );
@@ -117,7 +128,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId);
 
     res.json({
       sucesso: true,
@@ -427,7 +438,7 @@ router.post('/oauth/exchange', tokenLimiter, async (req, res) => {
     res.json({
       sucesso: true,
       mensagem: 'Login realizado com sucesso',
-      token: signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email),
+      token: signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId),
       usuario: usuarioPublico(usuario),
       redirectPath: redirectPorPerfil(perfil),
     });

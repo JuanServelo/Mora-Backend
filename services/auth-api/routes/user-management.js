@@ -81,9 +81,9 @@ router.post('/invites', async (req, res) => {
       });
     }
 
-    // Admin (role: 'admin') pode criar convites para qualquer condomínio.
-    // Demais perfis ficam restritos ao seu próprio condominioId.
-    const condominioEfetivo = req.user.role === 'admin'
+    // O Admin Geral opera a plataforma e escolhe o condomínio de destino.
+    // Os demais perfis ficam restritos ao próprio.
+    const condominioEfetivo = req.userPerfil === PERFIS.ADMIN_GERAL
       ? (condominioId || req.user.condominioId || null)
       : (req.user.condominioId || condominioId || null);
 

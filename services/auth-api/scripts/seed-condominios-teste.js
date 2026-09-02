@@ -216,10 +216,10 @@ async function semear() {
             : STATUS_USUARIO.ACTIVE;
 
         const [linhas] = await sequelize.query(`
-          INSERT INTO users (nome, email, senha, perfil, status, role, "condominioId",
+          INSERT INTO users (nome, email, senha, perfil, status, "condominioId",
                              "responsavelFinanceiro", "semAcessoSistema", "tokenVersion",
                              "activatedAt", "createdAt", "updatedAt")
-          VALUES (:nome, :email, :senha, :perfil, :status, 'user', :condominioId,
+          VALUES (:nome, :email, :senha, :perfil, :status, :condominioId,
                   :responsavel, :semAcesso, 0, :criadoEm, :criadoEm, :criadoEm)
           ON CONFLICT (email) DO UPDATE SET
             nome = EXCLUDED.nome, perfil = EXCLUDED.perfil, status = EXCLUDED.status,
