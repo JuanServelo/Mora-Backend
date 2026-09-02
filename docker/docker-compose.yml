@@ -176,6 +176,7 @@ services:
     container_name: gestao-geral
     depends_on:
       - auth-api
+      - consul
     networks:
       - microservices-net
     ports:
@@ -183,12 +184,53 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3002
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=gestao-geral
       # Mesmo segredo do auth-api: valida os tokens que ele emite.
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - AUTH_API_URL=http://auth-api:3001
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - PLAN_SERVICE_URL=http://plan-service:8093
+      - TZ=America/Sao_Paulo
+
+  # 7.95. Financeiro (Node) — faturas, cobrancas, multas e prestacao de contas
+  financeiro:
+    build:
+      context: ../services/financeiro
+      dockerfile: Dockerfile
+    container_name: financeiro
+    depends_on:
+      - postgres
+      - auth-api
+      - consul
+    networks:
+      - microservices-net
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=financeiro
+      # Mesmo segredo do auth-api: valida os tokens que ele emite.
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=mora_financeiro
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - AUTH_API_URL=http://auth-api:3001
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      # Credenciais do gateway: sem default, e sem entrar no repositorio.
+      # Defina em docker/.env — o servico sobe sem elas, so as rotas de
+      # cobranca ficam indisponiveis.
+      - ASAAS_BASE_URL=${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      - ASAAS_API_KEY=${ASAAS_API_KEY:-}
+      - ASAAS_WEBHOOK_TOKEN=${ASAAS_WEBHOOK_TOKEN:-}
       - TZ=America/Sao_Paulo
 
   # 8. pgAdmin (visualizador do banco de dados)

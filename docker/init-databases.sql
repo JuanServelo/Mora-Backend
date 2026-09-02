@@ -1,9 +1,15 @@
 -- Cria bancos adicionais para os microservicos
 -- O banco 'mora' (portaria) e criado automaticamente pela variavel POSTGRES_DB
+--
+-- ATENCAO: este script so roda quando o volume postgres_data e criado do zero.
+-- Em volume ja existente o Postgres ignora docker-entrypoint-initdb.d, entao um
+-- banco novo adicionado aqui NAO aparece em maquina que ja subiu antes. Use
+-- docker/criar-banco-financeiro.sql para criar no volume atual.
 CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
 CREATE DATABASE vagas_db;
 CREATE DATABASE mora_plan;
+CREATE DATABASE mora_financeiro;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;
