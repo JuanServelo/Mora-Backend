@@ -6,10 +6,7 @@
 **Equipe:** João Victor Monteiro Tancon · Juan Rodrigues dos Santos Servelo · Luana Akemi Sakurada · Ray Govaski · Thais Oliveira Amaral
 **Curitiba, 2026**
 
-> Versão 2 da especificação. Revisada para refletir a arquitetura real do sistema, incorporar o
-> fluxo de criação de cliente e atribuir status de implementação a cada requisito.
-> As decisões que originaram esta revisão estão registradas em
-> [DECISOES-ARQUITETURAIS.md](DECISOES-ARQUITETURAIS.md).
+> **Versão 3** — 26/08/2026
 
 ---
 
@@ -27,693 +24,487 @@
 10. [Analytics](#10-analytics)
 11. [Roadmap](#11-roadmap)
 
-Histórias de usuário: documento separado — [HISTORIAS-DE-USUARIO.md](HISTORIAS-DE-USUARIO.md).
+Complementos: [HISTORIAS-DE-USUARIO.md](HISTORIAS-DE-USUARIO.md) ·
+[FLUXOS-DE-USUARIO-E-TELAS.md](FLUXOS-DE-USUARIO-E-TELAS.md)
 
 ---
 
 ## 1. Objetivos
 
-**Produto:** Mora
 
-| # | Objetivo |
-|---|---|
-| 1 | Centralizar a gestão condominial em uma única plataforma SaaS, reunindo dados de cadastro, operação e comunicação. |
+| # | Objetivo                                                                                                                            |
+| - | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | Centralizar a gestão condominial em uma única plataforma SaaS, reunindo dados de cadastro, operação e comunicação.            |
 | 2 | Automatizar processos essenciais do condomínio, como autenticação, vínculo de moradores, reservas, financeiro e notificações. |
-| 3 | Apoiar a tomada de decisão com dados consolidados e relatórios analíticos por meio de dashboards. |
+| 3 | Apoiar a tomada de decisão com dados consolidados e relatórios analíticos por meio de dashboards.                                |
 
 ---
 
 ## 2. É / Não é · Faz / Não faz
 
-| É | Não é |
-|---|---|
-| Uma plataforma SaaS de gestão condominial. | Um sistema de uso geral para qualquer tipo de empresa. |
-| Um produto voltado para administradoras, síndicos e usuários do condomínio. | Um sistema apenas financeiro ou apenas de portaria. |
-| Um sistema multi-condomínio, contratável por administradora ou por síndico. | Um produto de uso exclusivo de equipe técnica. |
 
-| Faz | Não faz |
-|---|---|
-| Centraliza cadastro, autenticação e perfis de usuários. | Não substitui a atuação humana na tomada de decisão do condomínio. |
-| Gerencia operações condominiais: unidades, ocupantes, reservas, finanças, assembleias e comunicados. | Não garante solução automática de problemas e conflitos. |
-| Emite faturas e registra a quitação das cobranças do condomínio. | **Não custodia o dinheiro do condomínio** — cada condomínio recebe na própria conta. |
-| Gera dados para dashboards e relatórios analíticos. | Não oferece recursos de entretenimento ou lazer. |
+| É                                                                      | Não é                                                |
+| ----------------------------------------------------------------------- | ------------------------------------------------------ |
+| Uma plataforma SaaS de gestão condominial.                             | Um sistema de uso geral para qualquer tipo de empresa. |
+| Um produto voltado para síndicos, porteiros e moradores.               | Um sistema apenas financeiro ou apenas de portaria.    |
+| Um sistema multi-condomínio, em que**cada condomínio é um cliente**. | Um produto de uso exclusivo de equipe técnica.        |
 
-> A linha em destaque é nova nesta versão. Decorre da decisão D29: o Mora emite e concilia
-> cobranças, mas o valor pago pelo morador vai direto para a conta do condomínio, sem transitar
-> pela plataforma.
+
+| Faz                                                                                                     | Não faz                                                                                  |
+| ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Centraliza cadastro, autenticação e perfis de usuários.                                              | Não substitui a atuação humana na tomada de decisão do condomínio.                   |
+| Gerencia operações condominiais: unidades, ocupantes, reservas, finanças, assembleias e comunicados. | Não garante solução automática de problemas e conflitos.                              |
+| Emite faturas e registra a quitação das cobranças do condomínio.                                    | **Não custodia o dinheiro do condomínio** — cada condomínio recebe na própria conta. |
+| Gera dados para dashboards e relatórios analíticos.                                                   | Não oferece recursos de entretenimento ou lazer.                                         |
 
 ---
 
 ## 3. Visão do produto
 
-| Campo | Descrição |
-|---|---|
-| **Problemas** | A gestão condominial costuma ser espalhada em controles manuais, retrabalho administrativo, baixa integração entre áreas e dificuldade para acompanhar dados operacionais e financeiros. |
-| **Expectativas** | Concentrar em um só sistema a administração do condomínio, reduzir tarefas repetitivas, melhorar o controle de acessos e vínculos de moradores, organizar informações financeiras e disponibilizar indicadores úteis para decisão. |
-| **Cliente-alvo** | Administradoras de condomínio (carteira) e síndicos que contratam diretamente para um único condomínio. |
-| **Categoria / segmento** | Plataforma SaaS de gestão condominial. |
-| **Benefício-chave** | Centralização e automação da gestão do condomínio. |
-| **Diferenciador-chave** | Comunicação integrada + gestão financeira + controle de reservas em uma única plataforma. |
-| **Meta-valor** | Redução de retrabalho, mais controle operacional e melhor suporte à decisão. |
+
+| Campo                    | Descrição                                                                                                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Problemas**            | A gestão condominial costuma ser espalhada em controles manuais, retrabalho administrativo, baixa integração entre áreas e dificuldade para acompanhar dados operacionais e financeiros.                                                |
+| **Expectativas**         | Concentrar em um só sistema a administração do condomínio, reduzir tarefas repetitivas, melhorar o controle de acessos e vínculos de moradores, organizar informações financeiras e disponibilizar indicadores úteis para decisão. |
+| **Cliente-alvo**         | Condomínios residenciais, contratados individualmente.                                                                                                                                                                                     |
+| **Categoria / segmento** | Plataforma SaaS de gestão condominial.                                                                                                                                                                                                     |
+| **Benefício-chave**     | Centralização e automação da gestão do condomínio.                                                                                                                                                                                    |
+| **Diferenciador-chave**  | Comunicação integrada + gestão financeira + controle de reservas em uma única plataforma.                                                                                                                                               |
+| **Meta-valor**           | Redução de retrabalho, mais controle operacional e melhor suporte à decisão.                                                                                                                                                            |
 
 ---
 
 ## 4. Atores e perfis
 
-O sistema opera em **quatro camadas de autoridade**. Cada usuário pertence a exatamente uma
-camada, e seu alcance de dados é determinado por ela.
+O modelo de acesso tem **6 perfis em 3 camadas**. Cada usuário pertence a exatamente uma
+camada, e é ela que determina o alcance dos dados que ele enxerga.
 
-| Camada | Perfil | Alcance |
-|---|---|---|
-| **Plataforma** | `SUPER_ADMIN` | Global — todos os tenants |
-| **Tenant** | `CONTRACTING_PROPERTY_MANAGER` | Toda a carteira do tenant |
-| | `CONTRACTING_SYNDIC` | Toda a carteira do tenant |
-| **Condomínio** | `OPERATIONAL_SYNDIC` | Um condomínio |
-| | `ADMINISTRATOR` | Um condomínio |
-| | `DOORMAN` | Um condomínio |
-| | `REAL_ESTATE_AGENCY` | Um condomínio |
-| | `RESIDENT_OWNER` | Um condomínio + sua unidade |
-| **Unidade** | `ABSENT_OWNER` | Sua unidade |
-| | `LESSEE` | Sua unidade |
-| | `OCCUPANT` | Sua unidade |
-| | `GUEST` | Sua unidade, acesso restrito |
 
-**Regra de alcance (D34):** um usuário pertence a um único condomínio. Perfis de camada Tenant
-têm `tenantId` preenchido e `condominioId` nulo — é assim que a administradora enxerga a
-carteira inteira sem precisar de múltiplos vínculos.
+| Camada          | Perfil          | Quem é                                                      | Alcance               |
+| --------------- | --------------- | ------------------------------------------------------------ | --------------------- |
+| **Plataforma**  | `ADMIN_GERAL`   | Opera o Mora: cadastra e configura os condomínios clientes  | Todos os condomínios |
+| **Condomínio** | `ADMIN_SINDICO` | Síndico responsável pela gestão de um condomínio         | Um condomínio        |
+|                 | `PORTEIRO`      | Opera a guarita                                              | Um condomínio        |
+| **Unidade**     | `MORADOR`       | Mora em uma unidade — proprietário residente ou inquilino  | Sua unidade           |
+|                 | `DONO_ALUGUEL`  | Proprietário que não mora no condomínio e aluga o imóvel | Sua unidade           |
+|                 | `CONVIDADO`     | Visitante recorrente pré-autorizado                         | Sem acesso ao sistema |
 
-**Consequência assumida:** uma imobiliária que atua em vários condomínios precisará de uma
-conta por condomínio, pois `REAL_ESTATE_AGENCY` é perfil de camada Condomínio.
+### Matriz de delegação
 
-### Matriz de delegação de cadastro
-
-Quem pode cadastrar quem, em cascata:
+Quem pode cadastrar quem, via convite:
 
 ```
-SUPER_ADMIN
-  └─ CONTRACTING_PROPERTY_MANAGER, CONTRACTING_SYNDIC        (via cadastro de cliente)
-
-CONTRACTING_PROPERTY_MANAGER / CONTRACTING_SYNDIC
-  └─ OPERATIONAL_SYNDIC, ADMINISTRATOR, DOORMAN,
-     REAL_ESTATE_AGENCY, RESIDENT_OWNER, ABSENT_OWNER,
-     LESSEE, OCCUPANT
-
-ADMINISTRATOR / OPERATIONAL_SYNDIC
-  └─ OPERATIONAL_SYNDIC, ADMINISTRATOR, DOORMAN,
-     REAL_ESTATE_AGENCY, RESIDENT_OWNER
-
-RESIDENT_OWNER
-  └─ LESSEE, OCCUPANT, GUEST
-
-ABSENT_OWNER
-  └─ LESSEE
-
-LESSEE
-  └─ OCCUPANT, GUEST
+ADMIN_GERAL   → todos os perfis
+ADMIN_SINDICO → PORTEIRO, MORADOR, DONO_ALUGUEL, CONVIDADO
+DONO_ALUGUEL  → MORADOR, CONVIDADO
+MORADOR       → CONVIDADO
+PORTEIRO      → (nenhum)
+CONVIDADO     → (nenhum)
 ```
 
-Perfis que exigem `unidadeId` no convite: `RESIDENT_OWNER`, `ABSENT_OWNER`, `LESSEE`,
-`OCCUPANT`, `GUEST`.
+Perfis de unidade (`MORADOR`, `DONO_ALUGUEL`, `CONVIDADO`) exigem `unidadeId` no convite.
+
+### Responsabilidade financeira
+
+Proprietário residente e inquilino compartilham o perfil `MORADOR`. O que os distingue é a
+flag **`responsavelFinanceiro`**: um morador por unidade a carrega, e é quem recebe a fatura.
+Ao transferi-la a outro morador, quem transferiu passa a `DONO_ALUGUEL`.
 
 ---
 
 ## 5. Fluxo de criação do cliente
 
-> **Seção nova.** Cobre a lacuna entre a venda comercial e o sistema em uso. Nenhuma parte
-> deste fluxo está implementada hoje — corresponde ao RF-2.
+**O condomínio é o cliente.** Não existe camada intermediária de empresa ou administradora: ao
+fechar contrato, cria-se o condomínio e todos os seus dados ficam associados a ele.
 
-### 5.1 Modelo comercial
+### 5.1 Cadastro
 
-Existem duas trilhas de contratação (D01), unificadas por um mesmo registro de `tenant` (D05):
-
-| Trilha | `tenants.type` | Quem contrata | Quantos condomínios |
-|---|---|---|---|
-| Administradora | `ADMINISTRADORA` | Property Manager | 1..N, limitado pelo plano |
-| Contratação direta | `CONDOMINIO_DIRETO` | Síndico contratante | 1 |
-
-Manter o `tenant` nas duas trilhas evita duas regras paralelas de plano, limite e cobrança.
-
-### 5.2 Cadastro do cliente
-
-A venda ocorre fora do sistema. O Super Admin registra o cliente já contratado (D02, D33).
+A venda ocorre fora do sistema. O `ADMIN_GERAL` registra o cliente já contratado.
 
 ```mermaid
 sequenceDiagram
-    actor SA as Super Admin
-    participant AUTH as auth-api
-    participant PLAN as plan-service
+    actor SA as Admin Geral
+    participant API as auth-api
     participant MAIL as E-mail
-    actor GEST as Gestor do cliente
+    actor SIN as Síndico do cliente
 
-    SA->>AUTH: POST /tenants {nome, cnpj, type, planoId, emailGestor}
-    AUTH->>AUTH: valida CNPJ único
-    AUTH->>PLAN: POST /assinaturas {tenantId, planoId, vigenciaInicio}
-    PLAN-->>AUTH: assinatura ACTIVE
-    AUTH->>AUTH: cria tenant (status=ACTIVE)
-    AUTH->>AUTH: cria convite para o gestor<br/>(CONTRACTING_PROPERTY_MANAGER ou CONTRACTING_SYNDIC)
-    AUTH->>MAIL: envia convite
-    MAIL->>GEST: código de ativação (48h)
-    GEST->>AUTH: ativa conta e define senha
-    AUTH-->>GEST: JWT com tenantId
-    Note over GEST: A partir daqui o cliente<br/>configura o próprio ambiente
+    SA->>API: POST /api/condominios {id, nome, cnpj, endereço}
+    API->>API: cria o condomínio (status=active)
+    SA->>API: POST /api/invites {email, perfil: ADMIN_SINDICO, condominioId}
+    API->>MAIL: envia convite
+    MAIL->>SIN: código de ativação, válido por 48h
+    SIN->>API: ativa a conta e define a senha
+    API-->>SIN: JWT — cai na tela inicial do condomínio
+    Note over SIN: a partir daqui o síndico monta a<br/>estrutura e convida os moradores
 ```
 
-O ato de cadastro cria **três coisas em uma transação**: o tenant, a assinatura e o convite do
-primeiro gestor. Os condomínios ficam por conta do cliente.
-
-### 5.3 Configuração pelo cliente
-
-```mermaid
-sequenceDiagram
-    actor GEST as Gestor do cliente
-    participant AUTH as auth-api
-    participant PLAN as plan-service
-    participant PORT as portaria-service
-
-    GEST->>AUTH: POST /condominios {nome, cnpj, endereço}
-    AUTH->>PLAN: GET /assinaturas/{tenantId}/limites
-    PLAN-->>AUTH: maxCondominiums, maxUsersPerCondominium
-    alt limite atingido
-        AUTH-->>GEST: 409 — limite do plano atingido
-    else dentro do limite
-        AUTH->>AUTH: cria condomínio (tenantId)
-        AUTH->>PORT: evento CondominioCriado (outbox)
-        GEST->>PORT: cadastra blocos, apartamentos, áreas comuns
-        GEST->>AUTH: convida síndico, administrador, porteiro
-        GEST->>AUTH: convida proprietários por unidade
-    end
-```
-
-O limite do plano é verificado **no momento do cadastro do condomínio** e **na emissão de
-convite** — os dois pontos onde o consumo cresce.
-
-### 5.4 Ciclo de vida do tenant
-
-```mermaid
-stateDiagram-v2
-    [*] --> ACTIVE: Super Admin cadastra
-    ACTIVE --> SUSPENDED_READONLY: inadimplência após tolerância
-    SUSPENDED_READONLY --> ACTIVE: regularização
-    SUSPENDED_READONLY --> CANCELLED: cancelamento
-    ACTIVE --> CANCELLED: cancelamento a pedido
-    CANCELLED --> [*]: expurgo após retenção
-```
-
-| Estado | Login | Leitura | Escrita |
-|---|---|---|---|
-| `ACTIVE` | ✅ | ✅ | ✅ |
-| `SUSPENDED_READONLY` | ✅ | ✅ | ❌ com aviso em tela |
-| `CANCELLED` | ❌ | ❌ | ❌ |
-
-**Suspensão (D36):** vencida a tolerância, o tenant perde escrita e mantém consulta. Preserva o
-acesso do condomínio à informação que é dele e mantém alça de cobrança.
-
-**Cancelamento:** os dados ficam retidos por prazo definido em contrato antes do expurgo, com
-exportação disponível durante a retenção.
-
-### 5.5 Controle de módulos contratados
-
-O plano define `activeModules`. O bloqueio acontece **no gateway, por rota** (D35):
+### 5.2 Configuração pelo cliente
 
 ```mermaid
 graph LR
-    REQ["Requisição<br/>/api/financeiro/faturas"] --> GW["Gateway"]
-    GW --> CACHE{"Assinatura em cache:<br/>módulo 'financeiro' ativo?"}
-    CACHE -->|Sim| SVC["financeiro-service"]
-    CACHE -->|Não| BLOCK["403 — módulo não contratado"]
-    GW --> RO{"tenant em<br/>SUSPENDED_READONLY?"}
-    RO -->|"Sim + método de escrita"| BLOCK2["403 — assinatura suspensa"]
+    S["Síndico ativado"] --> E["/adm/estruturas"]
+    E --> B["Blocos e apartamentos"]
+    E --> A["Áreas comuns"]
+    S --> U["/adm/usuarios"]
+    U --> P["Convida porteiros"]
+    U --> M["Convida moradores por unidade"]
+    M --> O["Morador convida ocupantes e convidados"]
 ```
 
-Nenhum serviço de domínio precisa conhecer plano ou assinatura. Exige manter um mapa
-rota → módulo no gateway.
+O `ADMIN_GERAL` também pode montar a estrutura inicial: a tela `/adm/estruturas` tem seletor
+de cliente para esse caso.
+
+### 5.3 Ciclo de vida do condomínio
+
+```mermaid
+stateDiagram-v2
+    [*] --> ACTIVE: Admin Geral cadastra
+    ACTIVE --> INACTIVE: desativação
+    INACTIVE --> ACTIVE: reativação
+```
+
+
+| Estado     | Efeito                                        |
+| ---------- | --------------------------------------------- |
+| `active`   | Operação normal                             |
+| `inactive` | Acesso suspenso;**os dados são preservados** |
+
+Não há exclusão de condomínio. Apagar um cliente apagaria a operação inteira dele — a ação
+disponível é desativar.
 
 ---
 
 ## 6. Requisitos funcionais
 
-**28 requisitos.** Status refletindo o código em 19/08/2026.
+**18 requisitos.** Status refletindo o código em 26/08/2026.
 
 Legenda: ✅ Implementado · ⚠️ Parcial · 📋 Planejado
 
-| # | Requisito Funcional | Ator | Serviço | Sprint | Status |
-|---|---|---|---|---|---|
-| 1 | Gerenciar Planos | Super Admin | plan-service | 2 | ⚠️ |
-| 2 | **Gerenciar Tenants (clientes)** | Super Admin | auth-api | 2 | 📋 |
-| 3 | Gerenciar Cadastro de Usuário | Usuário com convite válido | auth-api | 1 | ✅ |
-| 4 | Realizar Autenticação de Usuário | Usuário com conta ativa | auth-api | 1 | ✅ |
-| 5 | Gerenciar Condomínio | Property Manager | auth-api | 2 | ⚠️ |
-| 6 | Gerenciar Estrutura do Condomínio | Property Manager | portaria-service | 1 | ✅ |
-| 7 | Gerenciar Vínculos de Ocupantes por Unidade | Property Manager, Resident/Absent Owner, Lessee | auth-api | 2 | ✅ |
-| 8 | Registrar Entradas e Saídas de Acesso | Doorman | portaria-service | 2 | ⚠️ |
-| 9 | Gerenciar Assembleias e Atas | Syndic, Administrator | meeting-service | 1 | ✅ |
-| 10 | Gerenciar Base de Conhecimento e FAQ | Property Manager, Syndic, Administrator | comunicacao-service | 1 | ✅ |
-| 11 | Gerenciar Entregas e Encomendas | Doorman | portaria-service | 1 | ⚠️ |
-| 12 | Gerenciar Avisos e Comunicados | Syndic | comunicacao-service | 2 | ⚠️ |
-| 13 | Controlar Vagas de Estacionamento | Doorman, Administrator | portaria-service | 1 | ⚠️ |
-| 14 | Gerenciar Contratos de Locação | Property Manager, Real Estate Agency, Resident Owner | financeiro-service | 3 | 📋 |
-| 15 | Gerar e Gerenciar Faturas por Unidade | Administrator, Property Manager | financeiro-service | 3 | 📋 |
-| 16 | Gerenciar Multas | Syndic, Administrator | financeiro-service | 3 | 📋 |
-| 17 | Registrar Prestação de Contas | Syndic, Administrator, Property Manager | financeiro-service | 3 | 📋 |
-| 18 | Gerenciar Visitantes e Pré-Autorizações | Doorman, Resident Owner, Lessee | portaria-service | 3 | ⚠️ |
-| 19 | Gerenciar Áreas Comuns e Reservas | Administrator, Resident Owner, Lessee, Occupant | portaria-service | 3 | ⚠️ |
-| 20 | Controlar Retirada e Devolução de Chaves | Doorman | portaria-service | 4 | ✅ |
-| 21 | Configurar Tipos e Regras de Taxas | Property Manager, Administrator | financeiro-service | 4 | 📋 |
-| 22 | Gerenciar Reclamações e Ocorrências | Resident Owner, Lessee, Occupant, Syndic, Administrator | ocorrencias-service | 4 | ⚠️ |
-| 23 | Gerenciar Votações | Syndic, Administrator, Resident Owner | meeting-service | 4 | ⚠️ |
-| 24 | Gerenciar Ordens de Serviço e Manutenção | Syndic, Administrator, Resident Owner, Lessee | ocorrencias-service | 4 | 📋 |
-| 25 | Gerenciar Envio de Mensagens (chat) | Todos os perfis com conta ativa | comunicacao-service | 4 | 📋 |
-| 26 | Gerar Relatórios e Dashboards Analíticos | Super Admin, Property Manager, Syndic, Administrator | analytics-service | 4 | 📋 |
-| 27 | **Gerenciar Notificações** | Sistema (evento) → todos os perfis | comunicacao-service | 4 | 📋 |
-| 28 | **Gerenciar Funcionários e Turnos** | Syndic, Administrator | portaria-service | 4 | ⚠️ |
 
-**Distribuição:** 7 implementados · 11 parciais · 10 planejados
+| #  | Requisito Funcional                          | Ator                                         | Serviço            | Status |
+| -- | -------------------------------------------- | -------------------------------------------- | ------------------- | ------ |
+| 1  | Realizar Autenticação de Usuário          | Usuário com conta ativa                     | auth-api            | ✅     |
+| 2  | Gerenciar Usuários e Vínculos de Unidade   | Admin Geral, Síndico, Morador, Dono Aluguel | auth-api            | ✅     |
+| 3  | Gerenciar Clientes (Condomínios)            | Admin Geral                                  | auth-api            | ✅     |
+| 4  | Gerenciar Planos e Assinaturas               | Admin Geral                                  | plan-service        | ⚠️   |
+| 5  | Gerenciar Estrutura do Condomínio           | Admin Geral, Síndico                        | portaria-service    | ⚠️   |
+| 6  | Controlar Acessos e Visitantes               | Porteiro, Morador                            | portaria-service    | ⚠️   |
+| 7  | Gerenciar Entregas e Encomendas              | Porteiro                                     | portaria-service    | ⚠️   |
+| 8  | Controlar Retirada e Devolução de Chaves   | Porteiro                                     | portaria-service    | ✅     |
+| 9  | Gerenciar Funcionários e Turnos             | Síndico                                     | portaria-service    | ⚠️   |
+| 10 | Gerenciar Reservas de Áreas Comuns          | Síndico, Morador                            | portaria-service    | ⚠️   |
+| 11 | Gerenciar Assembleias, Atas e Votações     | Síndico, Morador                            | meeting-service     | ⚠️   |
+| 12 | Gerenciar Comunicados e Base de Conhecimento | Síndico                                     | comunicacao-service | ⚠️   |
+| 13 | Gerenciar Mensagens e Notificações         | Todos com conta ativa                        | comunicacao-service | 📋     |
+| 14 | Gerenciar Ocorrências e Ordens de Serviço  | Morador, Síndico                            | ocorrencias-service | ⚠️   |
+| 15 | Gerenciar Contratos de Locação             | Dono Aluguel, Síndico                       | financeiro-service  | 📋     |
+| 16 | Gerenciar Cobranças da Unidade              | Síndico                                     | financeiro-service  | 📋     |
+| 17 | Registrar Prestação de Contas              | Síndico                                     | financeiro-service  | 📋     |
+| 18 | Gerar Relatórios e Dashboards Analíticos   | Admin Geral, Síndico                        | gestao-geral        | ⚠️   |
 
-**Novos nesta revisão:** RF-27 (Notificações — nenhum RF cobria notificação automática após
-RF-25 ser definido como chat) e RF-28 (Funcionários e Turnos — código existente e
-indocumentado).
+**Distribuição:** 3 implementados · 10 parciais · 5 planejados
 
-### 6.1 O que falta em cada requisito parcial
+### Escopo de cada requisito
 
-| # | O que existe | O que falta |
-|---|---|---|
-| 1 | Catálogo de planos (CRUD) | `Assinatura` ligando tenant a plano; aplicação dos limites |
-| 5 | CRUD de condomínio | Vínculo com tenant; endereço estruturado (CEP, logradouro, número, bairro, cidade, UF) |
-| 8 | Duas implementações paralelas | Unificação no portaria-service; `user_cache`; migração dos registros |
-| 11 | Registro de entrega | Destinatário como usuário cadastrado; notificação de chegada |
-| 12 | Publicação de aviso | Registro de leitura por usuário (`aviso_leitura`) |
-| 13 | Vaga e aluguel, duplicados em dois serviços | Fusão no portaria-service; remoção de `vagas_db` |
-| 18 | Registro de visitante na chegada | Pré-autorização pelo morador, com validade e lista do dia na guarita |
-| 19 | Cadastro de áreas comuns | Tabela `reservas`; regras de conflito, antecedência, limite, aprovação e taxa |
-| 22 | `Reclamacao` no auth-api | Migração para ocorrencias-service; normalização do histórico |
-| 23 | Voto por pessoa | Voto por unidade; constraint de unicidade por unidade |
-| 28 | `funcionarios`, `turnos` e coleções de entrada/saída | Requisito documentado; telas de gestão de jornada |
 
----
+| #  | Abrange                                                                                                                                  |
+| -- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | Login por senha e por conta Google, recuperação de senha, encerramento de sessão com revogação de token                             |
+| 2  | Convite, ativação de conta, cadastro de ocupantes da unidade, vínculo com apartamento e transferência de responsabilidade financeira |
+| 3  | Cadastro, edição, ativação e desativação dos condomínios contratantes                                                             |
+| 4  | Catálogo de planos, assinatura do condomínio e aplicação dos limites contratados                                                     |
+| 5  | Blocos, apartamentos, áreas comuns e vagas de estacionamento                                                                            |
+| 6  | Registro de entrada e saída de moradores e funcionários, cadastro de visitantes e pré-autorização pelo morador                      |
+| 7  | Recebimento de encomenda, notificação ao destinatário e baixa na retirada                                                             |
+| 8  | Retirada e devolução, com responsável e histórico                                                                                    |
+| 9  | Cadastro de funcionários, cargo, matrícula e controle de jornada                                                                       |
+| 10 | Solicitação, aprovação, regras de conflito e antecedência, e taxa de locação                                                      |
+| 11 | Convocação, integração com videoconferência, registro de ata e apuração de votos por unidade                                      |
+| 12 | Avisos com confirmação de leitura, artigos de regras e FAQ                                                                             |
+| 13 | Conversa direta entre usuários e notificações disparadas por evento do sistema                                                        |
+| 14 | Registro da ocorrência, atendimento, abertura de ordem de serviço, responsável e prazo                                                |
+| 15 | Contrato entre proprietário e inquilino, vigência e definição do responsável financeiro                                             |
+| 16 | Tipos e regras de taxa, rateio, geração de faturas, multas e pagamento                                                                 |
+| 17 | Lançamento de receitas e despesas, e publicação por competência                                                                      |
+| 18 | Indicadores da plataforma e do condomínio, com séries históricas e exportação                                                       |
 
 ## 7. Requisitos não-funcionais
 
-> **Seção nova.** O documento anterior não continha requisitos não-funcionais.
-
 ### 7.1 Segurança
 
-| # | Requisito | Verificação |
-|---|---|---|
-| RNF-01 | Todo endpoint de domínio exige JWT válido; token inválido ou ausente retorna 401 | Teste automatizado por serviço |
-| RNF-02 | Segredos (`JWT_SECRET`, senha de banco, chaves de gateway) vêm de variável de ambiente, sem valor default no repositório | Revisão de `docker-compose.yml` |
-| RNF-03 | Autorização por perfil aplicada no servidor, nunca apenas na interface | Teste de acesso negado por perfil |
-| RNF-04 | Senhas armazenadas com hash bcrypt, custo mínimo 10 | Inspeção de código |
-| RNF-05 | Revogação de sessão por incremento de `tokenVersion` | Teste de logout global |
-| RNF-06 | Rate limiting em login, recuperação de senha e validação de convite | Teste de carga pontual |
-| RNF-07 | Portas de serviços internos não publicadas no host; acesso apenas via gateway | Revisão do compose |
+
+| #      | Requisito                                                                           |
+| ------ | ----------------------------------------------------------------------------------- |
+| RNF-01 | Todo endpoint de domínio exige JWT válido; token ausente ou inválido retorna 401 |
+| RNF-02 | Segredos vêm de variável de ambiente, sem valor default no repositório           |
+| RNF-03 | Autorização por perfil aplicada no servidor, nunca apenas na interface            |
+| RNF-04 | Senhas armazenadas com hash bcrypt, custo mínimo 10                                |
+| RNF-05 | Logout e redefinição de senha revogam todos os tokens emitidos                    |
+| RNF-06 | Token de acesso nunca trafega em URL, apenas em cabeçalho                          |
+| RNF-07 | Fluxo OAuth protegido contra CSRF por parâmetro`state` assinado                    |
+| RNF-08 | Rate limiting em login, recuperação de senha e validação de convite             |
+| RNF-09 | Portas de serviços internos não publicadas no host; acesso via gateway            |
 
 ### 7.2 Privacidade e LGPD
 
-| # | Requisito |
-|---|---|
-| RNF-08 | CPF armazenado cifrado em repouso, exibido mascarado exceto para perfis de gestão |
-| RNF-09 | Registros de acesso e movimentação retidos por 12 meses e expurgados automaticamente |
-| RNF-10 | Base legal registrada por finalidade: execução de contrato (gestão condominial) e legítimo interesse (segurança do condomínio) |
-| RNF-11 | Titular pode solicitar exportação e eliminação dos próprios dados |
-| RNF-12 | Dados de tenant cancelado retidos pelo prazo contratual e então expurgados |
-| RNF-13 | Dados de pagamento não são armazenados pelo Mora — apenas identificadores de transação do gateway |
+
+| #      | Requisito                                                                         |
+| ------ | --------------------------------------------------------------------------------- |
+| RNF-10 | CPF cifrado em repouso, exibido mascarado exceto para perfis de gestão           |
+| RNF-11 | Registros de acesso e movimentação retidos por 12 meses e expurgados            |
+| RNF-12 | Base legal registrada por finalidade                                              |
+| RNF-13 | Titular pode solicitar exportação e eliminação dos próprios dados            |
+| RNF-14 | Dados de pagamento não são armazenados — apenas identificadores de transação |
 
 ### 7.3 Isolamento entre clientes
 
-| # | Requisito |
-|---|---|
-| RNF-14 | Toda tabela de domínio possui `condominioId`, e toda consulta aplica o filtro |
-| RNF-15 | Um usuário jamais acessa dados de condomínio diferente do seu, mesmo manipulando a requisição |
-| RNF-16 | Constraints de unicidade são compostas com `condominioId` quando o valor é único apenas dentro do condomínio |
+
+| #      | Requisito                                                                                                       |
+| ------ | --------------------------------------------------------------------------------------------------------------- |
+| RNF-15 | Toda tabela de domínio possui`condominioId`                                                                    |
+| RNF-16 | Toda consulta de domínio aplica o filtro por condomínio                                                       |
+| RNF-17 | Constraints de unicidade são compostas com`condominioId` quando o valor é único apenas dentro do condomínio |
 
 ### 7.4 Desempenho
 
-| # | Requisito |
-|---|---|
-| RNF-17 | Endpoints de listagem são paginados, com no máximo 50 itens por página |
-| RNF-18 | Consultas por status, período e unidade têm índice correspondente |
-| RNF-19 | Relacionamentos são `LAZY` por padrão; carregamento antecipado apenas por consulta explícita |
-| RNF-20 | Resposta de leitura em até 500 ms no percentil 95, com volume de 10 condomínios e 500 unidades |
+
+| #      | Requisito                                                                 |
+| ------ | ------------------------------------------------------------------------- |
+| RNF-18 | Endpoints de listagem são paginados, com no máximo 50 itens por página |
+| RNF-19 | Consultas por status, período e unidade têm índice correspondente      |
+| RNF-20 | Contagens exibidas são agregadas no banco, não no navegador             |
+| RNF-21 | Relacionamentos são`LAZY` por padrão                                    |
 
 ### 7.5 Disponibilidade e integridade
 
-| # | Requisito |
-|---|---|
-| RNF-21 | Operações multi-passo executam em transação |
-| RNF-22 | O schema é versionado por migrations; `ddl-auto` opera em modo `validate` |
-| RNF-23 | Falha de um serviço não derruba os demais — dados replicados por cache permitem operação degradada |
-| RNF-24 | Eventos do outbox são reprocessáveis e idempotentes |
+
+| #      | Requisito                                                                   |
+| ------ | --------------------------------------------------------------------------- |
+| RNF-22 | Operações multi-passo executam em transação                             |
+| RNF-23 | O schema é versionado por migrations idempotentes                          |
+| RNF-24 | Falha de um serviço não derruba os demais; o consumidor degrada por bloco |
 
 ### 7.6 Observabilidade
 
-| # | Requisito |
-|---|---|
-| RNF-25 | Todo serviço expõe `/actuator/health`, monitorado pelo Consul |
-| RNF-26 | Logs em formato estruturado, com identificador de correlação propagado entre serviços |
-| RNF-27 | `show-sql` desativado fora do ambiente de desenvolvimento |
-| RNF-28 | Alterações em plano, assinatura e status de tenant registram trilha de auditoria |
+
+| #      | Requisito                                                   |
+| ------ | ----------------------------------------------------------- |
+| RNF-25 | Todo serviço expõe endpoint de saúde                     |
+| RNF-26 | Logs estruturados, sem dados sensíveis                     |
+| RNF-27 | Mensagens de erro ao cliente não revelam detalhes internos |
 
 ---
 
 ## 8. Arquitetura
 
-### 8.1 Topologia
+Microsserviços com banco por serviço, orquestrados por Docker Compose, com Consul para
+service discovery e Traefik como gateway.
+
+### 8.1 Os oito serviços
+
+Cada serviço é dono de um domínio e do seu próprio banco. Nenhum lê a base de outro.
 
 ```mermaid
 graph TB
     FE["Frontend React/Vite"]
 
-    subgraph gw["Gateway"]
-        TR["Traefik<br/>roteamento + módulos + suspensão"]
-        CS["Consul<br/>service discovery"]
-    end
-
-    subgraph core["Núcleo"]
-        AUTH["auth-api<br/>Node · identidade, tenants,<br/>condomínios, convites"]
+    subgraph nucleo["Núcleo"]
+        AUTH["auth-api<br/>identidade, condomínios, convites"]
         PLAN["plan-service<br/>planos e assinaturas"]
     end
 
-    subgraph dom["Domínio"]
-        PORT["portaria-service<br/>estrutura, pessoas, acessos,<br/>veículos, vagas, chaves,<br/>entregas, reservas"]
+    subgraph dominio["Domínio"]
+        PORT["portaria-service<br/>estrutura física, acessos,<br/>entregas, chaves, vagas, reservas"]
         MEET["meeting-service<br/>assembleias, atas, votações"]
-        FIN["financeiro-service ★<br/>faturas, multas, taxas"]
-        COM["comunicacao-service ★<br/>chat, avisos, base, notificações"]
-        OCO["ocorrencias-service ★<br/>reclamações e OS"]
+        FIN["financeiro-service<br/>contratos, faturas, multas,<br/>taxas, prestação de contas"]
+        COM["comunicacao-service<br/>avisos, base de conhecimento,<br/>chat, notificações"]
+        OCO["ocorrencias-service<br/>reclamações e ordens de serviço"]
     end
 
-    ANA["analytics-service ★<br/>ETL e indicadores"]
+    GG["gestao-geral<br/>indicadores e relatórios"]
 
-    FE --> TR
-    TR --> AUTH & PLAN & PORT & MEET & FIN & COM & OCO & ANA
-    AUTH & PLAN & PORT & MEET & FIN & COM & OCO -.-> CS
-    CS --> TR
-    TR -.->|consulta assinatura| PLAN
-
-    AUTH -.->|"eventos: usuário, condomínio"| PORT & FIN & COM & OCO
-    PORT -.->|"eventos: reserva, unidade"| FIN
-    OCO -.->|"eventos: ocorrência"| COM
-    FIN -.->|"eventos: fatura"| COM
-    PORT & FIN & OCO & MEET & AUTH -.->|extração| ANA
+    FE --> AUTH & PLAN & PORT & MEET & FIN & COM & OCO & GG
+    GG --> AUTH & PLAN & PORT & MEET & FIN & COM & OCO
 ```
 
-★ = serviço novo
+
+| Serviço              | Responsabilidade                                                                         | Stack                 | Porta | Banco              | RFs               |
+| --------------------- | ---------------------------------------------------------------------------------------- | --------------------- | ----- | ------------------ | ----------------- |
+| `auth-api`            | Identidade, perfis, condomínios clientes, convites                                      | Node 20 / Express     | 3001  | `auth_db`          | 1, 2, 3           |
+| `plan-service`        | Planos comerciais e assinaturas                                                          | Java 21 / Spring Boot | 8093  | `mora_plan`        | 4                 |
+| `portaria-service`    | Estrutura física, acessos, entregas, chaves, vagas, visitantes, reservas, funcionários | Java 21 / Spring Boot | 8090  | `mora`             | 5, 6, 7, 8, 9, 10 |
+| `meeting-service`     | Assembleias, atas e votações                                                           | Java 21 / Spring Boot | 8091  | `mora_meeting`     | 11                |
+| `financeiro-service`  | Contratos de locação, faturas, multas, taxas, prestação de contas                    | Java 21 / Spring Boot | 8094  | `mora_financeiro`  | 15, 16, 17        |
+| `comunicacao-service` | Avisos, base de conhecimento, chat e notificações                                      | Node 20 / Express     | 3003  | `mora_comunicacao` | 12, 13            |
+| `ocorrencias-service` | Reclamações e ordens de serviço                                                       | Java 21 / Spring Boot | 8095  | `mora_ocorrencias` | 14                |
+| `gestao-geral`        | Agregação de indicadores e relatórios                                                 | Node 20 / Express     | 3002  | —                 | 18                |
+
+**Em operação:** `auth-api`, `plan-service`, `portaria-service`, `meeting-service` e
+`gestao-geral`. Os três de domínio restantes atendem requisitos ainda planejados, e nascem à
+medida que esses requisitos entram — a fila está na [seção 11](#11-roadmap).
 
 ### 8.2 Comunicação entre serviços
 
-Três mecanismos, cada um com seu papel:
 
-| Mecanismo | Uso | Exemplo |
-|---|---|---|
-| **Outbox + polling HTTP** (D10) | Propagação de mudança de estado | Usuário ativado → replica no `user_cache` dos consumidores |
-| **Cache replicado** (D09) | Leitura local de dado de outro domínio | Portaria mostra o nome do morador sem chamar o auth-api |
-| **HTTP síncrono** | Consulta que exige resposta imediata e consistente | Verificação de limite do plano no cadastro de condomínio |
+| Mecanismo           | Quando                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| **HTTP síncrono**  | Consulta que exige resposta imediata — verificação de unidade, agregação de indicadores |
+| **Cache replicado** | Leitura local de dado de outro domínio, para operar mesmo com a fonte fora                  |
+| **Outbox**          | Propagação de mudança de estado entre serviços                                           |
 
-```mermaid
-sequenceDiagram
-    participant A as auth-api
-    participant OB as outbox (auth_db)
-    participant W as worker
-    participant P as portaria-service
-    participant IN as mensageria_evento_recebido
+O `gestao-geral` é o único que consulta todos os demais. Ele não tem banco próprio: cada
+serviço agrega os próprios dados em SQL e ele compõe a resposta, repassando o token do usuário.
+O contrato prevê o campo `fontesIndisponiveis`, para degradar por bloco quando uma fonte
+estiver fora do ar em vez de derrubar o painel inteiro.
 
-    A->>OB: grava evento na mesma transação
-    W->>OB: lê eventos pendentes
-    W->>P: POST /eventos {eventId, tipo, payload}
-    P->>IN: grava com eventId (unique)
-    Note over IN: eventId duplicado = ignora<br/>garante idempotência
-    P->>P: atualiza user_cache
-    P-->>W: 200
-    W->>OB: marca publicado_em
-```
+### 8.3 Autenticação entre serviços
 
-### 8.3 Roteamento
+O `auth-api` emite o JWT com `{ id, perfil, tokenVersion, email }`, assinado em HS256 com
+segredo compartilhado. A revogação usa `tokenVersion`: incrementá-la invalida todos os tokens
+daquele usuário.
 
-Serviços se registram no Consul com tags do Traefik. O gateway lê o catálogo e monta as rotas
-dinamicamente. Além do roteamento, o gateway aplica duas verificações (D35, D36):
-
-1. **Módulo contratado** — a rota pertence a um módulo em `activeModules` da assinatura?
-2. **Estado do tenant** — se `SUSPENDED_READONLY`, métodos de escrita são recusados.
+O login com Google não cria conta — exige convite prévio — e devolve um **código de uso único**
+que o frontend troca pelo JWT, para que o token não trafegue na URL.
 
 ---
 
 ## 9. Modelo de dados
 
-### 9.1 Bancos
-
-| Banco | Serviço | Domínio |
-|---|---|---|
-| `auth_db` | auth-api | `tenants`, `condominios`, `users`, `invites` |
-| `mora` | portaria-service | Estrutura física, pessoas, acessos, veículos, vagas, chaves, entregas, áreas comuns, reservas, funcionários, turnos |
-| `mora_meeting` | meeting-service | Assembleias, atas, enquetes, votos |
-| `mora_plan` | plan-service | Planos, assinaturas |
-| `mora_financeiro` ★ | financeiro-service | Contratos, faturas, multas, taxas, prestação de contas |
-| `mora_comunicacao` ★ | comunicacao-service | Avisos, leitura, base de conhecimento, conversas, notificações |
-| `mora_ocorrencias` ★ | ocorrencias-service | Reclamações, ordens de serviço |
-| `mora_analytics` ★ | analytics-service | Indicadores consolidados |
-| ~~`vagas_db`~~ | — | **Descontinuado** (D11) |
-
-### 9.2 Núcleo: tenant, condomínio e usuário
+### 9.1 Núcleo
 
 ```mermaid
 erDiagram
-    TENANTS ||--o{ CONDOMINIOS : possui
-    TENANTS ||--|| ASSINATURAS : contrata
-    PLANS ||--o{ ASSINATURAS : referencia
     CONDOMINIOS ||--o{ USERS : abriga
-    TENANTS ||--o{ USERS : "perfis de nível tenant"
+    CONDOMINIOS ||--o{ INVITES : escopo
     USERS ||--o{ INVITES : emite
+    PLANS ||--o{ CONDOMINIOS : contratado
 
-    TENANTS {
-        uuid id PK
-        string nome
-        string cnpj UK
-        enum type "ADMINISTRADORA|CONDOMINIO_DIRETO"
-        enum status "ACTIVE|SUSPENDED_READONLY|CANCELLED"
-        timestamp suspensoEm
-    }
     CONDOMINIOS {
-        uuid id PK
-        uuid tenantId FK
+        string id PK "slug usado como condominioId"
         string nome
         string cnpj
-        string cep
-        string logradouro
-        string numero
-        string complemento
-        string bairro
-        string cidade
-        string uf
-        enum status
-    }
-    ASSINATURAS {
-        uuid id PK
-        uuid tenantId FK
-        bigint planId FK
-        date vigenciaInicio
-        date vigenciaFim
-        enum status
-    }
-    PLANS {
-        bigint id PK
-        string name UK
-        int maxCondominiums
-        int maxUsersPerCondominium
-        decimal monthlyPrice
-        jsonb activeModules
+        string endereco
+        string telefone
+        string email
+        enum status "active|inactive"
+        int criadoPorId
     }
     USERS {
-        uuid id PK
-        uuid tenantId FK "nulo p/ perfis de condomínio"
-        uuid condominioId FK "nulo p/ perfis de tenant"
+        int id PK
+        uuid condominioId FK "nulo p/ ADMIN_GERAL"
         uuid unidadeId
         string nome
         string email UK
-        string cpf "cifrado"
-        enum perfil
+        string cpf
+        enum perfil "6 valores"
         enum status
+        bool responsavelFinanceiro
+        bool semAcessoSistema
         int tokenVersion
+    }
+    INVITES {
+        int id PK
+        string codigo UK
+        string email
+        enum perfil
+        uuid condominioId FK
+        uuid unidadeId
+        bool responsavelFinanceiro
+        enum status
+        timestamp expiresAt
     }
 ```
 
-**Mudanças em relação ao ER anterior:**
+**O condomínio é a raiz do isolamento.** `ADMIN_GERAL` é o único perfil com `condominioId`
+nulo, porque opera sobre todos.
 
-| Mudança | Motivo |
-|---|---|
-| `tenants.schema_name` removido | D03 — isolamento por coluna |
-| `tenants.type` mantido | D05 — distingue as duas trilhas comerciais |
-| `tenants.status` ganha `SUSPENDED_READONLY` | D36 |
-| `condominios` com endereço estruturado | Substitui `endereco VARCHAR(300)` |
-| `assinaturas` criada | D14 — sem ela, os limites do plano são inaplicáveis |
-| `users.id` de `INTEGER` para `UUID` | D28 |
-| `users.role`, `.bloco`, `.apartamento`, `.vaga` removidos | D40 |
-| `plans` movida para `mora_plan` | Alinhamento com o serviço dono |
+### 9.2 Isolamento por condomínio
 
-### 9.3 Padrões transversais
+Toda tabela de domínio carrega `condominioId`. São **23 tabelas raiz** nos cinco bancos, com
+índice próprio.
 
-Aplicados a **todas** as tabelas de domínio:
+Constraints que seriam únicas globalmente passaram a ser únicas **por condomínio** — dois
+clientes podem ter um "Salão de Festas", a mesma placa de veículo e o mesmo CPF cadastrado:
 
-| Coluna | Tipo | Regra |
-|---|---|---|
-| `id` | `UUID` | Chave primária |
-| `condominioId` | `UUID` | Obrigatório (RNF-14); filtro em toda consulta |
-| `criadoEm` / `atualizadoEm` | `TIMESTAMP` | Padrão snake_case: `criado_em` / `atualizado_em` |
-| `ativo` | `BOOLEAN` | Exclusão lógica onde houver histórico |
+```
+UNIQUE (condominioId, nome)    areas_comuns
+UNIQUE (condominioId, numero)  vagas_estacionamento
+UNIQUE (condominioId, placa)   veiculos
+UNIQUE (condominioId, cpf)     moradores, funcionarios, visitantes
+```
 
-**Convenção de nomenclatura:** `snake_case` em todas as colunas novas. As colunas camelCase
-existentes (`"criadoEm"`, `"blocoId"`) são normalizadas na migração de baseline.
+### 9.3 Convenções
 
-### 9.4 Tabelas de integração
 
-| Tabela | Onde | Papel |
-|---|---|---|
-| `user_cache` | Em cada serviço consumidor | Réplica de `users` (nome, email, perfil, condomínio, unidade, ativo) |
-| `mensageria_evento_recebido` | Em cada serviço consumidor | Inbox: `event_id` único garante idempotência |
-| `mensageria_evento_publicado` | Em cada serviço produtor | Outbox: gravado na mesma transação do fato |
-
-### 9.5 Entidades novas por requisito
-
-| RF | Entidades |
-|---|---|
-| 2 | `tenants` |
-| 1 | `assinaturas` |
-| 12 | `aviso_leitura` |
-| 14 | `contratos_locacao` |
-| 15 | `faturas`, `fatura_itens` |
-| 16 | `multas` |
-| 17 | `prestacao_contas`, `lancamentos` |
-| 19 | `reservas` |
-| 21 | `tipos_taxa`, `regras_taxa` |
-| 24 | `ordens_servico`, `fornecedores` |
-| 25 | `conversas`, `mensagens` |
-| 26 | `indicadores_*` (consolidados pelo ETL) |
-| 27 | `notificacoes`, `preferencias_notificacao` |
-
-### 9.6 Entidades removidas
-
-| Entidade | Motivo |
-|---|---|
-| `carros` | D22 — duplicava `veiculos` |
-| `registros_acesso` (auth_db) | D08 — unificado no portaria |
-| `reclamacoes` (auth_db) | D27 — migrada para ocorrencias-service |
-| `blocos`, `apartamentos`, `moradores`, `vagas_estacionamento` (vagas_db) | D11 — banco descontinuado |
+| Item            | Regra                                                        |
+| --------------- | ------------------------------------------------------------ |
+| Chave primária | `UUID` nas tabelas novas                                     |
+| Escopo          | `condominioId` obrigatório em toda tabela de domínio       |
+| Auditoria       | `criadoEm` / `atualizadoEm`                                  |
+| Exclusão       | Lógica, por flag`ativo` ou `status`, onde houver histórico |
 
 ---
 
 ## 10. Analytics
 
-### 10.1 Objetivo e processo
+### 10.1 Painel do Admin Geral — entregue
 
-| Campo | Descrição |
-|---|---|
-| **Objetivo de negócio** | Centralizar a gestão condominial, reduzir retrabalho e apoiar decisões com dados consolidados de operação, financeiro e comunicação. |
-| **Fonte de dados** | Cadastros, faturas, multas, ocorrências, reservas, assembleias, comunicações, acessos e prestação de contas. |
-| **Processo de ETL** | Job diário às 02h00 extrai dos bancos de origem, padroniza, agrupa por período e condomínio, e carrega tabelas de indicadores em `mora_analytics`. KPIs operacionais são recalculados a cada 6h. |
-| **Consumo** | O `analytics-service` expõe os indicadores por endpoint, filtrados pelo alcance do perfil. |
+Rota `/adm/geral`. Consome o `gestao-geral`.
 
-### 10.2 Painéis e origem dos indicadores
+**6 indicadores:**
 
-**Painel Estratégico** — Síndico e Administrador, escopo de um condomínio
 
-| KPI | Origem | RF |
-|---|---|---|
-| Saldo do mês | `financeiro.lancamentos` | 17 |
-| Inadimplência | `financeiro.faturas` | 15 |
-| Participação em assembleia | `meeting.tb_meeting_convidados` | 9 |
-| Ocorrências (30d) | `ocorrencias.reclamacoes` | 22 |
-| Receita de reservas | `financeiro.faturas` (itens de reserva) | 19 |
+| Indicador                           | Fonte                   |
+| ----------------------------------- | ----------------------- |
+| Condomínios ativos                 | `condominios.status`    |
+| Novos em 30 dias                    | `condominios.createdAt` |
+| Usuários ativos                    | `users.status`          |
+| Média de usuários por condomínio | derivado                |
+| Convites pendentes                  | `invites`               |
+| Ocorrências abertas                | `reclamacoes.status`    |
 
-**Painel Financeiro** — Administrador e Property Manager
+**3 gráficos:** crescimento da carteira (12 meses, barras e linha acumulada) · distribuição
+pelos 6 perfis (donut) · usuários por condomínio (barras clicáveis, levam ao cliente).
 
-| KPI | Origem | RF |
-|---|---|---|
-| Receita prevista / realizada | `financeiro.faturas` | 15 |
-| Em atraso (+30d) e aging | `financeiro.faturas` | 15 |
-| Despesas do mês | `financeiro.lancamentos` | 17 |
-| Multas emitidas | `financeiro.multas` | 16 |
-| Saldo do período | `financeiro.lancamentos` | 17 |
+### 10.2 Painéis planejados
 
-**Painel Operacional** — Síndico, Administrador e Porteiro
 
-| KPI | Origem | RF |
-|---|---|---|
-| Ocorrências pendentes | `ocorrencias.reclamacoes` | 22 |
-| Tempo médio de resposta | `ocorrencias.reclamacoes` | 22 |
-| Leitura de comunicados | `comunicacao.aviso_leitura` | 12 |
-| OS no prazo | `ocorrencias.ordens_servico` | 24 |
-| Acessos hoje | `portaria.registros_acesso` | 8 |
+| Painel       | Público           | Depende de          |
+| ------------ | ------------------ | ------------------- |
+| Operacional  | Síndico, Porteiro | RF-12, RF-14        |
+| Financeiro   | Síndico           | RF-16, RF-17        |
+| Estratégico | Síndico           | RF-10, RF-11, RF-14 |
 
-**Painel da Carteira** — Super Admin e Property Manager, escopo multi-condomínio
-
-| KPI | Origem | RF |
-|---|---|---|
-| Inadimplência da carteira | `financeiro.faturas` agregado por condomínio | 15 |
-| Receita total | `financeiro.faturas` | 15 |
-| Ocorrências abertas | `ocorrencias.reclamacoes` | 22 |
-| OS críticas atrasadas | `ocorrencias.ordens_servico` | 24 |
-| Taxa de ocupação | `portaria.apartamentos` + `auth.users` | 6, 7 |
-
-> Na especificação anterior, **16 dos 21 KPIs não tinham fonte de dados**. Com os RFs 12, 15,
-> 16, 17, 19, 22 e 24 definidos, todos passam a ter origem — ainda que a maioria dependa de
-> implementação pendente.
+Os indicadores são agregados em SQL, sob demanda. Um processo de ETL com tabelas
+consolidadas entra quando o volume exigir — o `gestao-geral` isola essa decisão do frontend,
+que consome sempre o mesmo contrato.
 
 ---
 
 ## 11. Roadmap
 
-Sequência derivada das dependências técnicas, não da numeração dos requisitos.
+Ordem de entrega, definida pelas dependências entre os requisitos.
 
-### Fase 1 — Fundação (habilita todo o resto)
 
-| Ação | Decisão | Bloqueia |
-|---|---|---|
-| Remover segredos default e despublicar portas internas | RNF-02, RNF-07 | — |
-| Filtro JWT com rejeição real em todos os serviços | RNF-01 | Todo o resto |
-| Migração `INTEGER` → `UUID` em `users` | D28 | `user_cache`, RF-8 |
-| Flyway com baseline; `ddl-auto: validate` | RNF-22 | Toda mudança de schema |
-| Propagar `condominioId`; constraints compostas | D06, RNF-14 | Isolamento real |
+| Fase  | Escopo                                                                                                         | RFs            |
+| ----- | -------------------------------------------------------------------------------------------------------------- | -------------- |
+| **1** | Isolamento por condomínio aplicado em todas as consultas, e rejeição de JWT inválido em todos os serviços | RNF-01, RNF-16 |
+| **2** | Reservas de áreas comuns e pré-autorização de visitantes                                                   | 6, 10          |
+| **3** | `ocorrencias-service` — reclamações e ordens de serviço                                                    | 14             |
+| **4** | `comunicacao-service` — avisos com leitura, chat e notificações                                             | 12, 13         |
+| **5** | `financeiro-service` — contratos, faturas, multas, taxas e prestação de contas                              | 15, 16, 17     |
+| **7** | Painéis do síndico: operacional, financeiro e estratégico                                                   | 18             |
 
-### Fase 2 — Cliente e integração
-
-| Ação | Decisão | RF |
-|---|---|---|
-| `tenants` + `assinaturas` + seed do Super Admin | D05, D14, D24 | 1, 2 |
-| Outbox/inbox + `user_cache` | D09, D10 | — |
-| Validação de módulo e suspensão no gateway | D35, D36 | 1 |
-| Fusão do `vagas-service`; remoção de `Carro` | D11, D22 | 13 |
-| Unificação do RF-8 no portaria | D08 | 8 |
-
-### Fase 3 — Completar o operacional
-
-| Ação | RF |
-|---|---|
-| `comunicacao-service` com avisos, base, leitura e notificações | 10, 12, 27 |
-| `ocorrencias-service` com reclamações e OS | 22, 24 |
-| Pré-autorização de visitante | 18 |
-| Reservas com regras e taxa | 19 |
-| Entregas com destinatário e notificação | 11 |
-| Voto por unidade | 23 |
-| Funcionários e turnos | 28 |
-
-### Fase 4 — Financeiro e analytics
-
-| Ação | RF |
-|---|---|
-| `financeiro-service`: contratos, faturas, multas, taxas, prestação de contas | 14, 15, 16, 17, 21 |
-| Integração PIX e boleto | 15 |
-| `analytics-service` com ETL e os quatro painéis | 26 |
-| Chat entre usuários | 25 |
-
-> **Nota de planejamento.** As Fases 3 e 4 somam quatro serviços novos e uma integração
-> externa de pagamento. Se o prazo apertar, a recomendação é entregar as Fases 1 e 2 completas
-> — que corrigem os problemas estruturais e viabilizam o modelo SaaS — mantendo as Fases 3 e 4
-> especificadas e marcadas como Planejadas. Uma base sólida com escopo menor sustenta melhor a
-> defesa do projeto do que um escopo amplo com fundação frágil.
+As fases 3 a 5 criam os três microsserviços de domínio ainda não implementados. A fase 5
+é a que completa o diferenciador declarado na [visão do produto](#3-visão-do-produto).
 
 ---
 
-## Referências
+## Controle de versões
 
-- [DECISOES-ARQUITETURAIS.md](DECISOES-ARQUITETURAIS.md) — as 40 decisões que originaram esta revisão
-- [HISTORIAS-DE-USUARIO.md](HISTORIAS-DE-USUARIO.md) — 28 histórias com critérios de aceite
-- [ARQUITETURA-E-FLUXOS.md](ARQUITETURA-E-FLUXOS.md) — como o sistema funciona hoje
-- [relatorio-microservicos.md](relatorio-microservicos.md) — avaliação por serviço
+
+| Versão | Data       | Escopo                                                                          |
+| ------- | ---------- | ------------------------------------------------------------------------------- |
+| 3       | 26/08/2026 | Modelo de acesso com 6 perfis; condomínio como cliente; painel administrativo  |
+| 2       | 19/08/2026 | Status por requisito; requisitos não-funcionais; fluxo de criação do cliente |
+| 1       | —         | Especificação original                                                        |
