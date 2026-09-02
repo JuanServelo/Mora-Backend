@@ -120,7 +120,7 @@ public class ChaveService {
                 + ". Registre a devolução antes de uma nova retirada.");
         });
 
-        String nomeResponsavel = resolverNomeResponsavel(request.getResponsavelId(), request.getTipoResponsavel());
+        String nomeResponsavel = resolverNomeResponsavel(request.getResponsavelId(), request.getTipoResponsavel(), request.getNomeResponsavel());
         String perfilResponsavel = request.getTipoResponsavel() == TipoResponsavel.MORADOR ? "Morador" : "Funcionário";
 
         var claims = AuthContext.get();
@@ -230,7 +230,10 @@ public class ChaveService {
         }
     }
 
-    private String resolverNomeResponsavel(String responsavelId, TipoResponsavel tipo) {
+    private String resolverNomeResponsavel(String responsavelId, TipoResponsavel tipo, String nomeResponsavel) {
+        if (nomeResponsavel != null && !nomeResponsavel.isBlank()) {
+            return nomeResponsavel;
+        }
         if (tipo == TipoResponsavel.MORADOR) {
             return moradorService.buscarPorId(responsavelId).getNome();
         } else {

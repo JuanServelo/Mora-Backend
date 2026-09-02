@@ -81,10 +81,7 @@ CREATE TABLE IF NOT EXISTS invites (
 
 -- Usuários de teste por perfil (senha: Teste@1234)
 -- ADMIN_GERAL   → admin@mora.com        senha: Teste@1234
--- ADMIN_SINDICO → sindico@mora.com      senha: Teste@1234
--- PORTEIRO      → porteiro@mora.com     senha: Teste@1234
--- MORADOR       → morador@mora.com      senha: Teste@1234
--- DONO_ALUGUEL  → dono@mora.com         senha: Teste@1234
+
 INSERT INTO users (nome, email, senha, perfil, role, status, "condominioId", "tokenVersion", "activatedAt", "createdAt", "updatedAt")
 VALUES
   ('Administrador Geral',  'admin@mora.com',    '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_GERAL',    'admin', 'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
