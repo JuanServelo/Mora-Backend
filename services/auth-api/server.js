@@ -28,6 +28,7 @@ import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
 import { garantirColunasOauthCode } from './migrations/migrate-oauth-code.js';
 import { migrarPerfisV2 } from './migrations/migrate-perfis-v2.js';
 import { garantirCondominioIdReclamacoes } from './migrations/migrate-condominio-id.js';
+import { garantirColunasInvites } from './migrations/migrate-invites.js';
 import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
 import { ehProducao } from './config/regras.js';
 
@@ -140,6 +141,7 @@ const startServer = async () => {
     // Depois das legadas: converte os 11 perfis antigos para os 6 atuais.
     await migrarPerfisV2();
     await garantirCondominioIdReclamacoes();
+    await garantirColunasInvites();
     console.log('Tabelas sincronizadas e migrações RF03/RF07/Condomínios aplicadas');
     await seedAdminUser();
   } catch (err) {

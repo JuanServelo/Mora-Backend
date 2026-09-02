@@ -25,13 +25,13 @@ public class BlocoController {
     }
 
     @GetMapping
-    public List<Bloco> listarAtivos() {
-        return blocoService.listarAtivos(CondominioUtils.condominioIdEfetivo());
+    public List<Bloco> listarAtivos(@RequestParam(required = false) String condominioId) {
+        return blocoService.listarAtivos(CondominioUtils.resolverEscopo(condominioId));
     }
 
     @GetMapping("/todos")
-    public List<Bloco> listarTodos() {
-        return blocoService.listarTodos(CondominioUtils.condominioIdEfetivo());
+    public List<Bloco> listarTodos(@RequestParam(required = false) String condominioId) {
+        return blocoService.listarTodos(CondominioUtils.resolverEscopo(condominioId));
     }
 
     @GetMapping("/{id}")

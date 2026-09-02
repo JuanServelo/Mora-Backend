@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS invites (
   "expiresAt" TIMESTAMP NOT NULL,
   "usedAt" TIMESTAMP,
   "usedByUserId" INTEGER,
+  "responsavelFinanceiro" BOOLEAN NOT NULL DEFAULT false,
   "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -86,11 +87,7 @@ CREATE TABLE IF NOT EXISTS invites (
 -- DONO_ALUGUEL  → dono@mora.com         senha: Teste@1234
 INSERT INTO users (nome, email, senha, perfil, role, status, "condominioId", "tokenVersion", "activatedAt", "createdAt", "updatedAt")
 VALUES
-  ('Administrador Geral',  'admin@mora.com',    '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_GERAL',    'admin', 'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Síndico Teste',        'sindico@mora.com',  '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_SINDICO',  'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Porteiro Teste',       'porteiro@mora.com', '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'PORTEIRO',       'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Morador Teste',        'morador@mora.com',  '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'MORADOR',        'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Dono Aluguel Teste',   'dono@mora.com',     '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'DONO_ALUGUEL',   'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  ('Administrador Geral',  'admin@mora.com',    '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_GERAL',    'admin', 'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (email) DO NOTHING;
 
 -- Criar índices para melhor performance
@@ -136,7 +133,8 @@ CREATE TABLE IF NOT EXISTS apartamentos (
 -- Criar tabela areas_comuns
 CREATE TABLE IF NOT EXISTS areas_comuns (
   id UUID PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL UNIQUE,
+  nome VARCHAR(255) NOT NULL,
+  "condominioId" VARCHAR(50),
   tipo VARCHAR(100) NOT NULL,
   descricao TEXT,
   localizacao VARCHAR(255),
@@ -146,7 +144,8 @@ CREATE TABLE IF NOT EXISTS areas_comuns (
   observacoes TEXT,
   ativo BOOLEAN DEFAULT true,
   "criadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(nome, "condominioId")
 );
 
 -- Criar índices para melhor performance

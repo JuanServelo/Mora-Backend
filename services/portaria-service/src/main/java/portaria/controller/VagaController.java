@@ -29,15 +29,15 @@ public class VagaController {
     }
 
     @GetMapping
-    public List<VagaResponseDTO> listarApenasAtivas() {
-        return vagaService.listarApenasAtivas(CondominioUtils.condominioIdEfetivo()).stream()
+    public List<VagaResponseDTO> listarApenasAtivas(@RequestParam(required = false) String condominioId) {
+        return vagaService.listarApenasAtivas(CondominioUtils.resolverEscopo(condominioId)).stream()
                 .map(VagaResponseDTO::fromEntity)
                 .toList();
     }
 
     @GetMapping("/todas")
-    public List<VagaResponseDTO> listarTodas() {
-        return vagaService.listarTodas(CondominioUtils.condominioIdEfetivo()).stream()
+    public List<VagaResponseDTO> listarTodas(@RequestParam(required = false) String condominioId) {
+        return vagaService.listarTodas(CondominioUtils.resolverEscopo(condominioId)).stream()
                 .map(VagaResponseDTO::fromEntity)
                 .toList();
     }

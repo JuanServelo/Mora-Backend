@@ -1,5 +1,7 @@
 package portaria.security;
 
+import portaria.exception.AcessoNegadoException;
+
 /**
  * Extrai o condominioId efetivo do JWT armazenado no AuthContext.
  *
@@ -18,6 +20,24 @@ public final class CondominioUtils {
         if (claims == null) return null;
         String cid = claims.condominioId();
         if (cid == null || ADMIN_GERAL_CONDOMINIO.equals(cid)) return null;
+        return cid;
+    }
+
+    /**
+     * Resolve o condominioId efetivo considerando o query param da requisição.
+     * - Usuário escopado: usa sempre seu próprio condominioId; lança 403 se o param for diferente.
+     * - ADMIN_GERAL: usa o param se fornecido, senão null (sem filtro).
+     */
+    public static String resolverEscopo(String condominioIdParam) {
+        JwtClaims claims = AuthContext.get();
+        if (claims == null) return condominioIdParam;
+        String cid = claims.condominioId();
+        if (cid == null || ADMIN_GERAL_CONDOMINIO.equals(cid)) {
+            return condominioIdParam;
+        }
+        if (condominioIdParam != null && !condominioIdParam.equals(cid)) {
+            throw new AcessoNegadoException("Acesso negado ao condomínio especificado.");
+        }
         return cid;
     }
 }
