@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS users (
   "unidadeId" UUID,
   "cadastradoPorId" INTEGER,
   "responsavelFinanceiro" BOOLEAN DEFAULT false,
+  "dataNascimento" DATE,
+  "semAcessoSistema" BOOLEAN DEFAULT false,
+  "entradaPermitida" BOOLEAN DEFAULT false,
+  "oauthCode" VARCHAR(255),
+  "oauthCodeExpira" TIMESTAMP,
   "tokenVersion" INTEGER DEFAULT 0,
   "activatedAt" TIMESTAMP,
   "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -78,6 +83,21 @@ CREATE TABLE IF NOT EXISTS invites (
   "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Usuários de teste por perfil (senha: Teste@1234)
+-- ADMIN_GERAL   → admin@mora.com        senha: Teste@1234
+-- ADMIN_SINDICO → sindico@mora.com      senha: Teste@1234
+-- PORTEIRO      → porteiro@mora.com     senha: Teste@1234
+-- MORADOR       → morador@mora.com      senha: Teste@1234
+-- DONO_ALUGUEL  → dono@mora.com         senha: Teste@1234
+INSERT INTO users (nome, email, senha, perfil, role, status, "condominioId", "tokenVersion", "activatedAt", "createdAt", "updatedAt")
+VALUES
+  ('Administrador Geral',  'admin@mora.com',    '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_GERAL',    'admin', 'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Síndico Teste',        'sindico@mora.com',  '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_SINDICO',  'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Porteiro Teste',       'porteiro@mora.com', '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'PORTEIRO',       'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Morador Teste',        'morador@mora.com',  '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'MORADOR',        'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Dono Aluguel Teste',   'dono@mora.com',     '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'DONO_ALUGUEL',   'user',  'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (email) DO NOTHING;
 
 -- Criar índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_condominios_status ON condominios(status);
