@@ -56,6 +56,22 @@ public class PollService {
         return pollMapper.toResponseDto(poll);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<PollResponseDTO> listPollsByMeeting(Long meetingId) {
+        return pollRepository.findByMeetingId(meetingId).stream()
+                .map(pollMapper::toResponseDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<PollResponseDTO> listPollsByDate(java.time.LocalDate data) {
+        java.time.LocalDateTime start = data.atStartOfDay();
+        java.time.LocalDateTime end = data.atTime(23, 59, 59);
+        return pollRepository.findByMeetingDate(start, end).stream()
+                .map(pollMapper::toResponseDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     @Transactional
     public PollResponseDTO updatePoll(@NotNull Long id, @NotNull PollRequestDTO dto) {
         Poll pollExistente = pollRepository.findById(id)

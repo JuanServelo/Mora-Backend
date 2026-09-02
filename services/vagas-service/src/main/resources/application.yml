@@ -1,0 +1,50 @@
+server:
+  port: 8092
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: vagas-service
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:vagas_db}
+    username: ${POSTGRES_USER:admin}
+    password: ${POSTGRES_PASSWORD:Vibers@2112}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  cloud:
+    consul:
+      host: ${SPRING_CLOUD_CONSUL_HOST:localhost}
+      port: ${SPRING_CLOUD_CONSUL_PORT:8500}
+      discovery:
+        register: true
+        instance-id: ${spring.application.name}:${random.value}
+        prefer-ip-address: true
+        tags:
+          - "traefik.enable=true"
+          - "traefik.http.routers.vagas.rule=PathPrefix(`/api/vagas`)"
+          - "traefik.http.routers.vagas.entrypoints=web"
+          - "traefik.http.middlewares.vagas-stripprefix.stripprefix.prefixes=/api/vagas"
+          - "traefik.http.routers.vagas.middlewares=vagas-stripprefix"
+
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

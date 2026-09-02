@@ -1,0 +1,19 @@
+{
+  "name": "gestao-geral",
+  "version": "1.0.0",
+  "description": "Agregação de dados da plataforma para o painel do Admin Geral",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "consul": "^2.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

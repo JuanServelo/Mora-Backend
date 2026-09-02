@@ -13,6 +13,7 @@ public class BlocoResponseDTO {
 
     private UUID id;
     private String nome;
+    private String sigla;
     private String descricao;
     private Integer andares;
     private Integer apartamentosPorAndar;
@@ -22,6 +23,7 @@ public class BlocoResponseDTO {
         return BlocoResponseDTO.builder()
                 .id(bloco.getId())
                 .nome(bloco.getNome())
+                .sigla(bloco.getSigla())
                 .descricao(bloco.getDescricao())
                 .andares(bloco.getAndares())
                 .apartamentosPorAndar(bloco.getApartamentosPorAndar())

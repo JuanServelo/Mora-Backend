@@ -7,3 +7,5 @@ credentials.json
 tokens/
 
 node_modules/
+**/target/
+*.jar

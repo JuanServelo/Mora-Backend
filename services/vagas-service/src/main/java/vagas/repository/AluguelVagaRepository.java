@@ -1,0 +1,37 @@
+package vagas.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import vagas.model.AluguelVaga;
+import vagas.model.enums.StatusAluguel;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+public interface AluguelVagaRepository extends JpaRepository<AluguelVaga, String> {
+
+    List<AluguelVaga> findBySolicitanteId(UUID solicitanteId);
+
+    List<AluguelVaga> findByProprietarioId(UUID proprietarioId);
+
+    List<AluguelVaga> findBySolicitanteIdAndStatus(UUID solicitanteId, StatusAluguel status);
+
+    List<AluguelVaga> findByProprietarioIdAndStatus(UUID proprietarioId, StatusAluguel status);
+
+    /**
+     * Verifica conflito de datas para a mesma vaga em aluguéis APROVADOS (RF10 CA – pedidos simultâneos).
+     */
+    @Query("""
+            SELECT a FROM AluguelVaga a
+            WHERE a.vaga.id = :vagaId
+              AND a.status = 'APROVADO'
+              AND a.dataInicio <= :dataFim
+              AND a.dataFim   >= :dataInicio
+            """)
+    List<AluguelVaga> findAprovadosConflitantes(
+            @Param("vagaId") String vagaId,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim);
+}
+

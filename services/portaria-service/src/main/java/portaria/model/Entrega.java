@@ -38,6 +38,10 @@ public class Entrega {
 
     private String descricao;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     private String remetente;
 
     // "PENDENTE" | "RETIRADA"

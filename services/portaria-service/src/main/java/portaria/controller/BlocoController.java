@@ -24,13 +24,13 @@ public class BlocoController {
     }
 
     @GetMapping
-    public List<Bloco> listarAtivos() {
-        return blocoService.listarAtivos();
+    public List<Bloco> listarAtivos(@RequestParam(required = false) String condominioId) {
+        return blocoService.listarAtivos(condominioId);
     }
 
     @GetMapping("/todos")
-    public List<Bloco> listarTodos() {
-        return blocoService.listarTodos();
+    public List<Bloco> listarTodos(@RequestParam(required = false) String condominioId) {
+        return blocoService.listarTodos(condominioId);
     }
 
     @GetMapping("/{id}")
@@ -57,6 +57,7 @@ public class BlocoController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable UUID id) {
+        blocoService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 }

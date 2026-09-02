@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
@@ -17,6 +16,8 @@ import { googleOAuthConfigurado } from '../utils/oauthConfig.js';
 import { validarSenha } from '../utils/passwordValidation.js';
 import { redirectPorPerfil } from '../utils/redirectPorPerfil.js';
 import { STATUS_USUARIO } from '../constants/perfis.js';
+import { gerarTokenComHash, hashToken, expiraEm } from '../utils/tokens.js';
+import { RESET_TOKEN_TTL_MS, OAUTH_CODE_TTL_MS, JWT_EXPIRES_IN } from '../config/regras.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = process.env.STORAGE_PATH || path.join(__dirname, '..', 'uploads', 'avatars');
@@ -27,21 +28,20 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const router = express.Router();
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { sucesso: false, mensagem: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+const limiter = (max, windowMs, mensagem) => rateLimit({
+  windowMs,
+  max,
+  message: { sucesso: false, mensagem },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-const forgotLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 3,
-  message: { sucesso: false, mensagem: 'Muitas solicitações de recuperação. Tente novamente em 1 hora.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Limitadores separados por finalidade: estourar o login não pode impedir
+// alguém de redefinir a senha ou concluir o OAuth do mesmo IP (NAT/escritório).
+const authLimiter = limiter(10, 15 * 60 * 1000, 'Muitas tentativas de login. Tente novamente em 15 minutos.');
+const forgotLimiter = limiter(5, 60 * 60 * 1000, 'Muitas solicitações de recuperação. Tente novamente em 1 hora.');
+// Rotas protegidas por um token imprevisível: o limite serve só contra força bruta.
+const tokenLimiter = limiter(20, 15 * 60 * 1000, 'Muitas tentativas. Tente novamente em 15 minutos.');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -66,8 +66,23 @@ function loginComErroRedirect(codigo, extra = '') {
   return `${getFrontendUrl()}/login?erro=${codigo}${extra}`;
 }
 
-export const signToken = (userId, perfil, tokenVersion = 0) =>
-  jwt.sign({ id: userId, perfil, tokenVersion }, getJwtSecret(), { expiresIn: '7d' });
+/**
+ * `condominioId` viaja na claim para que os demais serviços saibam o escopo do
+ * usuário sem precisar consultar o auth-api a cada requisição. É nulo para o
+ * ADMIN_GERAL, que opera sobre todos os condomínios.
+ */
+export const signToken = (userId, perfil, tokenVersion = 0, email = undefined, condominioId = null) =>
+  jwt.sign(
+    {
+      id: userId,
+      perfil,
+      tokenVersion,
+      ...(email != null && { email }),
+      ...(condominioId != null && { condominioId }),
+    },
+    getJwtSecret(),
+    { expiresIn: JWT_EXPIRES_IN },
+  );
 
 router.post('/register', authLimiter, (_req, res) => {
   res.status(403).json({
@@ -103,13 +118,17 @@ router.post('/login', authLimiter, async (req, res) => {
       });
     }
 
+    if (usuario.semAcessoSistema) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.' });
+    }
+
     const senhaValida = await usuario.compararSenha(senha);
     if (!senhaValida) {
       return res.status(401).json({ sucesso: false, mensagem: 'E-mail ou senha inválidos.' });
     }
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId);
 
     res.json({
       sucesso: true,
@@ -119,7 +138,8 @@ router.post('/login', authLimiter, async (req, res) => {
       redirectPath: redirectPorPerfil(perfil),
     });
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao fazer login' });
+    console.error('Erro no login:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao fazer login' });
   }
 });
 
@@ -130,7 +150,8 @@ router.get('/me', authMiddleware, async (req, res) => {
       usuario: usuarioPublico(req.user),
     });
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: err.message || 'Erro ao buscar usuário' });
+    console.error('Erro ao buscar usuário:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuário' });
   }
 });
 
@@ -161,6 +182,16 @@ router.put('/me', authMiddleware, async (req, res) => {
     if (telefone !== undefined) usuario.telefone = telefone?.trim() || null;
     if (email) {
       const emailNorm = email.toLowerCase().trim();
+
+      // Conta Google: o email é a identidade verificada pelo provedor. Trocá-lo
+      // pela API contornaria o bloqueio que existia só na tela.
+      if (emailNorm !== usuario.email && usuario.provider === 'google') {
+        return res.status(403).json({
+          sucesso: false,
+          mensagem: 'E-mail vinculado ao Google não pode ser alterado.',
+        });
+      }
+
       const duplicado = await User.findOne({
         where: {
           email: emailNorm,
@@ -188,13 +219,28 @@ router.put('/me', authMiddleware, async (req, res) => {
         }
       }
       usuario.senha = senha;
+      // Trocar a senha derruba as outras sessões; esta ganha um token novo.
+      usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
     }
 
     await usuario.save();
+
+    const trocouSenha = Boolean(senha);
     res.json({
       sucesso: true,
-      mensagem: 'Dados atualizados com sucesso.',
+      mensagem: trocouSenha
+        ? 'Dados atualizados. As outras sessões foram encerradas.'
+        : 'Dados atualizados com sucesso.',
       usuario: usuarioPublico(usuario),
+      // Sem token novo o cliente seria deslogado pela própria troca de senha.
+      ...(trocouSenha && {
+        token: signToken(
+          usuario.id,
+          usuario.getPerfilEfetivo(),
+          usuario.tokenVersion,
+          usuario.email,
+        ),
+      }),
     });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
@@ -258,11 +304,10 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
       return res.json({ sucesso: true, mensagem: 'Se esse email estiver cadastrado, você receberá um link em breve.' });
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const { token, hash } = gerarTokenComHash();
 
     usuario.resetToken = hash;
-    usuario.resetTokenExpira = new Date(Date.now() + 60 * 60 * 1000);
+    usuario.resetTokenExpira = expiraEm(RESET_TOKEN_TTL_MS);
     await usuario.save({ validate: false });
 
     if (!emailConfigurado()) {
@@ -284,7 +329,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
   }
 });
 
-router.post('/reset-password/:token', authLimiter, async (req, res) => {
+router.post('/reset-password/:token', tokenLimiter, async (req, res) => {
   try {
     const { senha } = req.body;
     const errosSenha = validarSenha(senha);
@@ -292,11 +337,9 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
       return res.status(400).json({ sucesso: false, mensagem: errosSenha[0], errosSenha });
     }
 
-    const hash = crypto.createHash('sha256').update(req.params.token).digest('hex');
-
     const usuario = await User.scope('withResetToken').findOne({
       where: {
-        resetToken: hash,
+        resetToken: hashToken(req.params.token),
         resetTokenExpira: { [Op.gt]: new Date() },
       },
     });
@@ -308,9 +351,11 @@ router.post('/reset-password/:token', authLimiter, async (req, res) => {
     usuario.senha = senha;
     usuario.resetToken = null;
     usuario.resetTokenExpira = null;
+    // Quem redefine a senha pode estar expulsando um invasor: derruba tudo.
+    usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
     await usuario.save();
 
-    res.json({ sucesso: true, mensagem: 'Senha redefinida com sucesso' });
+    res.json({ sucesso: true, mensagem: 'Senha redefinida com sucesso. Faça login novamente.' });
   } catch (err) {
     console.error('Erro no reset-password:', err);
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao redefinir senha' });
@@ -325,11 +370,12 @@ router.get('/google', (req, res, next) => {
   if (!googleOAuthConfigurado()) {
     return res.redirect(`${getFrontendUrl()}/login?erro=oauth_nao_configurado`);
   }
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+  // session: false — a sessão guarda só o `state` do OAuth; a autenticação é JWT.
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false })(req, res, next);
 });
 
 router.get('/google/callback', (req, res) => {
-  passport.authenticate('google', (err, user) => {
+  passport.authenticate('google', { session: false }, (err, user) => {
     if (err || !user) {
       if (err) console.error('Erro no callback Google OAuth:', err.message || err);
       const codigo = erroOAuthRedirect(err);
@@ -342,11 +388,75 @@ router.get('/google/callback', (req, res) => {
     if (user.status === STATUS_USUARIO.PENDING_ACTIVATION) {
       return res.redirect(`${getFrontendUrl()}/login?erro=cadastro_pendente`);
     }
+    if (user.semAcessoSistema) {
+      return res.redirect(`${getFrontendUrl()}/login?erro=sem_acesso_sistema`);
+    }
 
-    const perfil = user.getPerfilEfetivo();
-    const token = signToken(user.id, perfil, user.tokenVersion || 0);
-    res.redirect(`${getFrontendUrl()}/auth/callback?token=${token}`);
+    // Em vez de mandar o JWT na URL, entrega um código de uso único e curta
+    // duração — a URL vaza para histórico, logs de proxy e cabeçalho Referer.
+    (async () => {
+      try {
+        const { token: codigo, hash } = gerarTokenComHash();
+        user.oauthCode = hash;
+        user.oauthCodeExpira = expiraEm(OAUTH_CODE_TTL_MS);
+        await user.save({ validate: false });
+
+        res.redirect(`${getFrontendUrl()}/auth/callback?code=${codigo}`);
+      } catch (e) {
+        console.error('Erro ao gerar código OAuth:', e);
+        res.redirect(loginComErroRedirect('oauth'));
+      }
+    })();
   })(req, res);
+});
+
+/** Troca o código de uso único do redirect pelo JWT de sessão. */
+router.post('/oauth/exchange', tokenLimiter, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ sucesso: false, mensagem: 'Código não fornecido' });
+    }
+
+    const usuario = await User.scope('withOauthCode').findOne({
+      where: {
+        oauthCode: hashToken(code),
+        oauthCodeExpira: { [Op.gt]: new Date() },
+      },
+    });
+
+    if (!usuario) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Código inválido ou expirado' });
+    }
+
+    // Uso único: consome antes de emitir o token.
+    usuario.oauthCode = null;
+    usuario.oauthCodeExpira = null;
+    await usuario.save({ validate: false });
+
+    const perfil = usuario.getPerfilEfetivo();
+    res.json({
+      sucesso: true,
+      mensagem: 'Login realizado com sucesso',
+      token: signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId),
+      usuario: usuarioPublico(usuario),
+      redirectPath: redirectPorPerfil(perfil),
+    });
+  } catch (err) {
+    console.error('Erro na troca do código OAuth:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao concluir login' });
+  }
+});
+
+/** Encerra a sessão de verdade: invalida todos os JWT já emitidos. */
+router.post('/logout', authMiddleware, async (req, res) => {
+  try {
+    await req.user.revogarTokens();
+    res.json({ sucesso: true, mensagem: 'Sessão encerrada' });
+  } catch (err) {
+    console.error('Erro no logout:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao encerrar sessão' });
+  }
 });
 
 export default router;

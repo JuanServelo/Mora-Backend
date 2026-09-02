@@ -41,3 +41,5 @@ tokens/
 *.patch
 target/
 *.xml
+
+**/target/

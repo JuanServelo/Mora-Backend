@@ -8,7 +8,7 @@ const getPortariaUrl = () =>
 export async function validarUnidadeExiste(unidadeId) {
   if (!unidadeId) return false;
   try {
-    const res = await fetch(`${getPortariaUrl()}/api/apartamentos/${unidadeId}`, {
+    const res = await fetch(`${getPortariaUrl()}/apartamentos/${unidadeId}`, {
       signal: AbortSignal.timeout(3000),
     });
     return res.ok;

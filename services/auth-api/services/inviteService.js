@@ -3,6 +3,7 @@ import sequelize from '../config/database.js';
 import User from '../models/User.js';
 import Invite from '../models/Invite.js';
 import {
+  PERFIS,
   STATUS_CONVITE,
   STATUS_USUARIO,
   CONDOMINIO_DEFAULT,
@@ -104,6 +105,13 @@ export async function emailEmUsoNaUnidade(email, unidadeId, excludeUserId = null
   return !!existe;
 }
 
+export async function emailExisteGlobalmente(email, excludeUserId = null) {
+  const where = { email: email.toLowerCase().trim() };
+  if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
+  const existe = await User.findOne({ where });
+  return !!existe;
+}
+
 export async function criarConvite({
   email,
   perfil,
@@ -112,6 +120,7 @@ export async function criarConvite({
   unidadeId = null,
   nomePrecadastro = null,
   cpfPrecadastro = null,
+  responsavelFinanceiro = false,
 }) {
   const codigo = await gerarCodigoUnico();
   const invite = await Invite.create({
@@ -123,6 +132,7 @@ export async function criarConvite({
     nomePrecadastro,
     cpfPrecadastro: cpfPrecadastro ? normalizarCpf(cpfPrecadastro) : null,
     cadastradoPorId,
+    responsavelFinanceiro,
     status: STATUS_CONVITE.PENDING,
     expiresAt: expiraEm48h(),
   });
@@ -150,6 +160,10 @@ export async function reenviarConvite(inviteId, cadastradoPorId) {
     return { sucesso: false, mensagem: MSG.CODIGO_USADO, status: 400 };
   }
 
+  if (invite.perfil === PERFIS.CONVIDADO) {
+    return { sucesso: false, mensagem: 'Convidados não possuem acesso ao sistema.', status: 400 };
+  }
+
   invite.status = STATUS_CONVITE.REVOKED;
   await invite.save();
 
@@ -161,6 +175,7 @@ export async function reenviarConvite(inviteId, cadastradoPorId) {
     unidadeId: invite.unidadeId,
     nomePrecadastro: invite.nomePrecadastro,
     cpfPrecadastro: invite.cpfPrecadastro,
+    responsavelFinanceiro: invite.responsavelFinanceiro ?? false,
   });
 
   return {
@@ -183,6 +198,10 @@ export async function validarDadosConviteAdmin({
     return { sucesso: false, mensagem: 'Unidade é obrigatória para este perfil.' };
   }
 
+  if (perfil === PERFIS.CONVIDADO) {
+    return { sucesso: false, mensagem: 'Convidados não possuem acesso ao sistema.' };
+  }
+
   if (unidadeId) {
     const ok = await validarUnidadeExiste(unidadeId);
     if (!ok) {
@@ -198,16 +217,9 @@ export async function validarDadosConviteAdmin({
 
   const emailNorm = email.toLowerCase().trim();
 
-  if (unidadeId) {
-    const emUsoUnidade = await emailEmUsoNaUnidade(emailNorm, unidadeId);
-    if (emUsoUnidade) {
-      return { sucesso: false, mensagem: 'Já existe um usuário cadastrado com este e-mail nesta unidade.' };
-    }
-  } else {
-    const emUso = await emailEmUsoNoCondominio(emailNorm, condominioId);
-    if (emUso) {
-      return { sucesso: false, mensagem: 'Já existe um usuário cadastrado com este e-mail.' };
-    }
+  const emUsoGlobal = await emailExisteGlobalmente(emailNorm);
+  if (emUsoGlobal) {
+    return { sucesso: false, mensagem: 'Já existe um usuário cadastrado com este e-mail.' };
   }
 
   return { sucesso: true };
@@ -216,21 +228,51 @@ export async function validarDadosConviteAdmin({
 export async function residentOwnerAtivoNaUnidade(unidadeId, excludeUserId = null) {
   const where = {
     unidadeId,
-    perfil: 'RESIDENT_OWNER',
+    perfil: PERFIS.MORADOR,
     status: STATUS_USUARIO.ACTIVE,
   };
   if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
   return User.findOne({ where });
 }
 
-export async function lesseeAtivoNaUnidade(unidadeId, excludeUserId = null) {
+/**
+ * Morador ativo da unidade apto a receber a responsabilidade financeira:
+ * mora lá e ainda não é o responsável. Antes da simplificação era o Lessee.
+ */
+export async function moradorSucessorNaUnidade(unidadeId, excludeUserId = null) {
   const where = {
     unidadeId,
-    perfil: 'LESSEE',
+    perfil: PERFIS.MORADOR,
+    responsavelFinanceiro: false,
     status: STATUS_USUARIO.ACTIVE,
   };
   if (excludeUserId) where.id = { [Op.ne]: excludeUserId };
   return User.findOne({ where });
+}
+
+/** Morador que responde financeiramente pela unidade (antigo Lessee). */
+export async function lesseeAtivoNaUnidade(unidadeId, excludeUserId = null) {
+  const whereUser = {
+    unidadeId,
+    perfil: PERFIS.MORADOR,
+    responsavelFinanceiro: true,
+    status: STATUS_USUARIO.ACTIVE,
+  };
+  if (excludeUserId) whereUser.id = { [Op.ne]: excludeUserId };
+  const ativo = await User.findOne({ where: whereUser });
+  if (ativo) return ativo;
+
+  // Também bloqueia se já existe convite PENDENTE de responsável nesta unidade
+  const convitePendente = await Invite.findOne({
+    where: {
+      unidadeId,
+      perfil: PERFIS.MORADOR,
+      responsavelFinanceiro: true,
+      status: STATUS_CONVITE.PENDING,
+      expiresAt: { [Op.gt]: new Date() },
+    },
+  });
+  return convitePendente || null;
 }
 
 export async function ativarConta({
@@ -239,6 +281,7 @@ export async function ativarConta({
   email,
   telefone,
   cpf,
+  dataNascimento,
   senha,
 }, signToken, usuarioPublicoFn, redirectPorPerfilFn) {
   const resultado = await buscarConvitePorCodigo(codigo);
@@ -249,6 +292,15 @@ export async function ativarConta({
   const { invite } = resultado;
   const emailNorm = email.toLowerCase().trim();
   const cpfNorm = normalizarCpf(cpf);
+
+  // Impede que o código do convite seja usado como nome
+  if (nome.trim().toUpperCase() === invite.codigo.toUpperCase()) {
+    return {
+      sucesso: false,
+      mensagem: 'O nome informado parece ser o código do convite. Por favor, informe seu nome completo.',
+      status: 400,
+    };
+  }
 
   if (invite.nomePrecadastro && invite.nomePrecadastro.trim() !== nome.trim()) {
     return {
@@ -265,14 +317,11 @@ export async function ativarConta({
     };
   }
 
-  const emUso = invite.unidadeId
-    ? await emailEmUsoNaUnidade(emailNorm, invite.unidadeId)
-    : await emailEmUsoNoCondominio(emailNorm, invite.condominioId);
-
+  const emUso = await emailExisteGlobalmente(emailNorm);
   if (emUso) {
     return {
       sucesso: false,
-      mensagem: 'Este e-mail já está em uso. Use um e-mail diferente ou entre em contato com ao Administrator .',
+      mensagem: 'Este e-mail já está em uso. Use um e-mail diferente ou entre em contato com o Administrador.',
       status: 400,
     };
   }
@@ -295,12 +344,15 @@ export async function ativarConta({
       email: emailNorm,
       telefone: telefone?.trim() || null,
       cpf: cpfNorm,
+      dataNascimento: dataNascimento || null,
       senha,
       perfil: invite.perfil,
       status: STATUS_USUARIO.ACTIVE,
       condominioId: invite.condominioId,
       unidadeId: invite.unidadeId,
       cadastradoPorId: invite.cadastradoPorId,
+      // Herdado do convite: é o que distingue o morador que paga a fatura.
+      responsavelFinanceiro: invite.responsavelFinanceiro ?? false,
       provider: 'local',
       activatedAt: new Date(),
       tokenVersion: 0,
@@ -314,7 +366,7 @@ export async function ativarConta({
     await transaction.commit();
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion, usuario.email, usuario.condominioId);
 
     return {
       sucesso: true,

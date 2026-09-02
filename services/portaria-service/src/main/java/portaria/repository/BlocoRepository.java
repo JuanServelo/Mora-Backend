@@ -12,4 +12,8 @@ import java.util.UUID;
 public interface BlocoRepository extends JpaRepository<Bloco, UUID> {
     List<Bloco> findByAtivo(boolean ativo);
     Optional<Bloco> findByNome(String nome);
+
+    List<Bloco> findByCondominioId(String condominioId);
+    List<Bloco> findByCondominioIdAndAtivo(String condominioId, boolean ativo);
+    Optional<Bloco> findByNomeAndCondominioId(String nome, String condominioId);
 }

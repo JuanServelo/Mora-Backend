@@ -22,6 +22,10 @@ public class Turno {
     @NotBlank(message = "Cargo é obrigatório")
     private String cargo;
 
+    /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
+    @Column(name = "`condominioId`")
+    private String condominioId;
+
     @ElementCollection
     @CollectionTable(name = "turno_entradas", joinColumns = @JoinColumn(name = "turno_id"))
     @Column(name = "entrada")

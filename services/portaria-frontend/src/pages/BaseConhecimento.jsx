@@ -27,6 +27,7 @@ export default function BaseConhecimento() {
   const [busca, setBusca] = useState('');
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('');
   const [soPublicados, setSoPublicados] = useState(false);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(null);
 
   useEffect(() => {
     carregarArtigos();
@@ -44,13 +45,14 @@ export default function BaseConhecimento() {
     }
   }
 
-  async function excluir(id) {
-    if (!window.confirm('Tem certeza que deseja excluir este artigo?')) return;
+  async function confirmarEExcluir() {
     try {
-      await conhecimentoApi.excluir(id);
-      setArtigos((prev) => prev.filter((a) => a.id !== id));
+      await conhecimentoApi.excluir(confirmarExclusao.id);
+      setArtigos((prev) => prev.filter((a) => a.id !== confirmarExclusao.id));
     } catch {
-      alert('Erro ao excluir artigo.');
+      setErro('Erro ao excluir artigo.');
+    } finally {
+      setConfirmarExclusao(null);
     }
   }
 
@@ -168,7 +170,7 @@ export default function BaseConhecimento() {
                   Editar
                 </button>
                 <button
-                  onClick={() => excluir(artigo.id)}
+                  onClick={() => setConfirmarExclusao(artigo)}
                   style={{ background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: '5px', padding: '0.35rem 0.8rem', cursor: 'pointer' }}
                 >
                   Excluir
@@ -178,6 +180,44 @@ export default function BaseConhecimento() {
           </div>
         ))}
       </div>
+
+      {confirmarExclusao && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '12px', padding: '2rem',
+            maxWidth: '420px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🗑️</div>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 700 }}>Excluir artigo</h2>
+            <p style={{ margin: '0 0 1.5rem', color: '#4b5563' }}>
+              Tem certeza que deseja excluir <strong>"{confirmarExclusao.titulo}"</strong>? Essa ação não pode ser desfeita.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => setConfirmarExclusao(null)}
+                style={{
+                  background: '#f3f4f6', color: '#374151', border: 'none',
+                  borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer', fontWeight: 600,
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEExcluir}
+                style={{
+                  background: '#dc2626', color: '#fff', border: 'none',
+                  borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer', fontWeight: 600,
+                }}
+              >
+                Sim, excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

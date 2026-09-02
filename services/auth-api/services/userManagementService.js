@@ -7,27 +7,35 @@ import {
   STATUS_CONVITE,
   podeCadastrarPerfil,
 } from '../constants/perfis.js';
-import { possuiCobrancasEmAberto } from '../utils/financialGuardService.js';
+import { MSG_RF07 } from '../constants/occupantMessages.js';
 import {
   criarConvite,
   reenviarConvite,
   validarDadosConviteAdmin,
-  residentOwnerAtivoNaUnidade,
   lesseeAtivoNaUnidade,
 } from './inviteService.js';
 
-export async function listarUsuariosEscopo(ator) {
+export async function listarUsuariosEscopo(ator, filtros = {}) {
   const perfil = ator.getPerfilEfetivo();
-  const condominioId = ator.condominioId;
 
-  let whereUsers = { condominioId };
+  /**
+   * O Admin Geral opera a plataforma e tem `condominioId` nulo. Sem este ramo,
+   * a consulta virava `WHERE "condominioId" IS NULL` e ele não via usuário
+   * algum. Ele enxerga tudo, ou um cliente específico via ?condominioId=.
+   */
+  const ehAdminGeral = perfil === PERFIS.ADMIN_GERAL;
+  const escopo = ehAdminGeral
+    ? (filtros.condominioId ? { condominioId: filtros.condominioId } : {})
+    : { condominioId: ator.condominioId };
+
+  let whereUsers = { ...escopo };
   let whereInvites = {
-    condominioId,
+    ...escopo,
     status: STATUS_CONVITE.PENDING,
     expiresAt: { [Op.gt]: new Date() },
   };
 
-  if ([PERFIS.RESIDENT_OWNER, PERFIS.ABSENT_OWNER, PERFIS.LESSEE].includes(perfil)) {
+  if ([PERFIS.MORADOR, PERFIS.DONO_ALUGUEL].includes(perfil)) {
     whereUsers = { ...whereUsers, unidadeId: ator.unidadeId };
     whereInvites = { ...whereInvites, unidadeId: ator.unidadeId };
   }
@@ -42,7 +50,8 @@ export async function listarUsuariosEscopo(ator) {
 
 export async function emitirConvite(ator, dados) {
   const perfilAtor = ator.getPerfilEfetivo();
-  const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro } = dados;
+  const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro, condominioId: condominioIdDados } = dados;
+  const condominioId = condominioIdDados || ator.condominioId;
 
   if (!podeCadastrarPerfil(perfilAtor, perfil)) {
     return {
@@ -52,25 +61,23 @@ export async function emitirConvite(ator, dados) {
     };
   }
 
+  if (perfil === PERFIS.CONVIDADO) {
+    return {
+      sucesso: false,
+      mensagem: MSG_RF07.GUEST_SEM_ACESSO,
+      status: 400,
+    };
+  }
+
   const unidadeEfetiva = unidadeId || ator.unidadeId || null;
 
-  if (perfilAtor === PERFIS.ABSENT_OWNER && perfil === PERFIS.LESSEE) {
+  // Só um morador responsável financeiro por unidade.
+  if (perfil === PERFIS.MORADOR && perfilAtor === PERFIS.DONO_ALUGUEL) {
     const lesseeExistente = await lesseeAtivoNaUnidade(unidadeEfetiva);
     if (lesseeExistente) {
       return {
         sucesso: false,
-        mensagem: 'Você já possui um Lessee vinculado a esta unidade.',
-        status: 400,
-      };
-    }
-  }
-
-  if (perfil === PERFIS.RESIDENT_OWNER && unidadeEfetiva) {
-    const roAtivo = await residentOwnerAtivoNaUnidade(unidadeEfetiva);
-    if (roAtivo) {
-      return {
-        sucesso: false,
-        mensagem: 'Esta unidade já possui um Resident Owner ativo. Desative o atual antes de cadastrar um novo.',
+        mensagem: MSG_RF07.LESSEE_DUPLICADO,
         status: 400,
       };
     }
@@ -82,7 +89,7 @@ export async function emitirConvite(ator, dados) {
     unidadeId: unidadeEfetiva,
     nomePrecadastro,
     cpfPrecadastro,
-    condominioId: ator.condominioId,
+    condominioId,
   });
 
   if (!validacao.sucesso) {
@@ -93,7 +100,7 @@ export async function emitirConvite(ator, dados) {
     email,
     perfil,
     cadastradoPorId: ator.id,
-    condominioId: ator.condominioId,
+    condominioId,
     unidadeId: unidadeEfetiva,
     nomePrecadastro,
     cpfPrecadastro,
@@ -122,14 +129,22 @@ async function desativarUsuarioRecursivo(usuario) {
   await usuario.save();
 }
 
-export async function desativarUsuario(ator, alvoId) {
+export async function desativarUsuario(ator, alvoId, opts = {}) {
   const alvo = await User.findByPk(alvoId);
   if (!alvo) {
-    return { sucesso: false, mensagem: 'Usuário não encontrado', status: 404 };
+    return {
+      sucesso: false,
+      mensagem: opts.mensagemRemocao ? MSG_RF07.VINCULO_INEXISTENTE : 'Usuário não encontrado',
+      status: 404,
+    };
   }
 
   if (alvo.status === STATUS_USUARIO.INACTIVE) {
-    return { sucesso: false, mensagem: 'Usuário já está inativo.', status: 400 };
+    return {
+      sucesso: false,
+      mensagem: opts.mensagemRemocao ? MSG_RF07.VINCULO_INEXISTENTE : 'Usuário já está inativo.',
+      status: 400,
+    };
   }
 
   const perfilAtor = ator.getPerfilEfetivo();
@@ -138,20 +153,19 @@ export async function desativarUsuario(ator, alvoId) {
   if (!podeDesativar(perfilAtor, perfilAlvo, ator, alvo)) {
     return {
       sucesso: false,
-      mensagem: 'Você não tem permissão para desativar este usuário.',
+      mensagem: opts.mensagemRemocao
+        ? MSG_RF07.SEM_PERMISSAO_REMOVER
+        : 'Você não tem permissão para desativar este usuário.',
       status: 403,
     };
   }
 
   if (alvo.responsavelFinanceiro && alvo.unidadeId) {
-    const temCobrancas = await possuiCobrancasEmAberto(alvo.id, alvo.unidadeId);
-    if (temCobrancas) {
-      return {
-        sucesso: false,
-        mensagem: `Este usuário é o responsável financeiro da unidade e possui cobranças em aberto. Regularize as pendências antes de prosseguir.`,
-        status: 400,
-      };
-    }
+    return {
+      sucesso: false,
+      mensagem: MSG_RF07.REMOVER_FINANCEIRO,
+      status: 400,
+    };
   }
 
   const cascata = await buscarUsuariosCascata(alvo);
@@ -162,10 +176,12 @@ export async function desativarUsuario(ator, alvoId) {
     await desativarUsuarioRecursivo(u);
   }
 
-  let mensagem = 'Usuário desativado com sucesso.';
-  if (perfilAlvo === PERFIS.LESSEE && totalCascata > 0) {
-    mensagem = `Lessee desativado. ${totalCascata} usuários vinculados também foram desativados.`;
-  } else if (totalCascata > 0) {
+  let mensagem = opts.mensagemRemocao ? MSG_RF07.VINCULO_REMOVIDO : 'Usuário desativado com sucesso.';
+  if (perfilAlvo === PERFIS.MORADOR && totalCascata > 0) {
+    mensagem = opts.mensagemRemocao
+      ? `Morador removido. ${totalCascata} usuários vinculados também foram desativados.`
+      : `Morador desativado. ${totalCascata} usuários vinculados também foram desativados.`;
+  } else if (totalCascata > 0 && !opts.mensagemRemocao) {
     mensagem = `Usuário desativado. ${totalCascata} usuários vinculados também foram desativados.`;
   }
 
@@ -177,26 +193,17 @@ export async function desativarUsuario(ator, alvoId) {
 }
 
 function podeDesativar(perfilAtor, perfilAlvo, ator, alvo) {
-  const escopoCondominio = [
-    PERFIS.CONTRACTING_PROPERTY_MANAGER,
-    PERFIS.CONTRACTING_SYNDIC,
-  ];
+  const escopoCondominio = [PERFIS.ADMIN_GERAL, PERFIS.ADMIN_SINDICO];
 
   if (escopoCondominio.includes(perfilAtor)) {
     return ator.condominioId === alvo.condominioId;
   }
 
-  if (perfilAtor === PERFIS.RESIDENT_OWNER || perfilAtor === PERFIS.ABSENT_OWNER) {
+  if (perfilAtor === PERFIS.MORADOR || perfilAtor === PERFIS.DONO_ALUGUEL) {
     if (alvo.cadastradoPorId !== ator.id && alvo.unidadeId !== ator.unidadeId) {
       return false;
     }
-    return [PERFIS.LESSEE, PERFIS.OCCUPANT, PERFIS.GUEST].includes(perfilAlvo)
-      || (perfilAlvo === PERFIS.RESIDENT_OWNER && ator.unidadeId === alvo.unidadeId);
-  }
-
-  if (perfilAtor === PERFIS.LESSEE) {
-    return alvo.cadastradoPorId === ator.id
-      && [PERFIS.OCCUPANT, PERFIS.GUEST].includes(perfilAlvo);
+    return [PERFIS.MORADOR, PERFIS.CONVIDADO].includes(perfilAlvo);
   }
 
   return false;
@@ -206,18 +213,19 @@ async function buscarUsuariosCascata(alvo) {
   const perfil = alvo.getPerfilEfetivo();
   const desativados = [];
 
-  if (perfil === PERFIS.LESSEE) {
+  if (perfil === PERFIS.MORADOR) {
     const vinculados = await User.findAll({
       where: {
         cadastradoPorId: alvo.id,
         status: STATUS_USUARIO.ACTIVE,
-        perfil: { [Op.in]: [PERFIS.OCCUPANT, PERFIS.GUEST] },
+        perfil: PERFIS.CONVIDADO,
       },
     });
     desativados.push(...vinculados);
   }
 
-  if (perfil === PERFIS.RESIDENT_OWNER && alvo.responsavelFinanceiro) {
+  // Desativar o responsável financeiro derruba a unidade inteira.
+  if (perfil === PERFIS.MORADOR && alvo.responsavelFinanceiro) {
     const vinculados = await User.findAll({
       where: {
         unidadeId: alvo.unidadeId,

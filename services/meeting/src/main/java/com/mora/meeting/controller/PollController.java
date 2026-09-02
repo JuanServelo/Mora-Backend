@@ -27,6 +27,19 @@ public class PollController {
         return ResponseEntity.status(HttpStatus.CREATED).body(novaVotacaoDTO);
     }
 
+    @GetMapping
+    @Operation(summary = "Listar votações", description = "Lista votações filtrando por reunião ou por data.")
+    public ResponseEntity<java.util.List<PollResponseDTO>> listPolls(
+            @RequestParam(required = false) Long meetingId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
+        if (meetingId != null) {
+            return ResponseEntity.ok(pollService.listPollsByMeeting(meetingId));
+        } else if (date != null) {
+            return ResponseEntity.ok(pollService.listPollsByDate(date));
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Ver uma votação", description = "Recebe o ID da votação e retorna as informações detalhadas.")
     public ResponseEntity<PollResponseDTO> readPoll(@PathVariable Long id) {

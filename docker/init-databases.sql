@@ -1,10 +1,36 @@
 -- Cria bancos adicionais para os microservicos
 -- O banco 'mora' (portaria) e criado automaticamente pela variavel POSTGRES_DB
+--
+-- ATENCAO: este script so roda quando o volume postgres_data e criado do zero.
+-- Em volume ja existente o Postgres ignora docker-entrypoint-initdb.d, entao um
+-- banco novo adicionado aqui NAO aparece em maquina que ja subiu antes. Use
+-- docker/criar-banco-financeiro.sql para criar no volume atual.
 CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
+CREATE DATABASE vagas_db;
+CREATE DATABASE mora_plan;
+CREATE DATABASE mora_financeiro;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;
+
+-- Criar tabela condominios (clientes)
+CREATE TABLE IF NOT EXISTS condominios (
+  id VARCHAR(50) PRIMARY KEY,
+  nome VARCHAR(200) NOT NULL,
+  cnpj VARCHAR(18),
+  endereco VARCHAR(300),
+  telefone VARCHAR(20),
+  email VARCHAR(150),
+  status VARCHAR(20) DEFAULT 'active',
+  "criadoPorId" INTEGER,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Inserir condomínio padrão
+INSERT INTO condominios (id, nome, status) VALUES ('default', 'Condomínio Padrão', 'active')
+ON CONFLICT (id) DO NOTHING;
 
 -- Criar tabela users
 CREATE TABLE IF NOT EXISTS users (
@@ -54,8 +80,12 @@ CREATE TABLE IF NOT EXISTS invites (
 );
 
 -- Criar índices para melhor performance
+CREATE INDEX IF NOT EXISTS idx_condominios_status ON condominios(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_googleId ON users("googleId");
+CREATE INDEX IF NOT EXISTS idx_users_condominioId ON users("condominioId");
+CREATE INDEX IF NOT EXISTS idx_users_unidadeId ON users("unidadeId");
+CREATE INDEX IF NOT EXISTS idx_invites_condominioId ON invites("condominioId");
 
 -- Conectar ao banco mora (portaria) para criar as tabelas de estrutura física
 \c mora;
@@ -63,13 +93,15 @@ CREATE INDEX IF NOT EXISTS idx_users_googleId ON users("googleId");
 -- Criar tabela blocos
 CREATE TABLE IF NOT EXISTS blocos (
   id UUID PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL UNIQUE,
+  nome VARCHAR(255) NOT NULL,
+  "condominioId" VARCHAR(50),
   descricao TEXT,
   andares INTEGER,
   "apartamentosPorAndar" INTEGER,
   ativo BOOLEAN DEFAULT true,
   "criadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(nome, "condominioId")
 );
 
 -- Criar tabela apartamentos

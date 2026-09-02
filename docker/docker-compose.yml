@@ -43,7 +43,10 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
     ports:
-      - "5432:5432"
+      # 5433 no host: a 5432 costuma estar ocupada por uma instalacao nativa do
+      # PostgreSQL, que vence o bind e faz o host falhar a autenticacao.
+      # Os servicos em containers seguem usando postgres:5432 pela rede interna.
+      - "5433:5432"
     networks:
       - microservices-net
     volumes:
@@ -68,11 +71,33 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
 
-  # 5. Microservice 2: Meetings e Atas (Java)
+  # 5. Microservice 2: Vagas de Estacionamento (Java)
+  vagas-service:
+    build:
+      context: ../services/vagas-service
+      dockerfile: Dockerfile
+    container_name: vagas-service
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - microservices-net
+    ports:
+      - "8092:8092"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=vagas_db
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+
+  # 6. Microservice 3: Meetings e Atas (Java)
   meeting-service:
     build:
       context: ../services/meeting
@@ -93,7 +118,28 @@ services:
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
 
-  # 6. Auth API (Node.js)
+  # 7.5. Microservice 4: Planos SaaS (Java)
+  plan-service:
+    build:
+      context: ../services/plan-service
+      dockerfile: Dockerfile
+    container_name: plan-service
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - microservices-net
+    ports:
+      - "8093:8093"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_plan
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+      - TZ=America/Sao_Paulo
+
+  # 7. Auth API (Node.js)
   auth-api:
     build:
       context: ../services/auth-api
@@ -112,14 +158,82 @@ services:
       - POSTGRES_DB=auth_db
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-troque-por-uma-chave-secreta}
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM}
       - TZ=America/Sao_Paulo
 
-  # 7. pgAdmin (visualizador do banco de dados)
+  # 7.9. Gestao Geral (Node) — agrega dados da plataforma para o Admin Geral
+  gestao-geral:
+    build:
+      context: ../services/gestao-geral
+      dockerfile: Dockerfile
+    container_name: gestao-geral
+    depends_on:
+      - auth-api
+      - consul
+    networks:
+      - microservices-net
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=gestao-geral
+      # Mesmo segredo do auth-api: valida os tokens que ele emite.
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - AUTH_API_URL=http://auth-api:3001
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      - PLAN_SERVICE_URL=http://plan-service:8093
+      - TZ=America/Sao_Paulo
+
+  # 7.95. Financeiro (Node) — faturas, cobrancas, multas e prestacao de contas
+  financeiro:
+    build:
+      context: ../services/financeiro
+      dockerfile: Dockerfile
+    container_name: financeiro
+    depends_on:
+      - postgres
+      - auth-api
+      - consul
+    networks:
+      - microservices-net
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=financeiro
+      # Mesmo segredo do auth-api: valida os tokens que ele emite.
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=mora_financeiro
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - AUTH_API_URL=http://auth-api:3001
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      # Credenciais do gateway: sem default, e sem entrar no repositorio.
+      # Defina em docker/.env — o servico sobe sem elas, so as rotas de
+      # cobranca ficam indisponiveis.
+      - ASAAS_BASE_URL=${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      - ASAAS_API_KEY=${ASAAS_API_KEY:-}
+      - ASAAS_WEBHOOK_TOKEN=${ASAAS_WEBHOOK_TOKEN:-}
+      - TZ=America/Sao_Paulo
+
+  # 8. pgAdmin (visualizador do banco de dados)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin

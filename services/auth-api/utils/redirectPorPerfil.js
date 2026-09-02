@@ -1,19 +1,17 @@
 import { PERFIS } from '../constants/perfis.js';
 
-const REDIRECT_MAP = {
-  [PERFIS.DOORMAN]: '/portaria',
-  [PERFIS.RESIDENT_OWNER]: '/inicio',
-  [PERFIS.LESSEE]: '/inicio',
-  [PERFIS.OCCUPANT]: '/inicio',
-  [PERFIS.GUEST]: '/inicio',
-  [PERFIS.CONTRACTING_PROPERTY_MANAGER]: '/inicio',
-  [PERFIS.CONTRACTING_SYNDIC]: '/inicio',
-  [PERFIS.OPERATIONAL_SYNDIC]: '/inicio',
-  [PERFIS.ADMINISTRATOR]: '/inicio',
-  [PERFIS.REAL_ESTATE_AGENCY]: '/inicio',
-  [PERFIS.ABSENT_OWNER]: '/inicio',
+const ROTA_POR_PERFIL = {
+  [PERFIS.PORTEIRO]: '/portaria',
+  // Admin Geral opera a plataforma, não um condomínio: painel próprio.
+  [PERFIS.ADMIN_GERAL]: '/adm/geral',
+  [PERFIS.ADMIN_SINDICO]: '/inicio',
+  [PERFIS.MORADOR]: '/inicio',
+  [PERFIS.DONO_ALUGUEL]: '/inicio',
+  [PERFIS.CONVIDADO]: '/inicio',
 };
 
 export function redirectPorPerfil(perfil) {
-  return REDIRECT_MAP[perfil] || '/inicio';
+  return ROTA_POR_PERFIL[perfil] ?? '/inicio';
 }
+
+export default redirectPorPerfil;
