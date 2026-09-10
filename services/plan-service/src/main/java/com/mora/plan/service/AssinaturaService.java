@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +31,10 @@ public class AssinaturaService {
     public AssinaturaResponseDTO buscarVigentePorCondominio(String condominioId) {
         Assinatura a = assinaturaRepository
                 .findByCondominioIdAndStatus(condominioId, StatusAssinatura.ATIVA)
-                .orElseThrow(() -> new IllegalArgumentException(
+                // Ausencia nao e requisicao invalida: condominio sem assinatura ativa
+                // e um estado legitimo, e o chamador precisa distinguir isso de erro
+                // dele. NoSuchElementException vira 404 no GlobalExceptionHandler.
+                .orElseThrow(() -> new NoSuchElementException(
                         "Nenhuma assinatura ativa para o condomínio " + condominioId));
         return paraDTO(a);
     }
@@ -48,12 +52,19 @@ public class AssinaturaService {
 
         // Um condomínio não pode ter duas assinaturas ativas ao mesmo tempo:
         // a anterior é encerrada antes de a nova entrar.
+        //
+        // saveAndFlush, e não save: o Hibernate ordena INSERT antes de UPDATE
+        // dentro do mesmo flush. Com save(), a nova linha era inserida enquanto
+        // a anterior ainda estava ATIVA, e o indice unico parcial recusava —
+        // trocar de plano falhava sempre com duplicate key.
         assinaturaRepository
                 .findByCondominioIdAndStatus(dto.getCondominioId(), StatusAssinatura.ATIVA)
                 .ifPresent(atual -> {
                     atual.setStatus(StatusAssinatura.CANCELADA);
-                    atual.setVigenciaFim(LocalDate.now());
-                    assinaturaRepository.save(atual);
+                    atual.setVigenciaFim(dto.getVigenciaInicio() != null
+                            ? dto.getVigenciaInicio()
+                            : LocalDate.now());
+                    assinaturaRepository.saveAndFlush(atual);
                 });
 
         Assinatura nova = Assinatura.builder()
@@ -94,6 +105,7 @@ public class AssinaturaService {
                 .maxCondominios(p.getMaxCondominiums())
                 .maxUsuariosPorCondominio(p.getMaxUsersPerCondominium())
                 .modulosAtivos(p.getActiveModules())
+                .observacao(a.getObservacao())
                 .build();
     }
 }

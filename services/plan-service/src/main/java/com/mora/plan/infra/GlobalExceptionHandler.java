@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @ControllerAdvice
@@ -55,6 +56,23 @@ public class GlobalExceptionHandler {
                 System.currentTimeMillis()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Recurso que nao existe e 404, nao 400.
+     *
+     * Sem isto o front nao consegue distinguir "este condominio nao tem
+     * assinatura" — estado normal, que merece uma tela de vazio — de "voce
+     * mandou uma requisicao errada", e acaba tratando os dois como falha.
+     */
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(NoSuchElementException ex) {
+        ErrorResponse error = new ErrorResponse(
+                ex.getMessage(),
+                HttpStatus.NOT_FOUND.value(),
+                System.currentTimeMillis()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(RuntimeException.class)
