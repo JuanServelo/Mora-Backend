@@ -225,6 +225,11 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
       - AUTH_API_URL=http://auth-api:3001
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      - PLAN_SERVICE_URL=http://plan-service:8093
+      # Envio de aviso de fatura. Sem estas, o servico sobe e so o e-mail falha.
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM}
       # Credenciais do gateway: sem default, e sem entrar no repositorio.
       # Defina em docker/.env — o servico sobe sem elas, so as rotas de
       # cobranca ficam indisponiveis.
