@@ -21,10 +21,10 @@ function falhaDaFontePrincipal(resultado, oQue) {
   };
 }
 
-export async function montarDashboard(authorization) {
+export async function montarDashboard(authorization, filtros = {}) {
   const fontesIndisponiveis = [];
 
-  const plataforma = await auth.estatisticasPlataforma(authorization);
+  const plataforma = await auth.estatisticasPlataforma(authorization, filtros);
   if (!plataforma.ok) return falhaDaFontePrincipal(plataforma, 'dados da plataforma');
 
   const { condominios, usuarios, ocorrencias } = plataforma.dados;
@@ -32,6 +32,9 @@ export async function montarDashboard(authorization) {
   return {
     sucesso: true,
     geradoEm: new Date().toISOString(),
+    // Ecoa o que valeu de fato, já normalizado pelo auth-api: a tela rotula os
+    // gráficos com isso em vez de repetir o que pediu.
+    filtros: plataforma.dados.filtros ?? null,
     condominios,
     usuarios,
     ocorrencias,
