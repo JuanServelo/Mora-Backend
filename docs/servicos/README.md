@@ -19,7 +19,7 @@ Um arquivo por microsserviço, com responsabilidade, fluxos de usuário, tabelas
 
 | Serviço | Domínio | Porta | Banco |
 |---|---|---|---|
-| [financeiro-service](financeiro-service.md) | Contratos, faturas, multas, prestação de contas | 8094 | `mora_financeiro` |
+| [financeiro-service](financeiro-service.md) | Contratos, faturas, multas, prestação de contas | 3004 | `mora_financeiro` |
 | [comunicacao-service](comunicacao-service.md) | Avisos, base de conhecimento, chat, notificações | 3003 | `mora_comunicacao` |
 | [ocorrencias-service](ocorrencias-service.md) | Reclamações e ordens de serviço | 8095 | `mora_ocorrencias` |
 
@@ -65,9 +65,14 @@ divisão de domínios:
 
 ## Sobre as tabelas dos serviços planejados
 
-Nos três serviços ainda não implementados, as tabelas listadas são **proposta**, esboçada a
-partir do escopo dos requisitos — não decisão fechada. Cada documento marca isso explicitamente
-e traz uma seção "Em aberto" com as questões que faltam resolver.
+Nos dois serviços ainda não implementados — `comunicacao-service` e `ocorrencias-service` — as
+tabelas listadas são **proposta**, esboçada a partir do escopo dos requisitos, não decisão
+fechada. Cada documento marca isso explicitamente e traz uma seção "Em aberto" com as questões
+que faltam resolver.
+
+O `financeiro-service` saiu dessa condição: o banco existe, com migrações versionadas. O que
+ainda é proposta ali são os endpoints de fatura, multa e prestação de contas — as tabelas já
+estão criadas.
 
 As exceções são `avisos`, `artigos_conhecimento` e `reclamacoes`, que já existem e apenas mudam
 de casa.

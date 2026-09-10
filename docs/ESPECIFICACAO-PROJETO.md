@@ -334,7 +334,7 @@ graph TB
 | `plan-service`        | Planos comerciais e assinaturas                                                          | Java 21 / Spring Boot | 8093  | `mora_plan`        | 4                 |
 | `portaria-service`    | Estrutura física, acessos, entregas, chaves, vagas, visitantes, reservas, funcionários | Java 21 / Spring Boot | 8090  | `mora`             | 5, 6, 7, 8, 9, 10 |
 | `meeting-service`     | Assembleias, atas e votações                                                           | Java 21 / Spring Boot | 8091  | `mora_meeting`     | 11                |
-| `financeiro-service`  | Contratos de locação, faturas, multas, taxas, prestação de contas                    | Java 21 / Spring Boot | 8094  | `mora_financeiro`  | 15, 16, 17        |
+| `financeiro-service`  | Contratos de locação, faturas, multas, taxas, prestação de contas                    | Node 20 / Express     | 3004  | `mora_financeiro`  | 15, 16, 17        |
 | `comunicacao-service` | Avisos, base de conhecimento, chat e notificações                                      | Node 20 / Express     | 3003  | `mora_comunicacao` | 12, 13            |
 | `ocorrencias-service` | Reclamações e ordens de serviço                                                       | Java 21 / Spring Boot | 8095  | `mora_ocorrencias` | 14                |
 | `gestao-geral`        | Agregação de indicadores e relatórios                                                 | Node 20 / Express     | 3002  | —                 | 18                |
