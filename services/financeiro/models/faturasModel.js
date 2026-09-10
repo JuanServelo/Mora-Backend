@@ -159,9 +159,13 @@ export async function kpisPorCompetencia(condominioId, competencia) {
   const { rows } = await consultar(
     `SELECT
        COUNT(*) FILTER (WHERE status <> 'CANCELADA') AS total,
-       COALESCE(SUM(valor_centavos) FILTER (WHERE status <> 'CANCELADA'), 0) AS "totalCentavos",
+       -- ::bigint nao e enfeite: SUM() sobre BIGINT devolve NUMERIC, que o
+       -- driver entrega como string, e o parser de tipos so converte BIGINT.
+       -- Sem o cast, uma subtracao funciona por coercao, mas uma soma
+       -- concatena as strings e o total vira lixo sem erro nenhum.
+       COALESCE(SUM(valor_centavos) FILTER (WHERE status <> 'CANCELADA'), 0)::bigint AS "totalCentavos",
        COUNT(*) FILTER (WHERE status = 'PAGA') AS pagas,
-       COALESCE(SUM(valor_centavos) FILTER (WHERE status = 'PAGA'), 0) AS "pagasCentavos",
+       COALESCE(SUM(valor_centavos) FILTER (WHERE status = 'PAGA'), 0)::bigint AS "pagasCentavos",
        COUNT(*) FILTER (WHERE status IN ('ABERTA', 'EM_ATRASO')) AS abertas,
        COUNT(*) FILTER (WHERE status = 'EM_ATRASO') AS "emAtraso"
      FROM faturas

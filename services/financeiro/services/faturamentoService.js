@@ -77,6 +77,26 @@ export async function fecharCompetencia(condominioId, competenciaInput, authoriz
   const fracaoMap = new Map(fracoesAll.map((f) => [f.unidadeId, f.milesimos]));
   const totalMilesimos = fracoesAll.reduce((s, f) => s + f.milesimos, 0);
 
+  // Recusa antes de emitir, em vez de emitir errado.
+  //
+  // Uma conta em modo FRACAO_IDEAL sem nenhuma fração cadastrada dava
+  // `Math.floor(valor * 0 / 0)`, ou seja NaN — e como `NaN > 0` é falso, o item
+  // era descartado em silêncio. A conta saía marcada como rateada, a fatura
+  // saía sem ela, e ninguém ficava sabendo. Melhor não fechar o mês e dizer o
+  // que falta.
+  if (totalMilesimos === 0) {
+    const porFracao = contas.filter((c) => c.modoRateio === 'FRACAO_IDEAL');
+    if (porFracao.length) {
+      return erro(
+        `Não há fração ideal cadastrada, e ${porFracao.length} conta(s) desta ` +
+        'competência são rateadas por fração: ' +
+        porFracao.map((c) => c.tipo).join(', ') +
+        '. Cadastre as frações das unidades, ou mude o rateio dessas contas ' +
+        'para divisão igual.',
+      );
+    }
+  }
+
   let taxaPlataformaCentavos = 0;
   if (regras.incluirTaxaPlataforma) {
     const plan = await buscarTaxaPlataforma(condominioId, authorization);
@@ -109,7 +129,10 @@ export async function fecharCompetencia(condominioId, competenciaInput, authoriz
     for (const conta of contas) {
       const pesos = conta.modoRateio === 'FRACAO_IDEAL' ? fracaoMilesimos : 1;
       const div = conta.modoRateio === 'FRACAO_IDEAL' ? totalMilesimos : unidades.length;
-      const valor = Math.floor((conta.valorTotalCentavos * pesos) / div);
+      // Divisor zero viraria NaN, e NaN é descartado pelo `valor > 0` abaixo
+      // sem erro nenhum. A guarda no topo já impede chegar aqui; esta existe
+      // para que um caminho novo não reintroduza o sumiço silencioso.
+      const valor = div > 0 ? Math.floor((conta.valorTotalCentavos * pesos) / div) : 0;
       if (valor > 0) {
         itens.push({
           tipo: 'CONTA_CONSUMO',
@@ -182,12 +205,19 @@ export async function fecharCompetencia(condominioId, competenciaInput, authoriz
     }
   }
 
-  // Marcar contas de consumo como rateadas
-  for (const conta of contas) {
-    await contasConsumoModel.marcarRateada(conta.id);
-  }
-
   const criadas = resultados.filter((r) => r.status === 'ok').length;
+
+  // Só carimba a conta como rateada se alguma fatura saiu de fato.
+  //
+  // Antes marcava sempre, mesmo com zero faturas criadas: a conta aparecia como
+  // "rateada" para o síndico e o morador não via cobrança nenhuma, sem que nada
+  // no caminho acusasse o problema. Fechamento que não fecha nada não pode
+  // mudar o estado de nada.
+  if (criadas > 0) {
+    for (const conta of contas) {
+      await contasConsumoModel.marcarRateada(conta.id);
+    }
+  }
   const existentes = resultados.filter((r) => r.status === 'existente').length;
   const erros = resultados.filter((r) => r.status === 'erro').length;
 
