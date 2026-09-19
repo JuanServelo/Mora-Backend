@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
-        HttpStatus status = ex.getMessage().contains("encontrado") ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR;
+        HttpStatus status = ex.getMessage().contains("encontrad") ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR;
 
         ErrorResponse error = new ErrorResponse(
                 ex.getMessage(),

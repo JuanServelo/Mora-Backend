@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mora_plan
+    username: admin
+    password: Vibers@2112
+
+  cloud:
+    consul:
+      discovery:
+        prefer-ip-address: true
+
+jwt:
+  secret: uma-chave-secreta-muito-segura-de-32-caracteres
