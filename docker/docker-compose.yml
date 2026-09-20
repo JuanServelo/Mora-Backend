@@ -140,6 +140,8 @@ services:
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
+    volumes:
+      - ../tokens:/app/tokens
 
   # 7.5. Microservice 4: Planos SaaS (Java)
   plan-service:
@@ -158,6 +160,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_plan
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
