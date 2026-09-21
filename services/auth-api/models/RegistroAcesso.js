@@ -31,6 +31,17 @@ const RegistroAcesso = sequelize.define('RegistroAcesso', {
     type: DataTypes.STRING(50),
     allowNull: true,
   },
+  // Turno previsto no momento da entrada. Gravado como cópia para que alterar
+  // a escala depois não reescreva retroativamente o que era "dentro do turno".
+  turnoPrevisto: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  liberacaoExcepcional: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 }, {
   tableName: 'registros_acesso',
   timestamps: true,

@@ -105,6 +105,15 @@ export const PERFIS_GESTAO_USUARIOS = [
 ];
 
 /** Operam as funcionalidades de portaria. */
+/**
+ * Perfis que atuam como "funcionário responsável".
+ *
+ * Fonte única: vale tanto para a aba Funcionários do registro de entrada e
+ * saída quanto para o responsável da reserva de evento do condomínio (RN-04).
+ * Incluir ou remover um perfil aqui reflete nas duas telas.
+ */
+export const PERFIS_FUNCIONARIO = [PERFIS.PORTEIRO, PERFIS.ADMIN_SINDICO];
+
 export const PERFIS_PORTARIA = [
   PERFIS.ADMIN_GERAL,
   PERFIS.ADMIN_SINDICO,

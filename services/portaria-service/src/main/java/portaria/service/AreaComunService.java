@@ -100,6 +100,7 @@ public class AreaComunService {
         areaComum.setCapacidadeMaxima(dados.getCapacidadeMaxima());
         areaComum.setArea(dados.getArea());
         areaComum.setPodeReservar(dados.isPodeReservar());
+        areaComum.setExigeAprovacao(dados.isExigeAprovacao());
         areaComum.setObservacoes(dados.getObservacoes());
         areaComum.setAtualizadoEm(LocalDateTime.now());
 

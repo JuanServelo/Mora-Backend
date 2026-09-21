@@ -26,6 +26,7 @@ import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
 import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
 import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
 import { garantirColunasOauthCode } from './migrations/migrate-oauth-code.js';
+import { garantirColunasJornadaSnapshot } from './migrations/migrate-jornada-snapshot.js';
 import { migrarPerfisV2 } from './migrations/migrate-perfis-v2.js';
 import { garantirCondominioIdReclamacoes } from './migrations/migrate-condominio-id.js';
 import { garantirColunasInvites } from './migrations/migrate-invites.js';
@@ -137,6 +138,7 @@ const startServer = async () => {
     await garantirColunasRf07();
     await garantirTabelaCondominios();
     await garantirColunasOauthCode();
+    await garantirColunasJornadaSnapshot();
     await migrarUsuariosLegados();
     // Depois das legadas: converte os 11 perfis antigos para os 6 atuais.
     await migrarPerfisV2();

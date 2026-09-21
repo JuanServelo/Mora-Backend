@@ -34,6 +34,7 @@ public class AuthFilter extends OncePerRequestFilter {
         String token = header.substring(7);
         try {
             AuthContext.set(jwtUtil.parse(token));
+            AuthContext.setToken(token);
         } catch (Exception e) {
             escrever401(response, "Token inválido ou expirado.");
             return;

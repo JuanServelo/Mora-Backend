@@ -74,6 +74,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      # Quem mora em qual unidade é dado do auth-api (RN-06).
+      - AUTH_API_URL=http://auth-api:3001
       - TZ=America/Sao_Paulo
 
   # 5. DESATIVADO — vagas-service migrado para portaria-service (Fase 3)
@@ -192,6 +194,9 @@ services:
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - MAIL_FROM=${MAIL_FROM}
+      # A regra de turno do funcionário vive no portaria-service; o auth-api
+      # a consulta antes de registrar a entrada (RF-09).
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - TZ=America/Sao_Paulo
 
   # 7.9. Gestao Geral (Node) — agrega dados da plataforma para o Admin Geral
