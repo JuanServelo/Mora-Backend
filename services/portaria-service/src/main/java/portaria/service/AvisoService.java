@@ -69,6 +69,7 @@ public class AvisoService {
         aviso.setPublicoAlvo(request.getPublicoAlvo());
         aviso.setCondominioId(request.getCondominioId());
         aviso.setAutor(request.getAutor());
+        aviso.setImagemUrl(request.getImagemUrl());
         aviso.setPublicado(request.isPublicado());
     }
 

@@ -24,6 +24,7 @@ public class AvisoResponseDTO {
     private PublicoAlvo publicoAlvo;
     private String condominioId;
     private String autor;
+    private String imagemUrl;
     private boolean publicado;
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
@@ -38,6 +39,7 @@ public class AvisoResponseDTO {
                 .publicoAlvo(aviso.getPublicoAlvo())
                 .condominioId(aviso.getCondominioId())
                 .autor(aviso.getAutor())
+                .imagemUrl(aviso.getImagemUrl())
                 .publicado(aviso.isPublicado())
                 .criadoEm(aviso.getCriadoEm())
                 .atualizadoEm(aviso.getAtualizadoEm())

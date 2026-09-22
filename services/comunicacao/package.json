@@ -1,0 +1,30 @@
+{
+  "name": "comunicacao-service",
+  "version": "1.0.0",
+  "description": "Avisos com leitura confirmada, conversas e notificacoes",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "migrate": "node-pg-migrate -j sql -m migrations",
+    "migrate:up": "node-pg-migrate -j sql -m migrations up",
+    "migrate:down": "node-pg-migrate -j sql -m migrations down 1",
+    "test": "node --test tests/*.test.js",
+    "verificar": "node scripts/testar-local.js"
+  },
+  "dependencies": {
+    "consul": "^2.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0",
+    "pg": "^8.11.3",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "node-pg-migrate": "^9.0.0"
+  }
+}

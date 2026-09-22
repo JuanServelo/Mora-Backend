@@ -95,25 +95,29 @@ de modelo.
 
 | Serviço | Spec | Realidade |
 |---|---|---|
-| `comunicacao-service` | Node · 3003 · `mora_comunicacao` | ❌ Nem código nem banco |
+| `comunicacao-service` | Node · 3003 · `mora_comunicacao` | ✅ **existe** — ver abaixo |
 | `ocorrencias-service` | Java · 8095 · `mora_ocorrencias` | ❌ Nem código nem banco |
 
-### `comunicacao-service` — RF-12 e RF-13
+### `comunicacao-service` — construído com o que era novo
 
-Metade do domínio **já existe, no lugar errado**:
+O caminho escolhido foi criar o serviço **só com o que não existia**, deixando
+avisos e base de conhecimento onde já funcionam:
 
 | Recurso | Onde está | Estado |
 |---|---|---|
-| Avisos | `mora.avisos` + `AvisoController` (7 endpoints, no portaria) | Publica; **sem registro de leitura** |
-| Base de conhecimento | `mora.artigos_conhecimento` + `ArtigoConhecimentoController` (9 endpoints, no portaria) | Funciona |
-| Chat | — | Não existe |
-| Notificações | — | Não existe como serviço |
+| Avisos | `mora.avisos` + `AvisoController` (7 endpoints, no portaria) | Publica — **segue lá** |
+| Base de conhecimento | `mora.artigos_conhecimento` + `ArtigoConhecimentoController` (9 endpoints, no portaria) | Funciona — **segue lá** |
+| Confirmação de leitura | `mora_comunicacao.aviso_leituras` | ✅ pronta, sem FK para outro banco |
+| Chat | `conversas`, `conversa_participantes`, `mensagens` | ✅ pronto |
+| Notificações | `notificacoes` + rota interna por `X-Servico-Token` | ✅ pronto |
 
-As duas tabelas estão **vazias** hoje, então migrar é mover código e esquema, sem
-transportar dado. Isso muda se alguém começar a usar.
+45 checagens de ponta a ponta passam contra a stack real. Detalhes em
+[docs/servicos/comunicacao-service.md](servicos/comunicacao-service.md).
 
-> Caminho mais curto: criar o serviço **só com o que é novo** — leitura de aviso,
-> chat e notificações — e migrar avisos e artigos depois.
+**O que ainda falta para a centralização ser real:** o `financeiro` continua
+gravando notificação na tabela dele. A rota interna está pronta e verificada, mas
+o corte exige mudar também a leitura no frontend — senão a notificação passa a
+viver em dois lugares.
 
 ### `ocorrencias-service` — RF-14
 
@@ -130,10 +134,16 @@ ou o serviço se funde ao portaria.
 
 ## 4. Requisitos funcionais
 
-### Completos (6)
+### Completos (8)
 
 RF-1 autenticação · RF-2 usuários e vínculos · RF-3 clientes · RF-4 planos e
-assinaturas · RF-8 chaves · RF-18 dashboards
+assinaturas · RF-8 chaves · RF-12 comunicados · RF-13 mensagens e notificações ·
+RF-18 dashboards
+
+> **RF-12 conta como completo, com uma ressalva:** os três pedaços que a spec
+> pede existem — avisos, artigos e confirmação de leitura — mas repartidos entre
+> o `portaria-service` e o `comunicacao-service`. Funciona; a spec descreve tudo
+> num serviço só.
 
 ### Parciais — a lacuna exata
 
@@ -145,7 +155,6 @@ assinaturas · RF-8 chaves · RF-18 dashboards
 | **9** Funcionários | **Controle de jornada** — há tabelas de turno, falta o fluxo |
 | **10** Reservas | **Não há tabela de reservas em banco nenhum.** Só o cadastro de área comum. Faltam solicitação, aprovação, conflito, antecedência e taxa |
 | **11** Assembleias | Videoconferência existe (`meet_link`, `google_event_id`), mas `tb_poll_vote` guarda **`usuario_id`, não `unidade_id`** — a apuração por unidade que a spec pede é impossível |
-| **12** Comunicados | `avisos` **não tem coluna de confirmação de leitura** |
 | **14** Ocorrências | **Ordem de serviço, responsável e prazo** |
 | **16** Cobranças | **Multas** — tabela existe, sem model, service ou endpoint |
 
@@ -153,7 +162,6 @@ assinaturas · RF-8 chaves · RF-18 dashboards
 
 | RF | Estado real |
 |---|---|
-| **13** Mensagens e chat | Nada. Sem entidade de conversa |
 | **15** Contratos de locação | **Só a tabela.** Sem model, service, endpoint ou tela |
 | **17** Prestação de contas | **Só as tabelas** `lancamentos` e `prestacao_contas` |
 
@@ -168,12 +176,12 @@ E lista o `financeiro-service` fora dos serviços em operação, quando ele roda
 
 | | Spec diz | Real |
 |---|---|---|
-| Implementados | 3 | **6** |
-| Parciais | 10 | 9 |
-| Planejados | 5 | 3 |
+| Implementados | 3 | **8** |
+| Parciais | 10 | 8 |
+| Planejados | 5 | 2 |
 
-**33% completos**, ou ~58% contando parcial como meio ponto. Nenhuma das contas
-chega aos 80% do critério 1.
+**44% completos**, ou ~67% contando parcial como meio ponto. Ainda abaixo dos 80%
+do critério 1, mas o `comunicacao-service` moveu dois RFs de uma vez.
 
 ---
 
@@ -221,16 +229,17 @@ novo:
 4. **Contratos de locação (RF-15)** — tabela pronta, e "responsável financeiro"
    já existe no `auth-api`
 5. **Prestação de contas (RF-17)** — duas tabelas prontas; é CRUD mais publicação
-6. **Confirmação de leitura (RF-12)** — uma coluna e uma tabela de junção
-7. **Voto por unidade (RF-11)** — trocar `usuario_id` por `unidade_id`
+6. **Voto por unidade (RF-11)** — trocar `usuario_id` por `unidade_id`
+7. **Cortar as notificações do `financeiro` para o `comunicacao-service`** — a
+   rota interna já existe; falta trocar a leitura no frontend
 
 ### Decisões de escopo pendentes
 
 - **`comunicacao-service` e `ocorrencias-service` vão existir?** Se não, corrigir
   a especificação em vez de deixá-los como dívida documentada
 - **`vagas-service` entra na spec ou funde no portaria?**
-- **As notificações do `financeiro` migram** para o `comunicacao-service` quando
-  ele nascer, ou cada serviço mantém as suas? Hoje são 24 registros reais, e a
-  spec assume centralizado enquanto a implementação está distribuída
+- **Avisos e base de conhecimento migram** do portaria para o
+  `comunicacao-service`, ou ficam onde estão? Hoje funcionam lá, e só a
+  confirmação de leitura mora no serviço novo
 - **Reservas (RF-10)** é um dos três pilares declarados do produto e não tem uma
   linha de código. Entra no escopo ou sai da visão?

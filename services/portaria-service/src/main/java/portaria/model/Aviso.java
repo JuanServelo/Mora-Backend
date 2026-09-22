@@ -45,6 +45,12 @@ public class Aviso {
 
     private String autor;
 
+    // Caminho da imagem do aviso, opcional. O arquivo e servido pelo
+    // comunicacao-service, que ja tem a infraestrutura de upload; aqui guarda-se
+    // so a referencia, junto do aviso a que ela pertence.
+    @Column(name = "imagem_url")
+    private String imagemUrl;
+
     private boolean publicado = false;
 
     @Column(name = "criado_em")

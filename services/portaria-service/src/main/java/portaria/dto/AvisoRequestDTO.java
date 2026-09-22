@@ -28,5 +28,7 @@ public class AvisoRequestDTO {
 
     private String autor;
 
+    private String imagemUrl;
+
     private boolean publicado;
 }
