@@ -26,9 +26,12 @@ import { garantirColunasRf07 } from './migrations/migrate-rf07.js';
 import { garantirTabelaCondominios } from './migrations/migrate-condominios.js';
 import { garantirTabelaPortaria } from './migrations/migrate-portaria.js';
 import { garantirColunasOauthCode } from './migrations/migrate-oauth-code.js';
+import { garantirColunasJornadaSnapshot } from './migrations/migrate-jornada-snapshot.js';
 import { migrarPerfisV2 } from './migrations/migrate-perfis-v2.js';
 import { garantirCondominioIdReclamacoes } from './migrations/migrate-condominio-id.js';
 import { removerColunasLegado } from './migrations/migrate-remover-legado.js';
+import { garantirColunasInvites } from './migrations/migrate-invites.js';
+import { migrarPerfilTerceiro } from './migrations/migrate-terceiro.js';
 import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
 import { ehProducao } from './config/regras.js';
 
@@ -134,18 +137,28 @@ const startServer = async () => {
     await garantirColunasNovas();
     await garantirColunasRf07();
     await garantirTabelaCondominios();
-    await garantirTabelaPortaria();
     await garantirColunasOauthCode();
+    await garantirColunasJornadaSnapshot();
     await migrarUsuariosLegados();
     // Depois das legadas: converte os 11 perfis antigos para os 6 atuais.
     await migrarPerfisV2();
     await garantirCondominioIdReclamacoes();
+    await garantirColunasInvites();
+    await migrarPerfilTerceiro();
     // Por último: as anteriores ainda leem as colunas que esta remove.
     await removerColunasLegado();
     console.log('Tabelas sincronizadas e migrações RF03/RF07/Condomínios aplicadas');
     await seedAdminUser();
   } catch (err) {
     console.error('Erro ao sincronizar tabelas:', err.message);
+  }
+
+  // Migração isolada: tabela registros_acesso e colunas de portaria.
+  // Bloco separado para garantir execução mesmo se outras migrações falharem.
+  try {
+    await garantirTabelaPortaria();
+  } catch (err) {
+    console.error('Erro ao migrar tabela portaria:', err.message);
   }
 
   const server = app.listen(PORT, () => {

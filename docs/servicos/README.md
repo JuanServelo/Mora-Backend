@@ -15,7 +15,7 @@ Um arquivo por microsserviço, com responsabilidade, fluxos de usuário, tabelas
 | [gestao-geral](gestao-geral.md) | Agregação de indicadores | 3002 | — |
 | [vagas-service](vagas-service.md) | Aluguel de vagas — **a fundir no portaria** | 8092 | `vagas_db` |
 | [financeiro-service](financeiro-service.md) | Taxas, rateio, faturas e cobrança | 3004 | `mora_financeiro` |
-| [comunicacao-service](comunicacao-service.md) | Conversas, notificações, confirmação de leitura | 3003 | `mora_comunicacao` |
+| [comunicacao-service](comunicacao-service.md) | Avisos, base de conhecimento, chat e notificações | 8094 | `mora` |
 
 ## Planejados
 

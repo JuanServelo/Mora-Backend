@@ -70,8 +70,19 @@ function loginComErroRedirect(codigo, extra = '') {
  * `condominioId` viaja na claim para que os demais serviços saibam o escopo do
  * usuário sem precisar consultar o auth-api a cada requisição. É nulo para o
  * ADMIN_GERAL, que opera sobre todos os condomínios.
+ *
+ * `unidadeId` viaja pelo mesmo motivo: os serviços de domínio (portaria)
+ * precisam saber a unidade do morador e não têm acesso ao banco do auth-api.
  */
-export const signToken = (userId, perfil, tokenVersion = 0, email = undefined, condominioId = null) =>
+export const signToken = (
+  userId,
+  perfil,
+  tokenVersion = 0,
+  email = undefined,
+  condominioId = undefined,
+  unidadeId = undefined,
+  nome = undefined,
+) =>
   jwt.sign(
     {
       id: userId,
@@ -79,6 +90,10 @@ export const signToken = (userId, perfil, tokenVersion = 0, email = undefined, c
       tokenVersion,
       ...(email != null && { email }),
       ...(condominioId != null && { condominioId }),
+      ...(unidadeId != null && { unidadeId }),
+      // nome no token para os serviços registrarem "quem fez" sem consultar
+      // o auth-api a cada ação.
+      ...(nome != null && { nome }),
     },
     getJwtSecret(),
     { expiresIn: JWT_EXPIRES_IN },
@@ -119,7 +134,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     if (usuario.semAcessoSistema) {
-      return res.status(401).json({ sucesso: false, mensagem: 'Guests não possuem acesso ao sistema.' });
+      return res.status(401).json({ sucesso: false, mensagem: 'Este perfil não possui acesso ao sistema. Procure a administração do condomínio.' });
     }
 
     const senhaValida = await usuario.compararSenha(senha);
@@ -128,7 +143,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     const perfil = usuario.getPerfilEfetivo();
-    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId);
+    const token = signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId, usuario.unidadeId, usuario.nome);
 
     res.json({
       sucesso: true,
@@ -239,6 +254,9 @@ router.put('/me', authMiddleware, async (req, res) => {
           usuario.getPerfilEfetivo(),
           usuario.tokenVersion,
           usuario.email,
+          usuario.condominioId,
+          usuario.unidadeId,
+          usuario.nome,
         ),
       }),
     });
@@ -438,7 +456,7 @@ router.post('/oauth/exchange', tokenLimiter, async (req, res) => {
     res.json({
       sucesso: true,
       mensagem: 'Login realizado com sucesso',
-      token: signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId),
+      token: signToken(usuario.id, perfil, usuario.tokenVersion || 0, usuario.email, usuario.condominioId, usuario.unidadeId, usuario.nome),
       usuario: usuarioPublico(usuario),
       redirectPath: redirectPorPerfil(perfil),
     });

@@ -4,14 +4,12 @@
 -- ATENCAO: este script so roda quando o volume postgres_data e criado do zero.
 -- Em volume ja existente o Postgres ignora docker-entrypoint-initdb.d, entao um
 -- banco novo adicionado aqui NAO aparece em maquina que ja subiu antes. Use
--- docker/criar-banco-financeiro.sql e docker/criar-banco-comunicacao.sql para
--- criar no volume atual.
+-- docker/criar-banco-financeiro.sql para criar no volume atual.
 CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
 CREATE DATABASE vagas_db;
 CREATE DATABASE mora_plan;
 CREATE DATABASE mora_financeiro;
-CREATE DATABASE mora_comunicacao;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;
@@ -57,6 +55,11 @@ CREATE TABLE IF NOT EXISTS users (
   "unidadeId" UUID,
   "cadastradoPorId" INTEGER,
   "responsavelFinanceiro" BOOLEAN DEFAULT false,
+  "dataNascimento" DATE,
+  "semAcessoSistema" BOOLEAN DEFAULT false,
+  "entradaPermitida" BOOLEAN DEFAULT false,
+  "oauthCode" VARCHAR(255),
+  "oauthCodeExpira" TIMESTAMP,
   "tokenVersion" INTEGER DEFAULT 0,
   "activatedAt" TIMESTAMP,
   "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -77,9 +80,35 @@ CREATE TABLE IF NOT EXISTS invites (
   "expiresAt" TIMESTAMP NOT NULL,
   "usedAt" TIMESTAMP,
   "usedByUserId" INTEGER,
+  "responsavelFinanceiro" BOOLEAN NOT NULL DEFAULT false,
   "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Portaria: histórico de entradas e saídas (um registro por evento ENTRADA/SAIDA)
+CREATE TABLE IF NOT EXISTS registros_acesso (
+  id                SERIAL PRIMARY KEY,
+  "usuarioId"       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tipo              VARCHAR(10) NOT NULL CHECK (tipo IN ('ENTRADA', 'SAIDA')),
+  "registradoPorId" INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  "condominioId"    VARCHAR(50),
+  "nomeSnapshot"    VARCHAR(150),
+  "perfilSnapshot"  VARCHAR(50),
+  "createdAt"       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_registros_acesso_usuario
+  ON registros_acesso ("usuarioId", "createdAt" DESC);
+CREATE INDEX IF NOT EXISTS idx_registros_acesso_condominio
+  ON registros_acesso ("condominioId", "createdAt" DESC);
+
+-- Usuários de teste por perfil (senha: Teste@1234)
+-- ADMIN_GERAL   → admin@mora.com        senha: Teste@1234
+
+INSERT INTO users (nome, email, senha, perfil, role, status, "condominioId", "tokenVersion", "activatedAt", "createdAt", "updatedAt")
+VALUES
+  ('Administrador Geral',  'admin@mora.com',    '$2a$10$et7p4t932Oh1VUoAuMw6VewAoqiDNro3Ka2clNo8VEVFCVJbatGOe', 'ADMIN_GERAL',    'admin', 'active', 'default', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (email) DO NOTHING;
 
 -- Criar índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_condominios_status ON condominios(status);
@@ -124,7 +153,8 @@ CREATE TABLE IF NOT EXISTS apartamentos (
 -- Criar tabela areas_comuns
 CREATE TABLE IF NOT EXISTS areas_comuns (
   id UUID PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL UNIQUE,
+  nome VARCHAR(255) NOT NULL,
+  "condominioId" VARCHAR(50),
   tipo VARCHAR(100) NOT NULL,
   descricao TEXT,
   localizacao VARCHAR(255),
@@ -134,7 +164,8 @@ CREATE TABLE IF NOT EXISTS areas_comuns (
   observacoes TEXT,
   ativo BOOLEAN DEFAULT true,
   "criadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(nome, "condominioId")
 );
 
 -- Criar índices para melhor performance

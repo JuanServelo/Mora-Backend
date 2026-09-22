@@ -19,7 +19,11 @@ async function migrarColuna(tabela, coluna, tipoAntigo, tipoNovo) {
   if (!atual) return `${tabela}.${coluna}: coluna inexistente, ignorada`;
   if (atual.udt_name === tipoNovo) return `${tabela}.${coluna}: já migrada`;
 
-  const casos = Object.entries(PERFIL_LEGADO_PARA_NOVO)
+  // Valores já no formato novo são preservados; legados são convertidos.
+  const casosNovos = NOVOS
+    .map((v) => `WHEN '${v}' THEN '${v}'`)
+    .join(' ');
+  const casosLegados = Object.entries(PERFIL_LEGADO_PARA_NOVO)
     .map(([antigo, novo]) => `WHEN '${antigo}' THEN '${novo}'`)
     .join(' ');
 
@@ -32,7 +36,7 @@ async function migrarColuna(tabela, coluna, tipoAntigo, tipoNovo) {
     await q(`
       ALTER TABLE ${tabela}
       ALTER COLUMN ${coluna} TYPE ${tipoNovo}
-      USING (CASE ${coluna}::text ${casos} ELSE NULL END)::${tipoNovo}
+      USING (CASE ${coluna}::text ${casosNovos} ${casosLegados} ELSE NULL END)::${tipoNovo}
     `);
 
     await q(`DROP TYPE IF EXISTS ${tipoAntigo}`);

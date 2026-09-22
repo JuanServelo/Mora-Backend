@@ -15,7 +15,9 @@ public enum PlanModule {
     CONHECIMENTO("conhecimento"),
     VOTACOES("votacoes"),
     VEICULOS("veiculos"),
-    CHAVES("chaves");
+    CHAVES("chaves"),
+    COMUNICACAO("comunicacao"),
+    FINANCEIRO("financeiro");
 
     private final String slug;
 

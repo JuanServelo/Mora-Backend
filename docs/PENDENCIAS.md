@@ -95,23 +95,35 @@ de modelo.
 
 | Serviço | Spec | Realidade |
 |---|---|---|
-| `comunicacao-service` | Node · 3003 · `mora_comunicacao` | ✅ **existe** — ver abaixo |
+| `comunicacao-service` | Java · 8094 · `mora` | ✅ **existe** — ver abaixo |
 | `ocorrencias-service` | Java · 8095 · `mora_ocorrencias` | ❌ Nem código nem banco |
 
-### `comunicacao-service` — construído com o que era novo
+### `comunicacao-service` — dois serviços, um sobreviveu
 
-O caminho escolhido foi criar o serviço **só com o que não existia**, deixando
-avisos e base de conhecimento onde já funcionam:
+Foi construído duas vezes em paralelo: em Java, migrando avisos e artigos para
+fora do portaria, e em Node, com conversas, relatório de leitura e notificações
+deduplicadas. Os dois pediam o mesmo prefixo no Traefik. Ficou o Java, e o que
+o Node fazia está sendo trazido para dentro dele.
 
 | Recurso | Onde está | Estado |
 |---|---|---|
-| Avisos | `mora.avisos` + `AvisoController` (7 endpoints, no portaria) | Publica — **segue lá** |
-| Base de conhecimento | `mora.artigos_conhecimento` + `ArtigoConhecimentoController` (9 endpoints, no portaria) | Funciona — **segue lá** |
-| Confirmação de leitura | `mora_comunicacao.aviso_leituras` | ✅ pronta, sem FK para outro banco |
-| Chat | `conversas`, `conversa_participantes`, `mensagens` | ✅ pronto |
-| Notificações | `notificacoes` + rota interna por `X-Servico-Token` | ✅ pronto |
+| Avisos | `mora.avisos` + `AvisoController` (comunicacao) | ✅ migrado do portaria |
+| Base de conhecimento | `mora.artigos_conhecimento` + `ArtigoController` | ✅ migrado do portaria |
+| Confirmação de leitura | `mora.aviso_leituras` | ⚠️ registra, mas sem denominador nem recorte por público |
+| Chat | `chat_mensagens`, direto entre dois usuários | ⚠️ falta o formato "falar com a administração" |
+| Notificações | `notificacoes` | ⚠️ sem `chaveUnica`, sem `origem`/`dados` e sem rota interna para job |
 
-45 checagens de ponta a ponta passam contra a stack real. Detalhes em
+#### Buracos de autorização, neste serviço
+
+| Item | Efeito |
+|---|---|
+| **Sem checagem de perfil** | Qualquer usuário autenticado cria, edita, publica e exclui aviso — um morador inclusive |
+| **Sem checagem de condomínio nas rotas por id** | `buscarPorId`, `atualizar`, `publicar`, `encerrar`, `excluir` e `marcarLido` não comparam o condomínio: o síndico do A alcança o aviso do B sabendo o id (RNF-15) |
+| **`@RequestBody Aviso` cru** | O cliente manda `id`, `criadoEm` e `condominioId` junto |
+| **`jwt.secret` com default** | `changeme-insecure-default` no `application.yml`: sem segredo o serviço sobe inseguro em vez de recusar |
+
+O desenho do serviço Node, com o raciocínio de cada regra, está no commit
+`0786c66`. Detalhes do serviço atual em
 [docs/servicos/comunicacao-service.md](servicos/comunicacao-service.md).
 
 **O que ainda falta para a centralização ser real:** o `financeiro` continua

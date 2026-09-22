@@ -4,7 +4,7 @@ export const SERVICOS = {
   portaria: process.env.PORTARIA_SERVICE_URL || 'http://localhost:8090',
   plan: process.env.PLAN_SERVICE_URL || 'http://localhost:8093',
   // Caixa de entrada do usuário. O financeiro publica, não guarda.
-  comunicacao: process.env.COMUNICACAO_SERVICE_URL || 'http://localhost:3003',
+  comunicacao: process.env.COMUNICACAO_SERVICE_URL || 'http://localhost:8094',
 };
 
 /** Uma fonte lenta não pode segurar o fechamento inteiro. */
