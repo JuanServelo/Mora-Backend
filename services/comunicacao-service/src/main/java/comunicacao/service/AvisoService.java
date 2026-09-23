@@ -67,6 +67,17 @@ public class AvisoService {
         aviso.setDataFim(dados.getDataFim());
         aviso.setPublicoAlvo(dados.getPublicoAlvo());
         aviso.setImagemUrl(dados.getImagemUrl());
+        // `publicado` entra junto porque as duas telas de comunicado — a tela
+        // própria e a aba dentro de Conhecimento — publicam por uma caixa de
+        // seleção no formulário, não pela rota `/publicar`. Sem esta linha a
+        // caixa não fazia nada, e o síndico marcava, salvava e via o aviso
+        // continuar como rascunho sem erro nenhum.
+        //
+        // Copiar é seguro porque as duas mandam o campo sempre, inclusive ao
+        // editar. Se alguma tela parar de mandar, o valor chega `false` (é o
+        // default da entidade) e o aviso despublica — por isso o campo não pode
+        // virar opcional no formulário sem mexer aqui também.
+        aviso.setPublicado(dados.isPublicado());
         aviso.setAtualizadoEm(LocalDateTime.now());
         return avisoRepository.save(aviso);
     }
