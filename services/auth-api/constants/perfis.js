@@ -1,9 +1,13 @@
 /**
  * Perfis de acesso do Mora.
  *
- * Modelo simplificado: 6 perfis em 3 camadas. Substitui os 11 anteriores, que
+ * Modelo simplificado: 7 perfis em 3 camadas. Substitui os 11 anteriores, que
  * distinguiam papéis que na prática tinham as mesmas permissões (síndico
  * contratante x operacional, proprietário residente x locatário x ocupante).
+ *
+ * Eram 6 até `TERCEIRO` entrar, para o funcionário terceirizado que atua no
+ * condomínio: ele precisa ser cadastrado e registrado na portaria, mas não
+ * entra no sistema.
  *
  * A distinção entre morador proprietário e inquilino não se perde: ela vive na
  * flag `responsavelFinanceiro` do usuário, que é o que a cobrança precisa saber.
