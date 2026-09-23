@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/chat")
@@ -23,20 +22,20 @@ public class ChatController {
 
     @PostMapping("/mensagem")
     public ResponseEntity<ChatMensagem> enviar(
-            @RequestParam UUID destinatarioId,
+            @RequestParam String destinatarioId,
             @RequestBody String texto) {
         ChatMensagem msg = chatService.enviar(currentUserId(), destinatarioId, texto);
         return ResponseEntity.status(HttpStatus.CREATED).body(msg);
     }
 
     @GetMapping("/conversa/{outroUsuarioId}")
-    public List<ChatMensagem> conversa(@PathVariable UUID outroUsuarioId) {
+    public List<ChatMensagem> conversa(@PathVariable String outroUsuarioId) {
         return chatService.buscarConversa(currentUserId(), outroUsuarioId);
     }
 
     @PatchMapping("/conversa/{outroUsuarioId}/lida")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void marcarConversaLida(@PathVariable UUID outroUsuarioId) {
+    public void marcarConversaLida(@PathVariable String outroUsuarioId) {
         chatService.marcarConversaLida(currentUserId(), outroUsuarioId);
     }
 
@@ -55,11 +54,17 @@ public class ChatController {
         return chatService.marcarLida(id, currentUserId());
     }
 
-    private UUID currentUserId() {
+    /**
+     * O id de quem está na requisição, como o token o traz.
+     *
+     * Sem conversão: o `auth-api` numera usuários com `integer`, e
+     * `UUID.fromString("32")` derrubava esta rota com 500.
+     */
+    private String currentUserId() {
         JwtClaims claims = AuthContext.get();
         if (claims == null || claims.authUserId() == null) {
             throw new OperacaoInvalidaException("Usuário não autenticado");
         }
-        return UUID.fromString(claims.authUserId());
+        return claims.authUserId();
     }
 }

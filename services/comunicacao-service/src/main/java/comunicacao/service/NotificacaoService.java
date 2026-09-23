@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +20,7 @@ public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
 
-    public Notificacao criar(UUID destinatarioId, String condominioId,
+    public Notificacao criar(String destinatarioId, String condominioId,
                              TipoNotificacao tipo, String titulo, String mensagem,
                              String referenciaId) {
         Notificacao n = new Notificacao();
@@ -44,7 +43,7 @@ public class NotificacaoService {
         return n;
     }
 
-    public void marcarTodasLidas(UUID destinatarioId) {
+    public void marcarTodasLidas(String destinatarioId) {
         notificacaoRepository
                 .findByDestinatarioIdAndLidaFalseOrderByCriadoEmDesc(destinatarioId)
                 .forEach(n -> {
@@ -60,17 +59,17 @@ public class NotificacaoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Notificacao> listar(UUID destinatarioId, Pageable pageable) {
+    public Page<Notificacao> listar(String destinatarioId, Pageable pageable) {
         return notificacaoRepository.findByDestinatarioIdOrderByCriadoEmDesc(destinatarioId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<Notificacao> listarNaoLidas(UUID destinatarioId) {
+    public List<Notificacao> listarNaoLidas(String destinatarioId) {
         return notificacaoRepository.findByDestinatarioIdAndLidaFalseOrderByCriadoEmDesc(destinatarioId);
     }
 
     @Transactional(readOnly = true)
-    public long contarNaoLidas(UUID destinatarioId) {
+    public long contarNaoLidas(String destinatarioId) {
         return notificacaoRepository.countByDestinatarioIdAndLidaFalse(destinatarioId);
     }
 }

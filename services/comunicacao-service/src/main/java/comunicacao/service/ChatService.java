@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +20,7 @@ public class ChatService {
 
     private final ChatMensagemRepository chatRepository;
 
-    public ChatMensagem enviar(UUID remetenteId, UUID destinatarioId, String texto) {
+    public ChatMensagem enviar(String remetenteId, String destinatarioId, String texto) {
         // Visitante e terceirizado existem no cadastro para serem registrados na
         // portaria. Conversar pelo sistema não faz parte do acesso deles.
         Autorizacao.exigirAcessoAoSistema();
@@ -37,7 +36,7 @@ public class ChatService {
         return chatRepository.save(msg);
     }
 
-    public ChatMensagem marcarLida(String id, UUID leitorId) {
+    public ChatMensagem marcarLida(String id, String leitorId) {
         ChatMensagem msg = buscarPorId(id);
         if (!leitorId.equals(msg.getDestinatarioId())) {
             throw new OperacaoInvalidaException("Apenas o destinatário pode marcar a mensagem como lida");
@@ -50,7 +49,7 @@ public class ChatService {
         return msg;
     }
 
-    public void marcarConversaLida(UUID destinatarioId, UUID remetenteId) {
+    public void marcarConversaLida(String destinatarioId, String remetenteId) {
         chatRepository.findConversa(destinatarioId, remetenteId).stream()
                 .filter(m -> destinatarioId.equals(m.getDestinatarioId()) && !m.isLida())
                 .forEach(m -> {
@@ -66,17 +65,17 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMensagem> buscarConversa(UUID usuarioA, UUID usuarioB) {
+    public List<ChatMensagem> buscarConversa(String usuarioA, String usuarioB) {
         return chatRepository.findConversa(usuarioA, usuarioB);
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMensagem> listarNaoLidas(UUID destinatarioId) {
+    public List<ChatMensagem> listarNaoLidas(String destinatarioId) {
         return chatRepository.findByDestinatarioIdAndLidaFalse(destinatarioId);
     }
 
     @Transactional(readOnly = true)
-    public long contarNaoLidas(UUID destinatarioId) {
+    public long contarNaoLidas(String destinatarioId) {
         return chatRepository.countByDestinatarioIdAndLidaFalse(destinatarioId);
     }
 }

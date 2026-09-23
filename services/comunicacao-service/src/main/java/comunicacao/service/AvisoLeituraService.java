@@ -21,7 +21,7 @@ public class AvisoLeituraService {
     private final AvisoLeituraRepository leituraRepository;
     private final AvisoRepository avisoRepository;
 
-    public AvisoLeitura marcarLido(UUID avisoId, UUID usuarioId) {
+    public AvisoLeitura marcarLido(UUID avisoId, String usuarioId) {
         return leituraRepository.findByAvisoIdAndUsuarioId(avisoId, usuarioId)
                 .orElseGet(() -> {
                     if (!avisoRepository.existsById(avisoId)) {
@@ -36,7 +36,7 @@ public class AvisoLeituraService {
     }
 
     @Transactional(readOnly = true)
-    public boolean jaLeu(UUID avisoId, UUID usuarioId) {
+    public boolean jaLeu(UUID avisoId, String usuarioId) {
         return leituraRepository.findByAvisoIdAndUsuarioId(avisoId, usuarioId).isPresent();
     }
 
@@ -46,7 +46,7 @@ public class AvisoLeituraService {
     }
 
     @Transactional(readOnly = true)
-    public List<UUID> avisosLidosPeloUsuario(UUID usuarioId) {
+    public List<UUID> avisosLidosPeloUsuario(String usuarioId) {
         return leituraRepository.findAvisosLidosByUsuario(usuarioId);
     }
 
@@ -57,7 +57,7 @@ public class AvisoLeituraService {
      * todos os ativos de uma vez, e N avisos não podem virar N idas ao banco.
      */
     @Transactional(readOnly = true)
-    public Map<UUID, LocalDateTime> quandoLeu(UUID usuarioId) {
+    public Map<UUID, LocalDateTime> quandoLeu(String usuarioId) {
         Map<UUID, LocalDateTime> porAviso = new HashMap<>();
         for (AvisoLeitura leitura : leituraRepository.findByUsuarioId(usuarioId)) {
             porAviso.put(leitura.getAvisoId(), leitura.getLidoEm());

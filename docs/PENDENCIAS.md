@@ -123,6 +123,11 @@ o Node fazia está sendo trazido para dentro dele.
 | ~~`GET /avisos` e `GET /artigos` expunham rascunho~~ | ✅ Visão da gestão. Devolviam o não publicado para qualquer um |
 | ~~Filtro por categoria vazava entre condomínios~~ | ✅ `listarPublicados` mantém o recorte. Pedir categoria trocava o filtro de condomínio pelo de categoria |
 | ~~Handler genérico vazava mensagem de erro~~ | ✅ Mensagem genérica para o cliente, detalhe no log |
+| ~~Id de usuário era `UUID`~~ | ✅ `VARCHAR`. O auth-api numera usuários com `integer`, e `UUID.fromString("32")` derrubava com 500 **toda** rota que precisa saber quem pede — confirmação de leitura, caixa de notificações e chat nunca funcionaram. As três tabelas estavam vazias |
+
+> **Como isso passou despercebido:** o frontend deles consumia apenas `artigos` e `avisos`, que
+> não olham o usuário. `notificacaoApi` e `chatApi` existiam no client sem nenhuma tela usando.
+> O defeito só apareceu quando as telas trazidas do outro lado exercitaram esse caminho.
 
 #### Autorização: o que continua aberto
 
@@ -231,6 +236,9 @@ como `??` no git. O avaliador não vai ver.
 | Numeração de RF divergente | `HISTORIAS-DE-USUARIO.md` × `docs/servicos/` | Deslocada em um. Alguém vai implementar o escopo errado achando que acertou |
 | Sem `trust proxy` no `auth-api` | Limitador de login | Atrás do Traefik, **todos os usuários dividem um balde de 10 tentativas** |
 | Chave PIX não cadastrada | Conta Asaas | Boleto funciona; PIX é recusado até cadastrar |
+| `credentials.json` assado na imagem | `meeting-service` | Lido do classpath, então entra no jar no build. Quem tem a imagem tem a credencial — mesma classe do item da senha acima. Montar por volume, como já é feito com `tokens/`, resolve |
+| `meeting-service` não sobe sem a credencial | `meeting-service` | `Exited (1)`. A imagem antiga rodava porque foi construída numa máquina que tinha o arquivo; rebuild em outra máquina derruba o serviço. Está documentado em [ARQUIVOS-NECESSARIOS.md](ARQUIVOS-NECESSARIOS.md) |
+| `docker/.env.example` estava incompleto | `docker/` | Faltavam `MAIL_*`, `ASAAS_*`, `SESSION_SECRET`, `ADMIN_SEED_*` e `SERVICO_TOKEN`. Quem copiava o exemplo subia uma stack onde e-mail e cobrança falhavam em silêncio. **Corrigido** |
 
 ---
 

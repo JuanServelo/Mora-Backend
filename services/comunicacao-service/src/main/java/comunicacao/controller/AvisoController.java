@@ -45,7 +45,7 @@ public class AvisoController {
      */
     @GetMapping("/ativos")
     public List<AvisoLidoDTO> listarAtivos() {
-        UUID userId = currentUserId();
+        String userId = currentUserId();
         Map<UUID, LocalDateTime> quandoLeu = leituraService.quandoLeu(userId);
         return avisoService.listarAtivos(CondominioUtils.condominioIdEfetivo()).stream()
                 .map(a -> AvisoLidoDTO.de(a, quandoLeu.get(a.getId())))
@@ -91,7 +91,7 @@ public class AvisoController {
     public ResponseEntity<Map<String, Object>> marcarLido(@PathVariable UUID id) {
         avisoService.buscarPorId(id);
 
-        UUID userId = currentUserId();
+        String userId = currentUserId();
         leituraService.marcarLido(id, userId);
         return ResponseEntity.ok(Map.of(
                 "avisoId", id,
@@ -112,11 +112,17 @@ public class AvisoController {
         );
     }
 
-    private UUID currentUserId() {
+    /**
+     * O id de quem está na requisição, como o token o traz.
+     *
+     * Sem conversão: o `auth-api` numera usuários com `integer`, e
+     * `UUID.fromString("32")` derrubava esta rota com 500.
+     */
+    private String currentUserId() {
         JwtClaims claims = AuthContext.get();
         if (claims == null || claims.authUserId() == null) {
             throw new OperacaoInvalidaException("Usuário não autenticado");
         }
-        return UUID.fromString(claims.authUserId());
+        return claims.authUserId();
     }
 }

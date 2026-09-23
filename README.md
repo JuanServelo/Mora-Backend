@@ -101,6 +101,10 @@ cp docker/.env.example docker/.env
 docker compose -f docker/docker-compose.yml up -d --build
 ```
 
+**Clonar não basta.** Alguns arquivos ficam fora do Git por conterem segredo, e o
+`meeting-service` nem sobe sem o dele. A lista completa, com o que cada ausência quebra, está em
+[`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md).
+
 O `init-databases.sql` cria os bancos, mas **só roda em volume novo**. Em máquina que já subiu a
 stack antes, o Postgres ignora o `docker-entrypoint-initdb.d`, e um banco acrescentado depois não
 aparece — para esses há os scripts avulsos em `docker/criar-banco-*.sql`.
@@ -152,6 +156,7 @@ unidade de quem pediu dependem do que está gravado, e só são verificáveis co
 | [`docs/ARQUITETURA-E-FLUXOS.md`](docs/ARQUITETURA-E-FLUXOS.md) | Decisões de arquitetura |
 | [`docs/servicos/`](docs/servicos/) | Um documento por serviço, com o porquê de cada decisão |
 | [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) | **O que não está pronto, e o que está errado** |
+| [`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md) | **Os arquivos que não estão no Git** e sem os quais a stack não sobe |
 
 `PENDENCIAS.md` é o documento a ler antes de mexer em qualquer coisa: ele lista as lacunas
 conhecidas, inclusive as de segurança, em vez de deixá-las serem descobertas em produção.

@@ -11,12 +11,12 @@ import java.util.UUID;
 
 public interface AvisoLeituraRepository extends JpaRepository<AvisoLeitura, String> {
 
-    Optional<AvisoLeitura> findByAvisoIdAndUsuarioId(UUID avisoId, UUID usuarioId);
+    Optional<AvisoLeitura> findByAvisoIdAndUsuarioId(UUID avisoId, String usuarioId);
 
-    List<AvisoLeitura> findByUsuarioId(UUID usuarioId);
+    List<AvisoLeitura> findByUsuarioId(String usuarioId);
 
     long countByAvisoId(UUID avisoId);
 
     @Query("SELECT al.avisoId FROM AvisoLeitura al WHERE al.usuarioId = :usuarioId")
-    List<UUID> findAvisosLidosByUsuario(@Param("usuarioId") UUID usuarioId);
+    List<UUID> findAvisosLidosByUsuario(@Param("usuarioId") String usuarioId);
 }

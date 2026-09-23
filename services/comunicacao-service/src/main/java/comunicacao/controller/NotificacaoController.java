@@ -52,7 +52,7 @@ public class NotificacaoController {
      */
     @GetMapping("/resumo")
     public Map<String, Long> resumo() {
-        UUID userId = currentUserId();
+        String userId = currentUserId();
         return Map.of(
                 "naoLidas", notificacaoService.contarNaoLidas(userId),
                 "conversasNaoLidas", chatService.contarNaoLidas(userId)
@@ -84,7 +84,7 @@ public class NotificacaoController {
      */
     @PostMapping("/admin")
     public ResponseEntity<Notificacao> criarAdmin(
-            @RequestParam UUID destinatarioId,
+            @RequestParam String destinatarioId,
             @RequestParam String condominioId,
             @RequestParam TipoNotificacao tipo,
             @RequestParam String titulo,
@@ -94,11 +94,17 @@ public class NotificacaoController {
                 destinatarioId, condominioId, tipo, titulo, mensagem, null));
     }
 
-    private UUID currentUserId() {
+    /**
+     * O id de quem está na requisição, como o token o traz.
+     *
+     * Sem conversão: o `auth-api` numera usuários com `integer`, e
+     * `UUID.fromString("32")` derrubava esta rota com 500.
+     */
+    private String currentUserId() {
         JwtClaims claims = AuthContext.get();
         if (claims == null || claims.authUserId() == null) {
             throw new OperacaoInvalidaException("Usuário não autenticado");
         }
-        return UUID.fromString(claims.authUserId());
+        return claims.authUserId();
     }
 }
