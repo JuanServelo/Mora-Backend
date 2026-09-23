@@ -4,6 +4,7 @@ import comunicacao.exception.OperacaoInvalidaException;
 import comunicacao.exception.RecursoNaoEncontradoException;
 import comunicacao.model.ChatMensagem;
 import comunicacao.repository.ChatMensagemRepository;
+import comunicacao.security.Autorizacao;
 import comunicacao.security.CondominioUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,10 @@ public class ChatService {
     private final ChatMensagemRepository chatRepository;
 
     public ChatMensagem enviar(UUID remetenteId, UUID destinatarioId, String texto) {
+        // Visitante e terceirizado existem no cadastro para serem registrados na
+        // portaria. Conversar pelo sistema não faz parte do acesso deles.
+        Autorizacao.exigirAcessoAoSistema();
+
         if (remetenteId.equals(destinatarioId)) {
             throw new OperacaoInvalidaException("Não é possível enviar mensagem para si mesmo");
         }

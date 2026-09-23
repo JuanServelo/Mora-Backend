@@ -73,11 +73,36 @@ o mesmo do auth-api, porque é ele quem emite.
 `CondominioUtils.condominioIdEfetivo()` resolve o escopo pela claim do token, nunca pelo corpo ou
 pela query. O Admin Geral (condomínio `default`) enxerga todos os condomínios.
 
-> **Vazio conhecido, e é o próximo item:** não existe checagem de **perfil**. Hoje qualquer
-> usuário autenticado cria, edita, publica e exclui aviso — um morador inclusive. E
-> `buscarPorId`, `atualizar`, `publicar`, `encerrar` e `excluir` não comparam o condomínio do
-> aviso com o de quem pede, então o síndico do condomínio A alcança o aviso do B sabendo o id.
-> Está em `docs/PENDENCIAS.md`.
+### Quem pode o quê
+
+As regras vivem em `security/Autorizacao.java`, e as checagens ficam nos **services**, não nos
+controllers. Não é organização: espalhadas pelos controllers elas divergem — a checagem entra em
+quatro rotas, esquece a quinta, e a quinta é a que alguém encontra. No serviço, um endpoint novo
+não tem como contornar.
+
+| | `ADMIN_SINDICO` | `ADMIN_GERAL` | morador, dono, porteiro | convidado, terceiro |
+|---|---|---|---|---|
+| Publicar, editar, excluir aviso ou artigo | ✅ | ❌ | ❌ | ❌ |
+| Ver rascunho e relatório de leitura | ✅ | ✅ | ❌ | ❌ |
+| Ler o que está publicado | ✅ | ✅ | ✅ | ❌ |
+| Confirmar leitura, conversar | ✅ | ✅ | ✅ | ❌ |
+
+**O Admin Geral não escreve, e isso é deliberado.** Ele opera a plataforma: acompanha qualquer
+condomínio, mas não publica comunicado em nome de nenhum. Há também um motivo mecânico —
+`condominioIdEfetivo()` devolve `null` para ele, então um aviso criado pelo Admin Geral nasceria
+sem condomínio e não apareceria para ninguém.
+
+**`CONVIDADO` e `TERCEIRO` não leem nada.** Existem no cadastro para serem registrados na
+portaria, não para receber o comunicado interno do condomínio.
+
+### O condomínio é verificado em toda rota por id
+
+`buscarPorId`, `atualizar`, `publicar`, `encerrar`, `excluir` e a confirmação de leitura comparam
+o condomínio do recurso com o de quem pede. **A recusa é 404, não 403:** dizer "existe, mas não é
+seu" já confirma que existe, e id de aviso é fácil de varrer.
+
+A ordem também importa — **perfil primeiro, existência depois**. Invertida, um morador descobriria
+quais ids existem pela diferença entre 404 e 403 antes de levar o 403.
 
 ---
 
@@ -135,8 +160,6 @@ Veio do serviço Node e ainda não tem equivalente aqui. Cada item é um passo s
 
 | Item | Por que importa |
 |---|---|
-| **Checagem de perfil** | Um morador cria e apaga aviso hoje |
-| **Isolamento por condomínio nas rotas por id** | Síndico do A alcança aviso do B; responder 404, não 403 |
 | **Filtro por `publicoAlvo`** | O morador recebe comunicado interno de funcionário |
 | **Relatório com denominador** | "8 confirmaram" sozinho não diz nada; 8 de 9 é ótimo, 8 de 80 é problema |
 | **`chaveUnica` na notificação** | O fechamento do financeiro reprocessado duplica o aviso de fatura |

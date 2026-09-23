@@ -4,6 +4,7 @@ import comunicacao.exception.OperacaoInvalidaException;
 import comunicacao.model.Notificacao;
 import comunicacao.model.enums.TipoNotificacao;
 import comunicacao.security.AuthContext;
+import comunicacao.security.Autorizacao;
 import comunicacao.security.JwtClaims;
 import comunicacao.service.ChatService;
 import comunicacao.service.NotificacaoService;
@@ -69,6 +70,18 @@ public class NotificacaoController {
         notificacaoService.marcarTodasLidas(currentUserId());
     }
 
+    /**
+     * Publica uma notificação para outro usuário.
+     *
+     * O `/admin` no caminho era só o nome: **qualquer usuário autenticado
+     * chamava esta rota** e escrevia na caixa de entrada de qualquer pessoa, em
+     * qualquer condomínio, com o título e o texto que quisesse. É o caminho
+     * pronto para um golpe — uma notificação convincente, vinda do sistema,
+     * mandando o morador fazer alguma coisa.
+     *
+     * O `condominioId` continua vindo por parâmetro porque a rota é da gestão,
+     * mas agora só a gestão chega até aqui.
+     */
     @PostMapping("/admin")
     public ResponseEntity<Notificacao> criarAdmin(
             @RequestParam UUID destinatarioId,
@@ -76,6 +89,7 @@ public class NotificacaoController {
             @RequestParam TipoNotificacao tipo,
             @RequestParam String titulo,
             @RequestBody String mensagem) {
+        Autorizacao.exigirGestaoDoCondominio("enviar notificações");
         return ResponseEntity.ok(notificacaoService.criar(
                 destinatarioId, condominioId, tipo, titulo, mensagem, null));
     }

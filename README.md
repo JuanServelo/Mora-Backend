@@ -163,8 +163,9 @@ conhecidas, inclusive as de segurança, em vez de deixá-las serem descobertas e
 Estão detalhadas em `docs/PENDENCIAS.md`. As que mudam o que dá para fazer com o sistema hoje:
 
 - **`plan-service` não autentica.** Qualquer requisição alcança qualquer rota dele.
-- **`comunicacao-service` não checa perfil.** Um morador autenticado cria e apaga aviso, e as
-  rotas por id não comparam o condomínio de quem pede.
+- **`comunicacao-service` aceita a entidade crua no corpo** (`@RequestBody Aviso`), e o
+  `jwt.secret` tem default inseguro no `application.yml`. A checagem de perfil e o recorte por
+  condomínio já existem.
 - **A senha do Postgres está versionada** como default no compose e em outros nove arquivos.
   Precisa ser rotacionada junto com a remoção.
 - **`node_modules/` está no índice do Git** — 5.881 arquivos. O `.gitignore` já o lista, mas

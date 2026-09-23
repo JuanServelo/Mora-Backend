@@ -4,6 +4,7 @@ import comunicacao.dto.AvisoLidoDTO;
 import comunicacao.exception.OperacaoInvalidaException;
 import comunicacao.model.Aviso;
 import comunicacao.security.AuthContext;
+import comunicacao.security.Autorizacao;
 import comunicacao.security.CondominioUtils;
 import comunicacao.security.JwtClaims;
 import comunicacao.service.AvisoLeituraService;
@@ -77,8 +78,19 @@ public class AvisoController {
         avisoService.excluir(id);
     }
 
+    /**
+     * Registra que este usuário leu o aviso.
+     *
+     * O aviso é buscado pelo serviço, e não direto pelo repositório, porque é
+     * lá que mora o recorte de condomínio. Sem passar por ele, qualquer usuário
+     * confirmava leitura de aviso de qualquer condomínio — e a confirmação
+     * entrava no relatório do síndico de lá, contando alguém que nunca foi
+     * destinatário.
+     */
     @PostMapping("/{id}/lido")
     public ResponseEntity<Map<String, Object>> marcarLido(@PathVariable UUID id) {
+        avisoService.buscarPorId(id);
+
         UUID userId = currentUserId();
         leituraService.marcarLido(id, userId);
         return ResponseEntity.ok(Map.of(
@@ -88,8 +100,12 @@ public class AvisoController {
         ));
     }
 
+    /** Quantos confirmaram — relatório da administração. */
     @GetMapping("/{id}/leituras")
     public Map<String, Object> estatisticasLeitura(@PathVariable UUID id) {
+        Autorizacao.exigirVisaoDeGestao("ver o relatório de leitura");
+        avisoService.buscarPorId(id);
+
         return Map.of(
                 "avisoId", id,
                 "totalLeituras", leituraService.contarLeituras(id)

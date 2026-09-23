@@ -113,14 +113,24 @@ o Node fazia está sendo trazido para dentro dele.
 | Chat | `chat_mensagens`, direto entre dois usuários | ⚠️ falta o formato "falar com a administração" |
 | Notificações | `notificacoes` | ⚠️ sem `chaveUnica`, sem `origem`/`dados` e sem rota interna para job |
 
-#### Buracos de autorização, neste serviço
+#### Autorização: o que foi fechado
+
+| Item | Como estava |
+|---|---|
+| ~~Sem checagem de perfil~~ | ✅ `security/Autorizacao.java`. Escrever é do síndico; o Admin Geral acompanha sem escrever; convidado e terceirizado não leem |
+| ~~Sem checagem de condomínio nas rotas por id~~ | ✅ Toda rota por id compara o condomínio e responde **404**, não 403 |
+| ~~`POST /notificacoes/admin` aberta~~ | ✅ Exige a gestão. Qualquer usuário autenticado escrevia na caixa de entrada de qualquer pessoa, em qualquer condomínio |
+| ~~`GET /avisos` e `GET /artigos` expunham rascunho~~ | ✅ Visão da gestão. Devolviam o não publicado para qualquer um |
+| ~~Filtro por categoria vazava entre condomínios~~ | ✅ `listarPublicados` mantém o recorte. Pedir categoria trocava o filtro de condomínio pelo de categoria |
+| ~~Handler genérico vazava mensagem de erro~~ | ✅ Mensagem genérica para o cliente, detalhe no log |
+
+#### Autorização: o que continua aberto
 
 | Item | Efeito |
 |---|---|
-| **Sem checagem de perfil** | Qualquer usuário autenticado cria, edita, publica e exclui aviso — um morador inclusive |
-| **Sem checagem de condomínio nas rotas por id** | `buscarPorId`, `atualizar`, `publicar`, `encerrar`, `excluir` e `marcarLido` não comparam o condomínio: o síndico do A alcança o aviso do B sabendo o id (RNF-15) |
-| **`@RequestBody Aviso` cru** | O cliente manda `id`, `criadoEm` e `condominioId` junto |
+| **`@RequestBody Aviso` cru** | O cliente manda `id`, `criadoEm` e `condominioId` junto. O `condominioId` é sobrescrito pela claim ao criar, mas o resto entra |
 | **`jwt.secret` com default** | `changeme-insecure-default` no `application.yml`: sem segredo o serviço sobe inseguro em vez de recusar |
+| **Sem `publicoAlvo` no recorte** | O morador recebe comunicado dirigido a funcionário |
 
 O desenho do serviço Node, com o raciocínio de cada regra, está no commit
 `0786c66`. Detalhes do serviço atual em
