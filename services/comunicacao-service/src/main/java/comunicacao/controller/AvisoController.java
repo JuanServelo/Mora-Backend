@@ -1,5 +1,6 @@
 package comunicacao.controller;
 
+import comunicacao.dto.AvisoLidoDTO;
 import comunicacao.exception.OperacaoInvalidaException;
 import comunicacao.model.Aviso;
 import comunicacao.security.AuthContext;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,9 +36,19 @@ public class AvisoController {
         return avisoService.listarTodos(CondominioUtils.condominioIdEfetivo());
     }
 
+    /**
+     * Os avisos vigentes, marcados com o que este usuário já leu.
+     *
+     * A lista vem de `avisos` e o "já li" de `aviso_leituras`; juntar aqui evita
+     * a tela fazer duas chamadas e cruzar sozinha.
+     */
     @GetMapping("/ativos")
-    public List<Aviso> listarAtivos() {
-        return avisoService.listarAtivos(CondominioUtils.condominioIdEfetivo());
+    public List<AvisoLidoDTO> listarAtivos() {
+        UUID userId = currentUserId();
+        Map<UUID, LocalDateTime> quandoLeu = leituraService.quandoLeu(userId);
+        return avisoService.listarAtivos(CondominioUtils.condominioIdEfetivo()).stream()
+                .map(a -> AvisoLidoDTO.de(a, quandoLeu.get(a.getId())))
+                .toList();
     }
 
     @GetMapping("/{id}")

@@ -104,6 +104,7 @@ public class BlocoService {
             bloco.setNome(dados.getNome());
         }
 
+        bloco.setSigla(dados.getSigla());
         bloco.setDescricao(dados.getDescricao());
         bloco.setAndares(dados.getAndares());
         bloco.setApartamentosPorAndar(dados.getApartamentosPorAndar());

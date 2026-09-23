@@ -4,8 +4,9 @@ import sequelize from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import User from '../models/User.js';
 import RegistroAcesso from '../models/RegistroAcesso.js';
-import { PERFIS, PERFIS_LABEL, STATUS_USUARIO, podeAcessarAdmin } from '../constants/perfis.js';
+import { PERFIS, PERFIS_LABEL, PERFIS_FUNCIONARIO, STATUS_USUARIO, podeAcessarAdmin } from '../constants/perfis.js';
 import { usuarioPublico } from '../utils/usuarioPublico.js';
+import { avaliarEntradaFuncionario } from '../utils/portariaClient.js';
 
 const router = express.Router();
 
@@ -99,7 +100,8 @@ router.get('/dentro', portariaMiddleware, async (req, res) => {
     const dentro = await sequelize.query(`
       WITH latest AS (
         SELECT DISTINCT ON ("usuarioId")
-          id, "usuarioId", tipo, "createdAt", "registradoPorId", "nomeSnapshot", "perfilSnapshot"
+          id, "usuarioId", tipo, "createdAt", "registradoPorId", "nomeSnapshot", "perfilSnapshot",
+          "turnoPrevisto", "liberacaoExcepcional"
         FROM registros_acesso
         WHERE "condominioId" = :condominioId
         ORDER BY "usuarioId", "createdAt" DESC
@@ -111,6 +113,8 @@ router.get('/dentro', portariaMiddleware, async (req, res) => {
         COALESCE(l."nomeSnapshot", u.nome)         AS nome,
         COALESCE(l."perfilSnapshot", u.perfil::text) AS perfil,
         u."unidadeId",
+        l."turnoPrevisto",
+        l."liberacaoExcepcional",
         rb.nome AS "registradoPorNome"
       FROM latest l
       LEFT JOIN users u  ON u.id = l."usuarioId"
@@ -144,6 +148,21 @@ router.post('/entrada/:userId', portariaMiddleware, async (req, res) => {
       });
     }
 
+    // RF-09/RN-04: funcionário só entra Ativo e dentro do turno. A regra vive
+    // no portaria-service; aqui perguntamos antes de gravar.
+    let avaliacao = { permitido: true };
+    if (PERFIS_FUNCIONARIO.includes(alvo.perfil)) {
+      const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+      avaliacao = await avaliarEntradaFuncionario(alvo.id, token);
+      if (!avaliacao.permitido) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: avaliacao.motivo || 'Entrada fora do turno.',
+          turnoPrevisto: avaliacao.turnoPrevisto ?? null,
+        });
+      }
+    }
+
     await RegistroAcesso.create({
       usuarioId: alvo.id,
       tipo: 'ENTRADA',
@@ -151,9 +170,18 @@ router.post('/entrada/:userId', portariaMiddleware, async (req, res) => {
       condominioId: req.user.condominioId,
       nomeSnapshot: alvo.nome,
       perfilSnapshot: toPerfilLabel(alvo.perfil),
+      turnoPrevisto: avaliacao.turnoPrevisto ?? null,
+      liberacaoExcepcional: Boolean(avaliacao.porLiberacaoExcepcional),
     });
 
-    res.json({ sucesso: true, mensagem: `Entrada de ${alvo.nome} registrada.` });
+    res.json({
+      sucesso: true,
+      mensagem: `Entrada de ${alvo.nome} registrada.`,
+      ...(avaliacao.porLiberacaoExcepcional && {
+        alerta: `Entrada por liberação excepcional: ${avaliacao.liberacaoMotivo}`
+          + ` (autorizada por ${avaliacao.liberacaoAutorizadaPor}).`,
+      }),
+    });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -178,7 +206,20 @@ router.post('/saida/:userId', portariaMiddleware, async (req, res) => {
       condominioId: req.user.condominioId,
     });
 
-    res.json({ sucesso: true, mensagem: `Saída de ${alvo.nome} registrada.` });
+    // RN-04: a saída NUNCA é bloqueada — quem está dentro sai, mesmo suspenso
+    // ou fora do turno. Situação irregular vira alerta ao porteiro, não trava.
+    let alerta = null;
+    if (PERFIS_FUNCIONARIO.includes(alvo.perfil)) {
+      const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+      const av = await avaliarEntradaFuncionario(alvo.id, token);
+      if (!av.permitido && av.motivo) alerta = `Atenção: ${av.motivo}`;
+    }
+
+    res.json({
+      sucesso: true,
+      mensagem: `Saída de ${alvo.nome} registrada.`,
+      ...(alerta && { alerta }),
+    });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -206,6 +247,80 @@ router.get('/meus-guests', responsavelMiddleware, async (req, res) => {
     const ultimos = await ultimoRegistroPorUsuario(ids, condominioId);
 
     res.json({ sucesso: true, guests: guests.map((g) => mapUsuario(g, ultimos)) });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// ─── RESPONSÁVEL: pessoas da minha unidade ───
+// Quem mora na unidade só existe aqui. O portaria-service consome esta rota,
+// repassando o token do próprio morador, para validar vínculos de veículo (RN-06).
+router.get('/pessoas-unidade', async (req, res) => {
+  try {
+    const p = req.userPerfil;
+    const permitido = [PERFIS.MORADOR, PERFIS.DONO_ALUGUEL, PERFIS.PORTEIRO].includes(p)
+      || podeAcessarAdmin(p);
+    if (!permitido) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão para consultar moradores.' });
+    }
+
+    // Porteiro e síndico escolhem a unidade; morador é sempre a própria,
+    // mesmo que mande outra no query (RN-05).
+    const podeEscolher = p === PERFIS.PORTEIRO || podeAcessarAdmin(p);
+    const unidadeId = podeEscolher && req.query.unidadeId
+      ? req.query.unidadeId
+      : req.user.unidadeId;
+    const { condominioId } = req.user;
+    if (!unidadeId) return res.json({ sucesso: true, pessoas: [] });
+
+    const pessoas = await User.findAll({
+      where: {
+        unidadeId,
+        condominioId,
+        status: STATUS_USUARIO.ACTIVE,
+        perfil: { [Op.in]: [PERFIS.MORADOR, PERFIS.DONO_ALUGUEL] },
+      },
+      order: [['nome', 'ASC']],
+    });
+
+    res.json({
+      sucesso: true,
+      // id como texto: o portaria-service compara com o "sub" do JWT, que é string.
+      pessoas: pessoas.map((p) => ({
+        id: String(p.id),
+        nome: p.nome,
+        email: p.email,
+        perfil: p.perfil,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// ─── Funcionários do condomínio (responsável de evento — RN-04) ───
+// Mesma constante PERFIS_FUNCIONARIO usada no registro de entrada e saída:
+// uma lista paralela divergiria na primeira mudança de perfil.
+router.get('/funcionarios', portariaMiddleware, async (req, res) => {
+  try {
+    const { condominioId } = req.user;
+    const funcionarios = await User.findAll({
+      where: {
+        condominioId,
+        status: STATUS_USUARIO.ACTIVE,
+        perfil: { [Op.in]: PERFIS_FUNCIONARIO },
+      },
+      order: [['nome', 'ASC']],
+    });
+    res.json({
+      sucesso: true,
+      funcionarios: funcionarios.map((f) => ({
+        id: String(f.id),
+        nome: f.nome,
+        email: f.email,
+        perfil: f.perfil,
+      })),
+    });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -302,6 +417,8 @@ router.get('/historico-acesso', portariaMiddleware, async (req, res) => {
           COALESCE(e."nomeSnapshot", u.nome)           AS nome,
           COALESCE(e."perfilSnapshot", u.perfil::text) AS perfil,
           u."unidadeId",
+          e."turnoPrevisto",
+          e."liberacaoExcepcional",
           rb.nome AS "registradoPorNome",
           (
             SELECT s."createdAt"

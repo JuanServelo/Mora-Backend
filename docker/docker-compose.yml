@@ -74,6 +74,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      # Quem mora em qual unidade é dado do auth-api (RN-06).
+      - AUTH_API_URL=http://auth-api:3001
       - TZ=America/Sao_Paulo
 
   # 5. DESATIVADO — vagas-service migrado para portaria-service (Fase 3)
@@ -118,7 +120,17 @@ services:
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      # Credencial que outro servico apresenta para publicar notificacao sem
+      # usuario logado — o caso e o fechamento de competencia do financeiro,
+      # que roda por job. Sem ela, /interno responde 503 em vez de ficar aberta.
+      - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       - TZ=America/Sao_Paulo
+    volumes:
+      # Imagens dos avisos. A coluna `imagem_url` aponta para estes arquivos:
+      # sem volume eles sumiriam no primeiro rebuild e a referencia ficaria
+      # apontando para 404 — foi o que aconteceu com as fotos de perfil do
+      # auth-api antes do `auth_uploads`.
+      - comunicacao_uploads:/app/uploads
 
   # 6. Microservice 3: Meetings e Atas (Java)
   meeting-service:
@@ -192,7 +204,19 @@ services:
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - MAIL_FROM=${MAIL_FROM}
+      # A regra de turno do funcionário vive no portaria-service; o auth-api
+      # a consulta antes de registrar a entrada (RF-09).
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - TZ=America/Sao_Paulo
+    volumes:
+      # As fotos de perfil sao gravadas em disco, e a coluna fotoUrl no banco
+      # aponta para elas. Sem volume, os arquivos ficam na camada gravavel do
+      # container: qualquer `up --build` ou recreate apaga todos, e o banco
+      # segue apontando para arquivos que nao existem mais — a tela do usuario
+      # passa a mostrar imagem quebrada e ninguem entende por que.
+      #
+      # Comprovado: avatar-1-1789002352592.jpg estava no banco e respondia 404.
+      - auth_uploads:/app/uploads
 
   # 7.9. Gestao Geral (Node) — agrega dados da plataforma para o Admin Geral
   gestao-geral:
@@ -202,6 +226,7 @@ services:
     container_name: gestao-geral
     depends_on:
       - auth-api
+      - consul
     networks:
       - microservices-net
     ports:
@@ -209,6 +234,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3002
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=gestao-geral
       # Mesmo segredo do auth-api: valida os tokens que ele emite.
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
@@ -216,6 +244,54 @@ services:
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - PLAN_SERVICE_URL=http://plan-service:8093
       - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - TZ=America/Sao_Paulo
+
+  # 7.95. Financeiro (Node) — faturas, cobrancas, multas e prestacao de contas
+  financeiro:
+    build:
+      context: ../services/financeiro
+      dockerfile: Dockerfile
+    container_name: financeiro
+    depends_on:
+      - postgres
+      - auth-api
+      - consul
+    networks:
+      - microservices-net
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=financeiro
+      # Mesmo segredo do auth-api: valida os tokens que ele emite.
+      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=mora_financeiro
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - AUTH_API_URL=http://auth-api:3001
+      - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      - PLAN_SERVICE_URL=http://plan-service:8093
+      # Caixa de entrada do usuario: o financeiro publica notificacao la, nao
+      # guarda a propria. Sem SERVICO_TOKEN o fechamento roda e so a
+      # notificacao deixa de sair.
+      - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - SERVICO_TOKEN=${SERVICO_TOKEN:-}
+      # Envio de aviso de fatura. Sem estas, o servico sobe e so o e-mail falha.
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM}
+      # Credenciais do gateway: sem default, e sem entrar no repositorio.
+      # Defina em docker/.env — o servico sobe sem elas, so as rotas de
+      # cobranca ficam indisponiveis.
+      - ASAAS_BASE_URL=${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      - ASAAS_API_KEY=${ASAAS_API_KEY:-}
+      - ASAAS_WEBHOOK_TOKEN=${ASAAS_WEBHOOK_TOKEN:-}
       - TZ=America/Sao_Paulo
 
   # 8. pgAdmin (visualizador do banco de dados)
@@ -234,6 +310,8 @@ services:
 
 volumes:
   postgres_data:
+  auth_uploads:
+  comunicacao_uploads:
 
 networks:
   microservices-net:

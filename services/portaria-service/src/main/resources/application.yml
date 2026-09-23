@@ -4,6 +4,12 @@ server:
     include-message: always
     include-binding-errors: always
 
+# Quem mora em qual unidade é dado do auth-api. O portaria-service consulta
+# esta URL para validar vínculos de pessoas (RN-06).
+auth:
+  api:
+    url: ${AUTH_API_URL:http://localhost:3001}
+
 spring:
   application:
     name: portaria-service

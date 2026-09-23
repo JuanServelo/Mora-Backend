@@ -7,20 +7,19 @@ import portaria.model.PreAutorizacao;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 public interface PreAutorizacaoRepository extends JpaRepository<PreAutorizacao, String> {
 
-    List<PreAutorizacao> findByMoradorId(UUID moradorId);
+    List<PreAutorizacao> findByMoradorId(String moradorId);
 
-    List<PreAutorizacao> findByCondominioIdAndAtivoTrue(String condominioId);
+    List<PreAutorizacao> findByUnidadeId(String unidadeId);
 
-    List<PreAutorizacao> findByAtivoTrue();
-
+    // "Ativa hoje" = aguardando e dentro da validade. Vencida não aparece:
+    // statusEfetivo() a trataria como EXPIRADA de qualquer forma.
     @Query("""
         SELECT p FROM PreAutorizacao p
         WHERE p.condominioId = :condominioId
-          AND p.ativo = true
+          AND p.status = portaria.model.enums.StatusPreAutorizacao.AGUARDANDO
           AND p.validadeInicio <= :hoje
           AND p.validadeFim   >= :hoje
         """)
@@ -29,7 +28,7 @@ public interface PreAutorizacaoRepository extends JpaRepository<PreAutorizacao, 
 
     @Query("""
         SELECT p FROM PreAutorizacao p
-        WHERE p.ativo = true
+        WHERE p.status = portaria.model.enums.StatusPreAutorizacao.AGUARDANDO
           AND p.validadeInicio <= :hoje
           AND p.validadeFim   >= :hoje
         """)
@@ -38,7 +37,7 @@ public interface PreAutorizacaoRepository extends JpaRepository<PreAutorizacao, 
     @Query("""
         SELECT p FROM PreAutorizacao p
         WHERE p.condominioId = :condominioId
-          AND p.ativo = true
+          AND p.status = portaria.model.enums.StatusPreAutorizacao.AGUARDANDO
           AND p.validadeInicio <= :hoje
           AND p.validadeFim   >= :hoje
           AND (LOWER(p.nomeVisitante) LIKE LOWER(CONCAT('%', :termo, '%'))
@@ -47,4 +46,30 @@ public interface PreAutorizacaoRepository extends JpaRepository<PreAutorizacao, 
     List<PreAutorizacao> buscarPorNomeOuCpf(@Param("condominioId") String condominioId,
                                              @Param("hoje") LocalDate hoje,
                                              @Param("termo") String termo);
+
+    /** Atendimento: autorização ativa ao identificar o visitante pelo CPF (RN-08). */
+    @Query("""
+        SELECT p FROM PreAutorizacao p
+        WHERE (:condominioId IS NULL OR p.condominioId = :condominioId)
+          AND p.status = portaria.model.enums.StatusPreAutorizacao.AGUARDANDO
+          AND p.validadeInicio <= :hoje
+          AND p.validadeFim   >= :hoje
+          AND p.cpfVisitante = :cpf
+        """)
+    List<PreAutorizacao> buscarPorCpf(@Param("condominioId") String condominioId,
+                                      @Param("hoje") LocalDate hoje,
+                                      @Param("cpf") String cpf);
+
+    /** Usada pelo atendimento para destacar a autorização ao bipar a placa (RN-08). */
+    @Query("""
+        SELECT p FROM PreAutorizacao p
+        WHERE (:condominioId IS NULL OR p.condominioId = :condominioId)
+          AND p.status = portaria.model.enums.StatusPreAutorizacao.AGUARDANDO
+          AND p.validadeInicio <= :hoje
+          AND p.validadeFim   >= :hoje
+          AND UPPER(p.placaVeiculo) = UPPER(:placa)
+        """)
+    List<PreAutorizacao> buscarPorPlaca(@Param("condominioId") String condominioId,
+                                        @Param("hoje") LocalDate hoje,
+                                        @Param("placa") String placa);
 }

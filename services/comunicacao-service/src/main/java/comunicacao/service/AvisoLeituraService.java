@@ -7,7 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -45,5 +48,20 @@ public class AvisoLeituraService {
     @Transactional(readOnly = true)
     public List<UUID> avisosLidosPeloUsuario(UUID usuarioId) {
         return leituraRepository.findAvisosLidosByUsuario(usuarioId);
+    }
+
+    /**
+     * Quando este usuário leu cada aviso.
+     *
+     * Uma consulta para a lista inteira, e não uma por aviso: a tela mostra
+     * todos os ativos de uma vez, e N avisos não podem virar N idas ao banco.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, LocalDateTime> quandoLeu(UUID usuarioId) {
+        Map<UUID, LocalDateTime> porAviso = new HashMap<>();
+        for (AvisoLeitura leitura : leituraRepository.findByUsuarioId(usuarioId)) {
+            porAviso.put(leitura.getAvisoId(), leitura.getLidoEm());
+        }
+        return porAviso;
     }
 }

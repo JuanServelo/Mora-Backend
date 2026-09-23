@@ -91,12 +91,6 @@ const User = sequelize.define('User', {
     defaultValue: 'local',
   },
 
-  /** @deprecated coluna legada — use perfil */
-  role: {
-    type: DataTypes.ENUM('user', 'admin'),
-    defaultValue: 'user',
-  },
-
   perfil: {
     type: DataTypes.ENUM(...PERFIS_VALUES),
     allowNull: true,
@@ -137,11 +131,6 @@ const User = sequelize.define('User', {
     defaultValue: false,
   },
 
-  entradaPermitida: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-
   tokenVersion: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
@@ -151,31 +140,6 @@ const User = sequelize.define('User', {
   activatedAt: {
     type: DataTypes.DATE,
     allowNull: true,
-  },
-
-  /** Legado — preferir unidadeId */
-  bloco: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    set(value) {
-      this.setDataValue('bloco', value ? String(value).trim() : null);
-    },
-  },
-
-  apartamento: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    set(value) {
-      this.setDataValue('apartamento', value ? String(value).trim() : null);
-    },
-  },
-
-  vaga: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    set(value) {
-      this.setDataValue('vaga', value ? String(value).trim() : null);
-    },
   },
 
   resetToken: {

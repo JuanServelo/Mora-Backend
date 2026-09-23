@@ -28,6 +28,7 @@ import portaria.repository.VisitanteRepository;
 import portaria.security.AuthContext;
 import portaria.security.CondominioUtils;
 import portaria.security.JwtClaims;
+import portaria.util.PlacaUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,7 +36,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -49,8 +49,6 @@ public class VeiculoService {
     private final MovimentacaoVeiculoRepository movimentacaoRepository;
     private final VisitanteRepository visitanteRepository;
 
-    private static final Pattern PLACA_PATTERN =
-            Pattern.compile("^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$");
     private static final DateTimeFormatter DT_BR =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -541,7 +539,7 @@ public class VeiculoService {
     // ─── Helpers internos ──────────────────────────────────────────────────────
 
     private void validarFormatoPlaca(String placa) {
-        if (!PLACA_PATTERN.matcher(placa).matches()) {
+        if (!PlacaUtils.valida(placa)) {
             throw new OperacaoInvalidaException(
                     "Placa inválida: " + placa + ". Use AAA9999 (formato antigo) ou AAA9A99 (Mercosul).");
         }

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import dashboardRoutes from './routes/dashboard.js';
 import { PORT, SERVICOS, ehProducao } from './config/servicos.js';
+import { registrarNoConsul } from './config/consul.js';
 
 dotenv.config();
 
@@ -25,10 +26,13 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', servico: 'gestao-geral' });
 });
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`gestao-geral rodando em http://localhost:${PORT}`);
   console.log(`  auth-api: ${SERVICOS.auth}`);
+  console.log(`  portaria: ${SERVICOS.portaria}`);
+  console.log(`  plan:     ${SERVICOS.plan}`);
   if (!ehProducao()) console.log('  ambiente: desenvolvimento');
+  await registrarNoConsul();
 });
 
 server.on('error', (err) => {

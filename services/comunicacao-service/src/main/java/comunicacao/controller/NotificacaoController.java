@@ -5,6 +5,7 @@ import comunicacao.model.Notificacao;
 import comunicacao.model.enums.TipoNotificacao;
 import comunicacao.security.AuthContext;
 import comunicacao.security.JwtClaims;
+import comunicacao.service.ChatService;
 import comunicacao.service.NotificacaoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class NotificacaoController {
 
     private final NotificacaoService notificacaoService;
+    private final ChatService chatService;
 
     @GetMapping
     public Page<Notificacao> listar(@PageableDefault(size = 20) Pageable pageable) {
@@ -37,6 +39,23 @@ public class NotificacaoController {
     @GetMapping("/contador")
     public Map<String, Long> contador() {
         return Map.of("naoLidas", notificacaoService.contarNaoLidas(currentUserId()));
+    }
+
+    /**
+     * O que o sino precisa mostrar, em uma chamada.
+     *
+     * São duas contagens, e não uma por redundância: a primeira mensagem que um
+     * morador manda para a administração **não gera notificação para ninguém** —
+     * não há destinatário nomeado a quem endereçá-la. Sem a segunda contagem, o
+     * síndico não veria nada acender até abrir a tela por conta própria.
+     */
+    @GetMapping("/resumo")
+    public Map<String, Long> resumo() {
+        UUID userId = currentUserId();
+        return Map.of(
+                "naoLidas", notificacaoService.contarNaoLidas(userId),
+                "conversasNaoLidas", chatService.contarNaoLidas(userId)
+        );
     }
 
     @PatchMapping("/{id}/lida")

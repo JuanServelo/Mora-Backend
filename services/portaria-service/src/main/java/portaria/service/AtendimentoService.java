@@ -30,12 +30,13 @@ import portaria.repository.VisitanteRepository;
 import portaria.security.AuthContext;
 import portaria.security.CondominioUtils;
 import portaria.security.JwtClaims;
+import portaria.util.CpfUtils;
+import portaria.util.PlacaUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +49,6 @@ public class AtendimentoService {
     private final ApartamentoRepository apartamentoRepository;
     private final MovimentacaoVeiculoRepository movimentacaoRepository;
 
-    private static final Pattern PLACA = Pattern.compile("^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$");
     private static final DateTimeFormatter DT_BR = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     // ─── Busca por ID ─────────────────────────────────────────────────────────
@@ -424,26 +424,17 @@ public class AtendimentoService {
         return placa == null ? "" : placa.toUpperCase().replaceAll("[^A-Z0-9]", "");
     }
 
+    // Placa e CPF vêm de util compartilhado: a pré-liberação do morador precisa
+    // aceitar e recusar exatamente o que o atendimento aceita e recusa.
     private void validarPlaca(String placa) {
-        if (!PLACA.matcher(placa).matches()) {
+        if (!PlacaUtils.valida(placa)) {
             throw new OperacaoInvalidaException(
                     "Placa inválida: " + placa + ". Use AAA9999 ou AAA9A99 (Mercosul).");
         }
     }
 
     private boolean cpfValido(String cpf) {
-        if (cpf == null || !cpf.matches("\\d{11}")) return false;
-        if (cpf.chars().distinct().count() == 1) return false;
-        int sum = 0;
-        for (int i = 0; i < 9; i++) sum += (cpf.charAt(i) - '0') * (10 - i);
-        int rem = 11 - (sum % 11);
-        int dig1 = rem >= 10 ? 0 : rem;
-        if (dig1 != cpf.charAt(9) - '0') return false;
-        sum = 0;
-        for (int i = 0; i < 10; i++) sum += (cpf.charAt(i) - '0') * (11 - i);
-        rem = 11 - (sum % 11);
-        int dig2 = rem >= 10 ? 0 : rem;
-        return dig2 == cpf.charAt(10) - '0';
+        return CpfUtils.valido(cpf);
     }
 
     private void validarMesmoCondo(String condoEntidade, String condoAtual) {

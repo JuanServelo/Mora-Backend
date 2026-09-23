@@ -9,3 +9,6 @@ tokens/
 node_modules/
 **/target/
 *.jar
+
+# Relatorios de cobertura: gerados a cada execucao dos testes.
+coverage/
