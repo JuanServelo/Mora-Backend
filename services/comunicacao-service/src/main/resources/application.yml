@@ -25,6 +25,11 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  jackson:
+    deserialization:
+      # O auth-api pode ganhar campos novos no usuario sem quebrar este servico.
+      fail-on-unknown-properties: false
+
   cloud:
     consul:
       host: ${SPRING_CLOUD_CONSUL_HOST:localhost}
@@ -41,6 +46,10 @@ spring:
           - "traefik.http.routers.comunicacao.middlewares=comunicacao-stripprefix"
         health-check-path: /actuator/health
         health-check-interval: 15s
+
+# Dono da identidade dos usuarios: este servico guarda apenas ids.
+auth-api:
+  url: ${AUTH_API_URL:http://localhost:3001}
 
 jwt:
   secret: ${JWT_SECRET:changeme-insecure-default}

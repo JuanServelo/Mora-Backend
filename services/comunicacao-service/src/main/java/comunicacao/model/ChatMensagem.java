@@ -2,27 +2,31 @@ package comunicacao.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "chat_mensagens")
+@Table(name = "chat_mensagens",
+        indexes = {
+                @Index(name = "idx_chat_remetente", columnList = "remetente_id"),
+                @Index(name = "idx_chat_destinatario", columnList = "destinatario_id"),
+        })
 public class ChatMensagem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @NotNull
-    @Column(name = "remetente_id")
-    private UUID remetenteId;
+    /** Ids do auth-api (inteiros) guardados como texto. */
+    @NotBlank
+    @Column(name = "remetente_id", length = 64)
+    private String remetenteId;
 
-    @Column(name = "destinatario_id")
-    private UUID destinatarioId;
+    @NotBlank
+    @Column(name = "destinatario_id", length = 64)
+    private String destinatarioId;
 
     @Column(name = "`condominioId`")
     private String condominioId;

@@ -4,6 +4,9 @@ CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
 CREATE DATABASE vagas_db;
 CREATE DATABASE mora_plan;
+-- Banco proprio do comunicacao-service. Fica criado e vazio: o servico ainda
+-- le avisos e artigos do banco 'mora', onde o portaria-service os criou.
+CREATE DATABASE mora_comunicacao;
 
 -- Conectar ao banco auth_db para criar as tabelas
 \c auth_db;

@@ -1,12 +1,13 @@
 package comunicacao.controller;
 
-import comunicacao.exception.OperacaoInvalidaException;
+import comunicacao.dto.AvisoResponse;
+import comunicacao.dto.LeituraAvisoResponse;
 import comunicacao.model.Aviso;
-import comunicacao.security.AuthContext;
 import comunicacao.security.CondominioUtils;
-import comunicacao.security.JwtClaims;
+import comunicacao.security.PerfilUtils;
 import comunicacao.service.AvisoLeituraService;
 import comunicacao.service.AvisoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,37 +26,42 @@ public class AvisoController {
     private final AvisoLeituraService leituraService;
 
     @PostMapping
-    public ResponseEntity<Aviso> criar(@RequestBody Aviso aviso) {
+    public ResponseEntity<AvisoResponse> criar(@Valid @RequestBody Aviso aviso) {
         return ResponseEntity.status(HttpStatus.CREATED).body(avisoService.criar(aviso));
     }
 
     @GetMapping
-    public List<Aviso> listar() {
-        return avisoService.listarTodos(CondominioUtils.condominioIdEfetivo());
+    public List<AvisoResponse> listar() {
+        return avisoService.listarTodos(CondominioUtils.condominioIdEfetivo(), PerfilUtils.usuarioAtual());
     }
 
     @GetMapping("/ativos")
-    public List<Aviso> listarAtivos() {
-        return avisoService.listarAtivos(CondominioUtils.condominioIdEfetivo());
+    public List<AvisoResponse> listarAtivos() {
+        return avisoService.listarAtivos(CondominioUtils.condominioIdEfetivo(), PerfilUtils.usuarioAtual());
     }
 
     @GetMapping("/{id}")
-    public Aviso buscarPorId(@PathVariable UUID id) {
-        return avisoService.buscarPorId(id);
+    public AvisoResponse buscarPorId(@PathVariable UUID id) {
+        return avisoService.buscarPorId(id, PerfilUtils.usuarioAtual());
     }
 
     @PutMapping("/{id}")
-    public Aviso atualizar(@PathVariable UUID id, @RequestBody Aviso dados) {
+    public AvisoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody Aviso dados) {
         return avisoService.atualizar(id, dados);
     }
 
     @PatchMapping("/{id}/publicar")
-    public Aviso publicar(@PathVariable UUID id) {
+    public AvisoResponse publicar(@PathVariable UUID id) {
         return avisoService.publicar(id);
     }
 
+    @PatchMapping("/{id}/despublicar")
+    public AvisoResponse despublicar(@PathVariable UUID id) {
+        return avisoService.despublicar(id);
+    }
+
     @PatchMapping("/{id}/encerrar")
-    public Aviso encerrar(@PathVariable UUID id) {
+    public AvisoResponse encerrar(@PathVariable UUID id) {
         return avisoService.encerrar(id);
     }
 
@@ -65,30 +71,27 @@ public class AvisoController {
         avisoService.excluir(id);
     }
 
+    /**
+     * Registra que o usuario leu o aviso.
+     *
+     * E o que permite ao sindico comprovar ciencia de uma regra. Idempotente:
+     * reabrir o aviso nao gera uma segunda leitura.
+     */
     @PostMapping("/{id}/lido")
-    public ResponseEntity<Map<String, Object>> marcarLido(@PathVariable UUID id) {
-        UUID userId = currentUserId();
-        leituraService.marcarLido(id, userId);
-        return ResponseEntity.ok(Map.of(
-                "avisoId", id,
-                "usuarioId", userId,
-                "totalLeituras", leituraService.contarLeituras(id)
-        ));
-    }
-
-    @GetMapping("/{id}/leituras")
-    public Map<String, Object> estatisticasLeitura(@PathVariable UUID id) {
+    public Map<String, Object> marcarLido(@PathVariable UUID id) {
+        String usuarioId = PerfilUtils.usuarioAtual();
+        var leitura = leituraService.marcarLido(id, usuarioId);
         return Map.of(
-                "avisoId", id,
-                "totalLeituras", leituraService.contarLeituras(id)
-        );
+                "avisoId", id.toString(),
+                "usuarioId", usuarioId,
+                "lidoEm", leitura.getLidoEm(),
+                "totalLeituras", leituraService.contarLeituras(id));
     }
 
-    private UUID currentUserId() {
-        JwtClaims claims = AuthContext.get();
-        if (claims == null || claims.authUserId() == null) {
-            throw new OperacaoInvalidaException("Usuário não autenticado");
-        }
-        return UUID.fromString(claims.authUserId());
+    /** Percentual de leitura, quem ja leu e quem falta. So para a administracao. */
+    @GetMapping("/{id}/leituras")
+    public LeituraAvisoResponse estatisticasLeitura(@PathVariable UUID id) {
+        PerfilUtils.exigirGestor();
+        return leituraService.estatisticas(id);
     }
 }
