@@ -1,6 +1,11 @@
 import { validarSenha, senhaAtendeRequisitos } from '../utils/passwordValidation.js';
 import { gerarCodigoConvite, normalizarCodigo } from '../utils/inviteCode.js';
-import { podeCadastrarPerfil, PERFIS } from '../constants/perfis.js';
+import {
+  podeCadastrarPerfil,
+  PERFIS,
+  PERFIS_SEM_ACESSO,
+  PERFIS_EXIGEM_UNIDADE,
+} from '../constants/perfis.js';
 import { redirectPorPerfil } from '../utils/redirectPorPerfil.js';
 
 describe('passwordValidation', () => {
@@ -42,8 +47,27 @@ describe('perfis', () => {
     expect(podeCadastrarPerfil(PERFIS.MORADOR, PERFIS.MORADOR)).toBe(false);
   });
 
-  test('são exatamente 6 perfis', () => {
-    expect(Object.keys(PERFIS)).toHaveLength(6);
+  // Contar não bastava: trocar um perfil por outro mantinha o número e passava
+  // despercebido. Afirmar o conjunto faz qualquer entrada ou saída aparecer
+  // com nome — foi assim que `TERCEIRO` apareceu, vindo da branch de ajustes.
+  test('o conjunto de perfis é exatamente este', () => {
+    expect(Object.keys(PERFIS)).toEqual([
+      'ADMIN_GERAL',
+      'ADMIN_SINDICO',
+      'PORTEIRO',
+      'MORADOR',
+      'DONO_ALUGUEL',
+      'CONVIDADO',
+      'TERCEIRO',
+    ]);
+  });
+
+  test('perfis sem acesso ao sistema não entram na camada de unidade', () => {
+    // `TERCEIRO` é de condomínio, não de unidade: um terceirizado atende o
+    // prédio, não um apartamento. Exigir `unidadeId` dele deixaria o cadastro
+    // impossível de concluir.
+    expect(PERFIS_SEM_ACESSO).toContain(PERFIS.TERCEIRO);
+    expect(PERFIS_EXIGEM_UNIDADE).not.toContain(PERFIS.TERCEIRO);
   });
 });
 

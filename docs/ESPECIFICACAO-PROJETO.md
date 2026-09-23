@@ -194,8 +194,8 @@ Legenda: ✅ Implementado · ⚠️ Parcial · 📋 Planejado
 | 9  | Gerenciar Funcionários e Turnos             | Síndico                                     | portaria-service    | ⚠️   |
 | 10 | Gerenciar Reservas de Áreas Comuns          | Síndico, Morador                            | portaria-service    | ⚠️   |
 | 11 | Gerenciar Assembleias, Atas e Votações     | Síndico, Morador                            | meeting-service     | ⚠️   |
-| 12 | Gerenciar Comunicados e Base de Conhecimento | Síndico                                     | comunicacao-service | ⚠️   |
-| 13 | Gerenciar Mensagens e Notificações         | Todos com conta ativa                        | comunicacao-service | 📋     |
+| 12 | Gerenciar Comunicados e Base de Conhecimento | Síndico                                     | comunicacao-service | ✅     |
+| 13 | Gerenciar Mensagens e Notificações         | Todos com conta ativa                        | comunicacao-service | ✅     |
 | 14 | Gerenciar Ocorrências e Ordens de Serviço  | Morador, Síndico                            | ocorrencias-service | ⚠️   |
 | 15 | Gerenciar Contratos de Locação             | Dono Aluguel, Síndico                       | financeiro-service  | 📋     |
 | 16 | Gerenciar Cobranças da Unidade              | Síndico                                     | financeiro-service  | 📋     |
@@ -334,14 +334,19 @@ graph TB
 | `plan-service`        | Planos comerciais e assinaturas                                                          | Java 21 / Spring Boot | 8093  | `mora_plan`        | 4                 |
 | `portaria-service`    | Estrutura física, acessos, entregas, chaves, vagas, visitantes, reservas, funcionários | Java 21 / Spring Boot | 8090  | `mora`             | 5, 6, 7, 8, 9, 10 |
 | `meeting-service`     | Assembleias, atas e votações                                                           | Java 21 / Spring Boot | 8091  | `mora_meeting`     | 11                |
-| `financeiro-service`  | Contratos de locação, faturas, multas, taxas, prestação de contas                    | Java 21 / Spring Boot | 8094  | `mora_financeiro`  | 15, 16, 17        |
-| `comunicacao-service` | Avisos, base de conhecimento, chat e notificações                                      | Node 20 / Express     | 3003  | `mora_comunicacao` | 12, 13            |
+| `financeiro-service`  | Contratos de locação, faturas, multas, taxas, prestação de contas                    | Node 20 / Express     | 3004  | `mora_financeiro`  | 15, 16, 17        |
+| `comunicacao-service` | Avisos, base de conhecimento, chat e notificações                                      | Java 21 / Spring Boot | 8094  | `mora`             | 12, 13            |
 | `ocorrencias-service` | Reclamações e ordens de serviço                                                       | Java 21 / Spring Boot | 8095  | `mora_ocorrencias` | 14                |
 | `gestao-geral`        | Agregação de indicadores e relatórios                                                 | Node 20 / Express     | 3002  | —                 | 18                |
 
-**Em operação:** `auth-api`, `plan-service`, `portaria-service`, `meeting-service` e
-`gestao-geral`. Os três de domínio restantes atendem requisitos ainda planejados, e nascem à
-medida que esses requisitos entram — a fila está na [seção 11](#11-roadmap).
+**Em operação:** `auth-api`, `plan-service`, `portaria-service`, `meeting-service`,
+`gestao-geral`, `financeiro-service` e `comunicacao-service`. Falta o `ocorrencias-service`, que
+atende um requisito ainda planejado e nasce quando ele entrar — a fila está na
+[seção 11](#11-roadmap).
+
+> O `comunicacao-service` cobre **conversas, notificações e confirmação de leitura**. Avisos e
+> base de conhecimento seguem no `portaria-service`, onde já funcionavam: mover esquema e código
+> não entregaria nada novo ao usuário.
 
 ### 8.2 Comunicação entre serviços
 
@@ -491,12 +496,13 @@ Ordem de entrega, definida pelas dependências entre os requisitos.
 | **1** | Isolamento por condomínio aplicado em todas as consultas, e rejeição de JWT inválido em todos os serviços | RNF-01, RNF-16 |
 | **2** | Reservas de áreas comuns e pré-autorização de visitantes                                                   | 6, 10          |
 | **3** | `ocorrencias-service` — reclamações e ordens de serviço                                                    | 14             |
-| **4** | `comunicacao-service` — avisos com leitura, chat e notificações                                             | 12, 13         |
+| ~~**4**~~ | ~~`comunicacao-service` — avisos com leitura, chat e notificações~~ **feito**                          | 12, 13         |
 | **5** | `financeiro-service` — contratos, faturas, multas, taxas e prestação de contas                              | 15, 16, 17     |
 | **7** | Painéis do síndico: operacional, financeiro e estratégico                                                   | 18             |
 
-As fases 3 a 5 criam os três microsserviços de domínio ainda não implementados. A fase 5
-é a que completa o diferenciador declarado na [visão do produto](#3-visão-do-produto).
+Das três fases que criavam microsserviços de domínio, a 4 está feita e a 5 entregou o núcleo
+do RF-16 — taxas, rateio, fechamento, faturas e gateway. Resta a 3, e o que falta da 5 são
+contratos de locação, multas e prestação de contas.
 
 ---
 

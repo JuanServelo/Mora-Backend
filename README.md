@@ -1,322 +1,183 @@
 # Mora — Backend
 
-Backend do sistema de gestão condominial **Mora**, composto por três microsserviços independentes orquestrados via Docker Compose com Consul (service discovery) e Traefik (API gateway).
+Backend do sistema de gestão condominial **Mora**: sete microsserviços em Node e Java,
+orquestrados por Docker Compose, com Consul para descoberta de serviço e Traefik como gateway.
+
+Projeto acadêmico de Bacharelado em Sistemas de Informação — PUCPR.
 
 ---
 
-## Sobre o projeto
+## O produto
 
-O Mora é um sistema para gestão de condomínios que oferece:
+O Mora atende três públicos com necessidades diferentes, e a divisão dos serviços segue essa
+separação mais do que qualquer critério técnico:
 
-- Autenticação de moradores com JWT e Google OAuth
-- Gestão de estrutura: blocos, apartamentos e vagas de garagem
-- Portaria: controle de visitantes, funcionários, chaves, carros e entregas
-- Reuniões condominiais com integração ao Google Meet, atas e enquetes
-- Painel administrativo e área do morador
+- **A plataforma** cadastra condomínios clientes e vende planos.
+- **A administração do condomínio** configura estrutura física, taxas, comunicados e usuários.
+- **O morador** paga faturas, reserva espaços, autoriza visitantes e fala com a administração.
 
 ---
 
 ## Arquitetura
 
 ```
-Frontend (React + Vite — porta 5173)
-        │
-        ├── Auth API (Node.js — porta 3001) ──── PostgreSQL: auth_db
-        │
-        ├── Portaria Service (Java — porta 8090) ─ PostgreSQL: mora
-        │
-        └── Meeting Service (Java — porta 8091) ── PostgreSQL: mora_meeting
+                        Frontend (React + Vite — 5173)
+                                     │
+                          Traefik (gateway — 8087)
+                                     │
+        ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┐
+        │          │          │            │          │          │
+     auth-api  portaria  comunicacao  financeiro   plan    meeting
+      :3001     :8090      :8094        :3004     :8093    :8091
+        │          │          │            │          │          │
+     auth_db     mora       mora     mora_financeiro mora_plan mora_meeting
+                                     │
+                              gestao-geral :3002
+                          (agrega, não tem banco)
 
-[Consul — porta 8500]   service discovery entre os serviços
-[Traefik — porta 8080]  API gateway / roteamento
-[pgAdmin — porta 5050]  interface visual do banco de dados
+        Consul :8500  —  descoberta de serviço e roteamento do Traefik
+        PostgreSQL 16 :5433  —  um container, vários bancos
+        pgAdmin :5050
 ```
+
+### Serviços
+
+| Serviço | Responsabilidade | Stack | Porta | Banco |
+|---|---|---|---|---|
+| `auth-api` | Identidade, perfis, condomínios clientes, convites, portaria de acesso | Node 20 · Express | 3001 | `auth_db` |
+| `portaria-service` | Estrutura física, acessos, entregas, chaves, vagas, veículos, reservas | Java 21 · Spring Boot | 8090 | `mora` |
+| `comunicacao-service` | Avisos, base de conhecimento, chat e notificações | Java 21 · Spring Boot | 8094 | `mora` |
+| `financeiro` | Taxas, rateio, faturas, multas, cobrança via Asaas | Node 20 · Express | 3004 | `mora_financeiro` |
+| `plan-service` | Planos comerciais e assinaturas | Java 21 · Spring Boot | 8093 | `mora_plan` |
+| `meeting-service` | Assembleias, atas e votações | Java 21 · Spring Boot | 8091 | `mora_meeting` |
+| `gestao-geral` | Agrega indicadores dos demais para o painel do Admin Geral | Node 20 · Express | 3002 | — |
+
+> `vagas-service` foi **incorporado ao `portaria-service`** e está desativado no compose. O
+> diretório continua no repositório enquanto a migração dos dados não é confirmada.
+
+**`portaria-service` e `comunicacao-service` compartilham o banco `mora`.** Não é acidente: os
+avisos e artigos nasceram no portaria e foram migrados para o comunicacao sem mover o esquema,
+porque mover não entregaria nada que o usuário não tenha hoje.
 
 ---
 
-## Serviços
+## Perfis de acesso
 
-| Serviço | Tecnologia | Porta | Banco |
-|---|---|---|---|
-| Auth API | Node.js 20 + Express + Sequelize | 3001 | auth_db |
-| Portaria Service | Java 21 + Spring Boot 3.5 | 8090 | mora |
-| Meeting Service | Java 21 + Spring Boot 3.2 | 8091 | mora_meeting |
-| PostgreSQL | PostgreSQL 16 | 5432 | — |
-| Consul | Consul 1.15 | 8500 | — |
-| Traefik | Traefik 2.9 | 8080 / 8087 | — |
-| pgAdmin | pgAdmin 4 | 5050 | — |
+São **sete**, em três camadas. A camada define o alcance, não o poder.
 
----
-
-## Pré-requisitos
-
-### Opção Docker (recomendada)
-- **Docker** 24 ou superior
-- **Docker Compose** v2
-
-### Opção local (desenvolvimento)
-- **Node.js** 20 ou superior
-- **Java** 21 (JDK)
-- **Maven** 3.9 ou superior
-- **PostgreSQL** 16 rodando localmente
-
----
-
-## Executando com Docker (recomendado)
-
-### 1. Configure as variáveis de ambiente
-
-```bash
-cd Mora-Backend/docker
-cp .env.example .env
-```
-
-Edite o arquivo `.env` com seus valores:
-
-```env
-# PostgreSQL
-POSTGRES_DB=mora
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=sua_senha_segura
-
-# Auth API
-JWT_SECRET=chave-secreta-longa-e-aleatoria
-FRONTEND_URL=http://localhost:5173
-
-# Google OAuth (opcional — necessário para login com Google)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
-
-# Email (opcional — necessário para recuperação de senha)
-MAIL_USER=seuemail@gmail.com
-MAIL_PASS=sua-app-password-gmail
-MAIL_FROM=Mora <seuemail@gmail.com>
-```
-
-### 2. Suba todos os serviços
-
-```bash
-cd Mora-Backend/docker
-docker compose up -d
-```
-
-### 3. Verifique se está tudo rodando
-
-```bash
-docker compose ps
-```
-
-### 4. Acompanhe os logs
-
-```bash
-# Todos os serviços
-docker compose logs -f
-
-# Serviço específico
-docker compose logs -f auth-api
-docker compose logs -f portaria-service
-docker compose logs -f meeting-service
-```
-
-### Parar os serviços
-
-```bash
-docker compose down
-
-# Para remover também os volumes (apaga o banco de dados)
-docker compose down -v
-```
-
----
-
-## Executando localmente (desenvolvimento)
-
-Certifique-se de que o PostgreSQL está rodando e crie os bancos necessários:
-
-```sql
-CREATE DATABASE mora;
-CREATE DATABASE auth_db;
-CREATE DATABASE mora_meeting;
-```
-
-### Auth API
-
-```bash
-cd Mora-Backend/services/auth-api
-
-# Crie o arquivo de variáveis de ambiente
-cp .env.example .env  # ajuste os valores
-
-# Instale as dependências
-npm install
-
-# Inicie em modo desenvolvimento (hot-reload)
-npm run dev
-```
-
-Disponível em: **http://localhost:3001**
-
-### Portaria Service
-
-```bash
-cd Mora-Backend/services/portaria-service
-
-# Build e execução
-mvn spring-boot:run
-```
-
-As variáveis de ambiente podem ser passadas como parâmetros ou configuradas no `application.yml`:
-
-```bash
-POSTGRES_HOST=localhost \
-POSTGRES_DB=mora \
-POSTGRES_USER=admin \
-POSTGRES_PASSWORD=sua_senha \
-mvn spring-boot:run
-```
-
-Disponível em: **http://localhost:8090**
-
-### Meeting Service
-
-```bash
-cd Mora-Backend/services/meeting
-
-mvn spring-boot:run
-```
-
-Disponível em: **http://localhost:8091**
-
----
-
-## Variáveis de ambiente
-
-### Auth API
-
-| Variável | Padrão | Descrição |
+| Camada | Perfis | Alcance |
 |---|---|---|
-| `PORT` | `3001` | Porta do servidor |
-| `POSTGRES_HOST` | `localhost` | Host do PostgreSQL |
-| `POSTGRES_PORT` | `5432` | Porta do PostgreSQL |
-| `POSTGRES_DB` | `auth_db` | Nome do banco |
-| `POSTGRES_USER` | `admin` | Usuário do banco |
-| `POSTGRES_PASSWORD` | — | Senha do banco |
-| `JWT_SECRET` | — | Chave para assinar tokens JWT |
-| `FRONTEND_URL` | `http://localhost:5173` | URL do frontend (CORS) |
-| `GOOGLE_CLIENT_ID` | — | Client ID do Google OAuth |
-| `GOOGLE_CLIENT_SECRET` | — | Client Secret do Google OAuth |
-| `GOOGLE_CALLBACK_URL` | — | Callback URL do Google OAuth |
-| `MAIL_USER` | — | E-mail remetente (Gmail) |
-| `MAIL_PASS` | — | App password do Gmail |
-| `MAIL_FROM` | — | Nome e e-mail exibidos no envio |
+| Plataforma | `ADMIN_GERAL` | Todos os condomínios |
+| Condomínio | `ADMIN_SINDICO`, `PORTEIRO`, `TERCEIRO` | Um condomínio |
+| Unidade | `MORADOR`, `DONO_ALUGUEL`, `CONVIDADO` | Uma unidade — exigem `unidadeId` |
 
-### Portaria Service
+`CONVIDADO` e `TERCEIRO` **não acessam o sistema**: existem para serem cadastrados e registrados
+na portaria.
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `POSTGRES_HOST` | `localhost` | Host do PostgreSQL |
-| `POSTGRES_DB` | `mora` | Nome do banco |
-| `POSTGRES_USER` | `admin` | Usuário do banco |
-| `POSTGRES_PASSWORD` | `Vibers@2112` | Senha do banco |
-| `SPRING_CLOUD_CONSUL_HOST` | `localhost` | Host do Consul |
-| `SPRING_CLOUD_CONSUL_PORT` | `8500` | Porta do Consul |
+A distinção entre proprietário e inquilino não vive no perfil, e sim na flag
+`responsavelFinanceiro` — que é o que a cobrança precisa saber.
 
-### Meeting Service
+### Autenticação
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/mora_meeting` | URL JDBC completa |
-| `SPRING_DATASOURCE_USERNAME` | `admin` | Usuário do banco |
-| `SPRING_DATASOURCE_PASSWORD` | `Vibers@2112` | Senha do banco |
-| `SPRING_CLOUD_CONSUL_HOST` | `localhost` | Host do Consul |
-| `SPRING_CLOUD_CONSUL_PORT` | `8500` | Porta do Consul |
+JWT HS256 emitido pelo `auth-api` e validado por todos os demais com o mesmo segredo. As claims
+são `{ id, perfil, tokenVersion, email, condominioId, unidadeId, nome }`.
+
+**`tokenVersion` é o que faz o logout valer.** `POST /api/auth/logout` incrementa o contador no
+usuário, e todo token emitido antes passa a ser recusado — em qualquer navegador, em qualquer
+serviço. Sem isso, "sair" só apagaria o token da aba atual.
+
+**O escopo vem sempre da claim, nunca do corpo ou da query.** Um síndico que passe o
+`condominioId` de outro condomínio na URL recebe os dados do próprio.
 
 ---
 
-## Banco de dados
+## Como subir
 
-Os bancos são criados automaticamente pelo script `docker/init-databases.sql` na primeira inicialização do container PostgreSQL. As tabelas são gerenciadas pelo Hibernate (`ddl-auto: update`) — não é necessário rodar migrations manualmente.
+Requisitos: Docker Desktop e Node 20. Java e Maven **não** são necessários — os serviços Java
+compilam dentro do container.
 
-### Acessando o pgAdmin
-
-1. Acesse **http://localhost:5050**
-2. Login: `admin@mora.com` / senha: `admin`
-3. Clique em **Add New Server** e preencha:
-
-**Aba General:**
-- Name: `Mora`
-
-**Aba Connection:**
-- Host: `postgres` (nome do container, não `localhost`)
-- Port: `5432`
-- Database: `mora`
-- Username: `admin`
-- Password: conforme configurado no `.env`
-
----
-
-## Endpoints e documentação
-
-### Auth API — principais rotas
-
-| Método | Rota | Descrição |
-|---|---|---|
-| `POST` | `/api/auth/login` | Login com e-mail e senha |
-| `POST` | `/api/invites/validate` | Validar código de convite |
-| `POST` | `/api/invites/activate` | Ativar conta via convite |
-| `GET` | `/api/auth/me` | Dados do usuário autenticado |
-| `PUT` | `/api/auth/me` | Atualizar perfil |
-| `POST` | `/api/user-management/invites` | Emitir convite (gestores) |
-| `GET` | `/api/health` | Health check |
-
-Fluxo invite-only: registro público desabilitado. Ver [AUTH-README.md](services/auth-api/AUTH-README.md).
-
-### Portaria Service — Swagger UI
-
-Disponível em **http://localhost:8090/swagger-ui.html** com todos os endpoints documentados interativamente.
-
-### Meeting Service — Swagger UI
-
-Disponível em **http://localhost:8091/swagger-ui.html**.
-
----
-
-## Estrutura de diretórios
-
+```bash
+cp docker/.env.example docker/.env
+docker compose -f docker/docker-compose.yml up -d --build
 ```
-Mora-Backend/
-├── docker/
-│   ├── docker-compose.yml    # Orquestração de todos os serviços
-│   ├── init-databases.sql    # Criação dos bancos de dados
-│   └── .env.example          # Modelo de variáveis de ambiente
-├── docs/                     # Documentação adicional
-└── services/
-    ├── auth-api/             # Node.js — autenticação e usuários
-    │   ├── config/
-    │   ├── middleware/
-    │   ├── models/
-    │   ├── routes/
-    │   ├── utils/
-    │   ├── Dockerfile
-    │   └── server.js
-    ├── portaria-service/     # Java — portaria e estruturas do condomínio
-    │   ├── src/main/java/portaria/
-    │   │   ├── controller/
-    │   │   ├── dto/
-    │   │   ├── exception/
-    │   │   ├── model/
-    │   │   ├── repository/
-    │   │   └── service/
-    │   ├── Dockerfile
-    │   └── pom.xml
-    └── meeting/              # Java — reuniões, atas e enquetes
-        ├── src/main/java/com/mora/meeting/
-        │   ├── controller/
-        │   ├── dto/
-        │   ├── entity/
-        │   ├── mapper/
-        │   └── repository/
-        ├── Dockerfile
-        └── pom.xml
+
+**Clonar não basta.** Alguns arquivos ficam fora do Git por conterem segredo, e o
+`meeting-service` nem sobe sem o dele. A lista completa, com o que cada ausência quebra, está em
+[`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md).
+
+O `init-databases.sql` cria os bancos, mas **só roda em volume novo**. Em máquina que já subiu a
+stack antes, o Postgres ignora o `docker-entrypoint-initdb.d`, e um banco acrescentado depois não
+aparece — para esses há os scripts avulsos em `docker/criar-banco-*.sql`.
+
+### Conferir que subiu
+
+```bash
+docker compose -f docker/docker-compose.yml ps
+curl http://localhost:3001/api/health
 ```
+
+Consul em `http://localhost:8500` mostra quem se registrou; o painel do Traefik, em
+`http://localhost:8080`, mostra quais rotas ele está publicando.
+
+---
+
+## Testes
+
+```bash
+cd services/auth-api && npm test              # 422 testes de contrato
+cd services/auth-api && npm run test:cobertura # com relatório de cobertura
+```
+
+Os testes do `auth-api` usam **Vitest + Supertest** e exercitam **as 61 rotas**, uma a uma:
+
+| O que afirmam | |
+|---|---|
+| Autenticação | 401 sem token, com token malformado, **forjado com outro segredo** e expirado |
+| Autorização | cada perfil negado recebe 403; cada perfil permitido não recebe |
+| Conta desativada | token válido + conta inativa → 401 |
+| `tokenVersion` | token anterior ao logout → 401 |
+
+**A lista de rotas é lida do próprio Express**, não escrita à mão. Uma lista manual envelhece em
+silêncio: alguém acrescenta um endpoint, ninguém lembra do teste, e a suíte segue verde afirmando
+uma cobertura que já não existe. Perguntando ao router, **endpoint novo sem contrato declarado
+quebra os testes** — e quem o escreveu precisa dizer, por escrito, se é público e quem ele recusa.
+
+A suíte roda **com o Postgres desligado**: a decisão de acesso acontece antes de qualquer
+consulta. O limite disso é conhecido — as rotas que recortam o resultado pelo condomínio ou pela
+unidade de quem pediu dependem do que está gravado, e só são verificáveis com banco de pé.
+
+---
+
+## Documentação
+
+| | |
+|---|---|
+| [`docs/ESPECIFICACAO-PROJETO.md`](docs/ESPECIFICACAO-PROJETO.md) | Requisitos e escopo |
+| [`docs/ARQUITETURA-E-FLUXOS.md`](docs/ARQUITETURA-E-FLUXOS.md) | Decisões de arquitetura |
+| [`docs/servicos/`](docs/servicos/) | Um documento por serviço, com o porquê de cada decisão |
+| [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) | **O que não está pronto, e o que está errado** |
+| [`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md) | **Os arquivos que não estão no Git** e sem os quais a stack não sobe |
+
+`PENDENCIAS.md` é o documento a ler antes de mexer em qualquer coisa: ele lista as lacunas
+conhecidas, inclusive as de segurança, em vez de deixá-las serem descobertas em produção.
+
+---
+
+## Limitações conhecidas
+
+Estão detalhadas em `docs/PENDENCIAS.md`. As que mudam o que dá para fazer com o sistema hoje:
+
+- **`plan-service` não autentica.** Qualquer requisição alcança qualquer rota dele.
+- **`comunicacao-service` aceita a entidade crua no corpo** (`@RequestBody Aviso`), e o
+  `jwt.secret` tem default inseguro no `application.yml`. A checagem de perfil e o recorte por
+  condomínio já existem.
+- **A senha do Postgres está versionada** como default no compose e em outros nove arquivos.
+  Precisa ser rotacionada junto com a remoção.
+- **`node_modules/` está no índice do Git** — 5.881 arquivos. O `.gitignore` já o lista, mas
+  arquivo já rastreado não é ignorado.
+
+---
+
+## Licença
+
+Projeto acadêmico, sem licença de distribuição.

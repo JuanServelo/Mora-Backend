@@ -28,4 +28,12 @@ public class AssinaturaResponseDTO {
     private Integer maxCondominios;
     private Integer maxUsuariosPorCondominio;
     private List<String> modulosAtivos;
+
+    /**
+     * Anotacao livre do contrato — numero, condicoes negociadas.
+     *
+     * Era gravada e nunca devolvida: quem cadastrava nunca mais via o que
+     * escreveu, e a tela nao tinha como exibir o historico completo.
+     */
+    private String observacao;
 }

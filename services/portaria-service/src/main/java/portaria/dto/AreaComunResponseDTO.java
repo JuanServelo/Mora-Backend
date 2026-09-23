@@ -19,6 +19,7 @@ public class AreaComunResponseDTO {
     private Integer capacidadeMaxima;
     private Double area;
     private boolean podeReservar;
+    private boolean exigeAprovacao;
     private String observacoes;
     private boolean ativo;
 
@@ -32,6 +33,7 @@ public class AreaComunResponseDTO {
                 .capacidadeMaxima(areaComum.getCapacidadeMaxima())
                 .area(areaComum.getArea())
                 .podeReservar(areaComum.isPodeReservar())
+                .exigeAprovacao(areaComum.isExigeAprovacao())
                 .observacoes(areaComum.getObservacoes())
                 .ativo(areaComum.isAtivo())
                 .build();

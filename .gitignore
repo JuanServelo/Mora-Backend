@@ -9,3 +9,10 @@ tokens/
 node_modules/
 **/target/
 *.jar
+
+# Relatorios de cobertura: gerados a cada execucao dos testes.
+coverage/
+
+# Material de aula e anotacoes locais — nao fazem parte do produto.
+atividades/
+.claude/

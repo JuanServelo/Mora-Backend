@@ -28,6 +28,9 @@ public class JwtUtil {
         String authUserId = String.valueOf(claims.get("id"));
         String email = (String) claims.get("email");
         String perfil = (String) claims.get("perfil");
-        return new JwtClaims(authUserId, email, perfil);
+        String condominioId = (String) claims.get("condominioId");
+        String unidadeId = (String) claims.get("unidadeId");
+        String nome = (String) claims.get("nome");
+        return new JwtClaims(authUserId, email, perfil, condominioId, unidadeId, nome);
     }
 }

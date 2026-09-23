@@ -23,3 +23,15 @@ export async function assinaturaDoCondominio(condominioId, authorization) {
 
   return { ok: true, dados: r.dados };
 }
+
+/**
+ * Todas as assinaturas da plataforma, para agregar receita.
+ *
+ * Uma chamada só em vez de uma por condomínio: com dezenas de clientes, o
+ * caminho por condomínio faria o painel esperar dezenas de idas ao plan-service.
+ */
+export async function listarAssinaturas(authorization) {
+  const r = await buscar(`${SERVICOS.plan}/api/assinaturas`, authorization);
+  if (!r.ok) return r;
+  return { ok: true, dados: Array.isArray(r.dados) ? r.dados : [] };
+}

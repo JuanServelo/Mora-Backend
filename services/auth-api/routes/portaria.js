@@ -4,12 +4,17 @@ import sequelize from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import User from '../models/User.js';
 import RegistroAcesso from '../models/RegistroAcesso.js';
-import { PERFIS, STATUS_USUARIO, podeAcessarAdmin } from '../constants/perfis.js';
+import { PERFIS, PERFIS_LABEL, PERFIS_FUNCIONARIO, STATUS_USUARIO, podeAcessarAdmin } from '../constants/perfis.js';
 import { usuarioPublico } from '../utils/usuarioPublico.js';
+import { avaliarEntradaFuncionario } from '../utils/portariaClient.js';
 
 const router = express.Router();
 
 router.use(authMiddleware);
+
+function toPerfilLabel(s) {
+  return PERFIS_LABEL[s] ?? s ?? '—';
+}
 
 function portariaMiddleware(req, res, next) {
   const p = req.userPerfil;
@@ -88,28 +93,37 @@ router.get('/residentes', portariaMiddleware, async (req, res) => {
   }
 });
 
-// ─── PORTEIRO: quem está dentro agora ───
+// ─── PORTEIRO: quem está dentro agora (detalhado) ───
 router.get('/dentro', portariaMiddleware, async (req, res) => {
   try {
-    const condominioId = req.user.condominioId;
-    const rows = await sequelize.query(`
-      SELECT DISTINCT ON ("usuarioId") "usuarioId", tipo, "createdAt"
-      FROM registros_acesso
-      WHERE "condominioId" = :condominioId
-      ORDER BY "usuarioId", "createdAt" DESC
-    `, {
-      replacements: { condominioId },
-      type: sequelize.QueryTypes.SELECT,
-    });
-    const dentroIds = rows.filter((r) => r.tipo === 'ENTRADA').map((r) => r.usuarioId);
-    if (!dentroIds.length) return res.json({ sucesso: true, dentro: [] });
+    const { condominioId } = req.user;
+    const dentro = await sequelize.query(`
+      WITH latest AS (
+        SELECT DISTINCT ON ("usuarioId")
+          id, "usuarioId", tipo, "createdAt", "registradoPorId", "nomeSnapshot", "perfilSnapshot",
+          "turnoPrevisto", "liberacaoExcepcional"
+        FROM registros_acesso
+        WHERE "condominioId" = :condominioId
+        ORDER BY "usuarioId", "createdAt" DESC
+      )
+      SELECT
+        l.id           AS "entradaId",
+        l."usuarioId",
+        l."createdAt"  AS "entradaEm",
+        COALESCE(l."nomeSnapshot", u.nome)         AS nome,
+        COALESCE(l."perfilSnapshot", u.perfil::text) AS perfil,
+        u."unidadeId",
+        l."turnoPrevisto",
+        l."liberacaoExcepcional",
+        rb.nome AS "registradoPorNome"
+      FROM latest l
+      LEFT JOIN users u  ON u.id = l."usuarioId"
+      LEFT JOIN users rb ON rb.id = l."registradoPorId"
+      WHERE l.tipo = 'ENTRADA'
+      ORDER BY l."createdAt" DESC
+    `, { replacements: { condominioId }, type: sequelize.QueryTypes.SELECT });
 
-    const usuarios = await User.findAll({
-      where: { id: { [Op.in]: dentroIds }, status: STATUS_USUARIO.ACTIVE },
-      order: [['nome', 'ASC']],
-    });
-    const ultimoMap = Object.fromEntries(rows.map((r) => [r.usuarioId, r]));
-    res.json({ sucesso: true, dentro: usuarios.map((u) => mapUsuario(u, ultimoMap)) });
+    res.json({ sucesso: true, dentro });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -134,14 +148,40 @@ router.post('/entrada/:userId', portariaMiddleware, async (req, res) => {
       });
     }
 
+    // RF-09/RN-04: funcionário só entra Ativo e dentro do turno. A regra vive
+    // no portaria-service; aqui perguntamos antes de gravar.
+    let avaliacao = { permitido: true };
+    if (PERFIS_FUNCIONARIO.includes(alvo.perfil)) {
+      const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+      avaliacao = await avaliarEntradaFuncionario(alvo.id, token);
+      if (!avaliacao.permitido) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: avaliacao.motivo || 'Entrada fora do turno.',
+          turnoPrevisto: avaliacao.turnoPrevisto ?? null,
+        });
+      }
+    }
+
     await RegistroAcesso.create({
       usuarioId: alvo.id,
       tipo: 'ENTRADA',
       registradoPorId: req.user.id,
       condominioId: req.user.condominioId,
+      nomeSnapshot: alvo.nome,
+      perfilSnapshot: toPerfilLabel(alvo.perfil),
+      turnoPrevisto: avaliacao.turnoPrevisto ?? null,
+      liberacaoExcepcional: Boolean(avaliacao.porLiberacaoExcepcional),
     });
 
-    res.json({ sucesso: true, mensagem: `Entrada de ${alvo.nome} registrada.` });
+    res.json({
+      sucesso: true,
+      mensagem: `Entrada de ${alvo.nome} registrada.`,
+      ...(avaliacao.porLiberacaoExcepcional && {
+        alerta: `Entrada por liberação excepcional: ${avaliacao.liberacaoMotivo}`
+          + ` (autorizada por ${avaliacao.liberacaoAutorizadaPor}).`,
+      }),
+    });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -166,7 +206,20 @@ router.post('/saida/:userId', portariaMiddleware, async (req, res) => {
       condominioId: req.user.condominioId,
     });
 
-    res.json({ sucesso: true, mensagem: `Saída de ${alvo.nome} registrada.` });
+    // RN-04: a saída NUNCA é bloqueada — quem está dentro sai, mesmo suspenso
+    // ou fora do turno. Situação irregular vira alerta ao porteiro, não trava.
+    let alerta = null;
+    if (PERFIS_FUNCIONARIO.includes(alvo.perfil)) {
+      const token = (req.headers.authorization || '').replace(/^Bearer /, '');
+      const av = await avaliarEntradaFuncionario(alvo.id, token);
+      if (!av.permitido && av.motivo) alerta = `Atenção: ${av.motivo}`;
+    }
+
+    res.json({
+      sucesso: true,
+      mensagem: `Saída de ${alvo.nome} registrada.`,
+      ...(alerta && { alerta }),
+    });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -194,6 +247,80 @@ router.get('/meus-guests', responsavelMiddleware, async (req, res) => {
     const ultimos = await ultimoRegistroPorUsuario(ids, condominioId);
 
     res.json({ sucesso: true, guests: guests.map((g) => mapUsuario(g, ultimos)) });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// ─── RESPONSÁVEL: pessoas da minha unidade ───
+// Quem mora na unidade só existe aqui. O portaria-service consome esta rota,
+// repassando o token do próprio morador, para validar vínculos de veículo (RN-06).
+router.get('/pessoas-unidade', async (req, res) => {
+  try {
+    const p = req.userPerfil;
+    const permitido = [PERFIS.MORADOR, PERFIS.DONO_ALUGUEL, PERFIS.PORTEIRO].includes(p)
+      || podeAcessarAdmin(p);
+    if (!permitido) {
+      return res.status(403).json({ sucesso: false, mensagem: 'Sem permissão para consultar moradores.' });
+    }
+
+    // Porteiro e síndico escolhem a unidade; morador é sempre a própria,
+    // mesmo que mande outra no query (RN-05).
+    const podeEscolher = p === PERFIS.PORTEIRO || podeAcessarAdmin(p);
+    const unidadeId = podeEscolher && req.query.unidadeId
+      ? req.query.unidadeId
+      : req.user.unidadeId;
+    const { condominioId } = req.user;
+    if (!unidadeId) return res.json({ sucesso: true, pessoas: [] });
+
+    const pessoas = await User.findAll({
+      where: {
+        unidadeId,
+        condominioId,
+        status: STATUS_USUARIO.ACTIVE,
+        perfil: { [Op.in]: [PERFIS.MORADOR, PERFIS.DONO_ALUGUEL] },
+      },
+      order: [['nome', 'ASC']],
+    });
+
+    res.json({
+      sucesso: true,
+      // id como texto: o portaria-service compara com o "sub" do JWT, que é string.
+      pessoas: pessoas.map((p) => ({
+        id: String(p.id),
+        nome: p.nome,
+        email: p.email,
+        perfil: p.perfil,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// ─── Funcionários do condomínio (responsável de evento — RN-04) ───
+// Mesma constante PERFIS_FUNCIONARIO usada no registro de entrada e saída:
+// uma lista paralela divergiria na primeira mudança de perfil.
+router.get('/funcionarios', portariaMiddleware, async (req, res) => {
+  try {
+    const { condominioId } = req.user;
+    const funcionarios = await User.findAll({
+      where: {
+        condominioId,
+        status: STATUS_USUARIO.ACTIVE,
+        perfil: { [Op.in]: PERFIS_FUNCIONARIO },
+      },
+      order: [['nome', 'ASC']],
+    });
+    res.json({
+      sucesso: true,
+      funcionarios: funcionarios.map((f) => ({
+        id: String(f.id),
+        nome: f.nome,
+        email: f.email,
+        perfil: f.perfil,
+      })),
+    });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
@@ -249,6 +376,76 @@ router.get('/usuarios-condominio', portariaMiddleware, async (req, res) => {
       order: [['nome', 'ASC']],
     });
     res.json({ sucesso: true, usuarios: usuarios.map(usuarioPublico) });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, mensagem: err.message });
+  }
+});
+
+// ─── PORTEIRO: histórico de entradas e saídas do condomínio ───
+router.get('/historico-acesso', portariaMiddleware, async (req, res) => {
+  try {
+    const { condominioId } = req.user;
+    const { nome, perfil, status, dataInicio, dataFim } = req.query;
+
+    const conditions = [`e.tipo = 'ENTRADA'`, `e."condominioId" = :condominioId`];
+    const replacements = { condominioId };
+
+    if (nome) {
+      conditions.push(`COALESCE(e."nomeSnapshot", u.nome) ILIKE :nomeLike`);
+      replacements.nomeLike = `%${nome}%`;
+    }
+    if (perfil) {
+      // 'Visitante' covers both new label and legacy 'Convidado' snapshot
+      if (perfil === 'Visitante') {
+        conditions.push(`COALESCE(e."perfilSnapshot", u.perfil::text) IN ('Visitante', 'Convidado')`);
+      } else {
+        conditions.push(`COALESCE(e."perfilSnapshot", u.perfil::text) = :perfil`);
+        replacements.perfil = perfil;
+      }
+    }
+    if (dataFim) {
+      conditions.push(`e."createdAt" <= :dataFim`);
+      replacements.dataFim = new Date(`${dataFim}T23:59:59Z`);
+    }
+
+    const rows = await sequelize.query(`
+      WITH pares AS (
+        SELECT
+          e.id,
+          e."usuarioId",
+          e."createdAt"   AS "entradaEm",
+          COALESCE(e."nomeSnapshot", u.nome)           AS nome,
+          COALESCE(e."perfilSnapshot", u.perfil::text) AS perfil,
+          u."unidadeId",
+          e."turnoPrevisto",
+          e."liberacaoExcepcional",
+          rb.nome AS "registradoPorNome",
+          (
+            SELECT s."createdAt"
+            FROM registros_acesso s
+            WHERE s."usuarioId"    = e."usuarioId"
+              AND s."condominioId" = e."condominioId"
+              AND s.tipo           = 'SAIDA'
+              AND s."createdAt"    > e."createdAt"
+            ORDER BY s."createdAt" ASC
+            LIMIT 1
+          ) AS "saidaEm"
+        FROM registros_acesso e
+        LEFT JOIN users u  ON u.id = e."usuarioId"
+        LEFT JOIN users rb ON rb.id = e."registradoPorId"
+        WHERE ${conditions.join(' AND ')}
+      )
+      SELECT * FROM pares
+      WHERE TRUE
+        ${status === 'DENTRO' ? 'AND "saidaEm" IS NULL' : ''}
+        ${status === 'SAIU'   ? 'AND "saidaEm" IS NOT NULL' : ''}
+        ${dataInicio ? `AND ("saidaEm" >= :dataInicio OR "saidaEm" IS NULL)` : ''}
+      ORDER BY CASE WHEN "saidaEm" IS NULL THEN 0 ELSE 1 END, "entradaEm" DESC
+      LIMIT 200
+    `, { replacements: { ...replacements, ...(dataInicio ? { dataInicio: new Date(`${dataInicio}T00:00:00Z`) } : {}) },
+         type: sequelize.QueryTypes.SELECT });
+
+    res.json({ sucesso: true, registros: rows });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: err.message });
   }
