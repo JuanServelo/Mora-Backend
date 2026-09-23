@@ -6,6 +6,7 @@ import {
   estatisticasUsuarios,
   estatisticasOcorrencias,
   estatisticasDoCondominio,
+  condominiosDoFiltro,
 } from '../services/estatisticasService.js';
 
 const router = express.Router();
@@ -23,14 +24,33 @@ function adminGeralMiddleware(req, res, next) {
   next();
 }
 
+/**
+ * Números da plataforma, com filtros aplicados aqui — não no frontend.
+ *
+ * `meses` recorta a janela das séries; `status` restringe a quais condomínios
+ * tudo se refere, inclusive as contagens de usuário e ocorrência. Filtrar aqui
+ * evita mandar a base inteira para a tela peneirar, que era o que aconteceria
+ * com dezenas de clientes.
+ */
 router.get('/plataforma', adminGeralMiddleware, async (req, res) => {
   try {
+    const { meses, status } = req.query;
+    // Resolvido uma vez e reaproveitado: as três agregações precisam do mesmo
+    // recorte, e repetir a consulta em cada uma seria desperdício.
+    const condominioIds = await condominiosDoFiltro(status);
+
     const [condominios, usuarios, ocorrencias] = await Promise.all([
-      estatisticasCondominios(),
-      estatisticasUsuarios(),
-      estatisticasOcorrencias(),
+      estatisticasCondominios({ meses, status }),
+      estatisticasUsuarios({ condominioIds }),
+      estatisticasOcorrencias({ condominioIds }),
     ]);
-    res.json({ sucesso: true, condominios, usuarios, ocorrencias });
+    res.json({
+      sucesso: true,
+      filtros: { meses: condominios.meses, status: status || 'todos' },
+      condominios,
+      usuarios,
+      ocorrencias,
+    });
   } catch (err) {
     console.error('Erro ao montar estatísticas da plataforma:', err);
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar estatísticas' });

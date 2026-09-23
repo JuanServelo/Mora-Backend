@@ -14,13 +14,13 @@ Um arquivo por microsserviço, com responsabilidade, fluxos de usuário, tabelas
 | [plan-service](plan-service.md) | Planos comerciais | 8093 | `mora_plan` |
 | [gestao-geral](gestao-geral.md) | Agregação de indicadores | 3002 | — |
 | [vagas-service](vagas-service.md) | Aluguel de vagas — **a fundir no portaria** | 8092 | `vagas_db` |
+| [financeiro-service](financeiro-service.md) | Taxas, rateio, faturas e cobrança | 3004 | `mora_financeiro` |
+| [comunicacao-service](comunicacao-service.md) | Avisos, base de conhecimento, chat e notificações | 8094 | `mora` |
 
 ## Planejados
 
 | Serviço | Domínio | Porta | Banco |
 |---|---|---|---|
-| [financeiro-service](financeiro-service.md) | Contratos, faturas, multas, prestação de contas | 8094 | `mora_financeiro` |
-| [comunicacao-service](comunicacao-service.md) | Avisos, base de conhecimento, chat, notificações | 3003 | `mora_comunicacao` |
 | [ocorrencias-service](ocorrencias-service.md) | Reclamações e ordens de serviço | 8095 | `mora_ocorrencias` |
 
 ---
@@ -57,17 +57,21 @@ divisão de domínios:
 
 | Recurso | Está em | Vai para |
 |---|---|---|
-| `avisos` | portaria-service | comunicacao-service |
-| `artigos_conhecimento` | portaria-service | comunicacao-service |
+| `avisos` | portaria-service | **decisão em aberto** — funcionam lá, e só a confirmação de leitura foi para o comunicacao-service |
+| `artigos_conhecimento` | portaria-service | idem |
 | `reclamacoes` | auth-api | ocorrencias-service |
 
 ---
 
 ## Sobre as tabelas dos serviços planejados
 
-Nos três serviços ainda não implementados, as tabelas listadas são **proposta**, esboçada a
-partir do escopo dos requisitos — não decisão fechada. Cada documento marca isso explicitamente
-e traz uma seção "Em aberto" com as questões que faltam resolver.
+No serviço ainda não implementado — `ocorrencias-service` — as tabelas listadas são
+**proposta**, esboçada a partir do escopo dos requisitos, não decisão fechada. O documento marca
+isso explicitamente e traz uma seção "Em aberto" com as questões que faltam resolver.
+
+O `financeiro-service` saiu dessa condição: o banco existe, com migrações versionadas. O que
+ainda é proposta ali são os endpoints de fatura, multa e prestação de contas — as tabelas já
+estão criadas.
 
 As exceções são `avisos`, `artigos_conhecimento` e `reclamacoes`, que já existem e apenas mudam
 de casa.

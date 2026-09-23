@@ -26,7 +26,7 @@ public class MeetingService {
 
     private final MeetingRepository meetingRepository;
     private final MeetingMapper meetingMapper;
-    //private final Meet googleMeetClient;
+    private final Meet googleMeetClient;
 
     @Transactional
     public MeetingResponseDTO createMeeting(@NotNull MeetingRequestDTO dto) {
@@ -51,21 +51,19 @@ public class MeetingService {
          */
 
 
-//        try {
-//            Space spaceRequest = new Space();
-//            Space createdSpace = googleMeetClient.spaces().create(spaceRequest).execute();
-//            String meetLink = createdSpace.getMeetingUri();
-//            meeting.setMeetLink(meetLink);
-//
-//            System.out.println("Link do Meet gerado com sucesso: " + meetLink);
-//
-//        } catch (Exception e) {
-//            System.err.println("Erro ao comunicar com a API do Google Meet: " + e.getMessage());
-//            throw new RuntimeException("Falha ao gerar o link da reunião no Google Meet.", e);
-//        }
+        try {
+            Space spaceRequest = new Space();
+            Space createdSpace = googleMeetClient.spaces().create(spaceRequest).execute();
+            String meetLink = createdSpace.getMeetingUri();
+            meeting.setMeetLink(meetLink);
 
-        // Link fake só para o banco não dar erro de nulo (caso seja obrigatório)
-        meeting.setMeetLink("https://meet.google.com/fake-link-temporario");
+            System.out.println("Link do Meet gerado com sucesso: " + meetLink);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao comunicar com a API do Google Meet: " + e.getMessage());
+            // Se falhar, usa um link genérico ou lança erro. Para evitar travar a reunião:
+            meeting.setMeetLink("https://meet.google.com/link-indisponivel-erro");
+        }
 
         List<MeetingGuests> convidados = dto.getIdConvidados().stream()
                 .map(id -> new MeetingGuests(id, AttendanceStatus.PENDENTE))

@@ -6,8 +6,10 @@ import com.mora.plan.entity.Plan;
 import com.mora.plan.enums.PlanModule;
 import com.mora.plan.mapper.PlanMapper;
 import com.mora.plan.repository.PlanRepository;
+import com.mora.plan.security.AuthContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +18,9 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PlanService {
+
 
     private final PlanRepository planRepository;
     private final PlanMapper planMapper;
@@ -38,6 +42,7 @@ public class PlanService {
         plan.setIsActive(true);
 
         Plan saved = planRepository.save(plan);
+        log.info("Plano criado: id={}, nome={}, por={}", saved.getId(), saved.getName(), getEmail());
         return planMapper.toResponseDto(saved);
     }
 
@@ -94,6 +99,7 @@ public class PlanService {
         existing.getActiveModules().addAll(dto.getActiveModules());
 
         Plan updated = planRepository.save(existing);
+        log.info("Plano atualizado: id={}, nome={}, por={}", updated.getId(), updated.getName(), getEmail());
         return planMapper.toResponseDto(updated);
     }
 
@@ -107,6 +113,7 @@ public class PlanService {
 
         plan.setIsActive(!plan.getIsActive());
         Plan saved = planRepository.save(plan);
+        log.info("Status do plano alterado: id={}, ativo={}, por={}", saved.getId(), saved.getIsActive(), getEmail());
 
         return planMapper.toResponseDto(saved);
     }
@@ -129,6 +136,7 @@ public class PlanService {
         plan.getActiveModules().addAll(modules);
 
         Plan saved = planRepository.save(plan);
+        log.info("Módulos atualizados: plano={}, módulos={}, por={}", saved.getId(), modules, getEmail());
         return planMapper.toResponseDto(saved);
     }
 
@@ -144,5 +152,10 @@ public class PlanService {
                 throw new IllegalArgumentException("Módulo inválido: " + slug);
             }
         }
+    }
+
+    private String getEmail() {
+        var claims = AuthContext.get();
+        return claims != null ? claims.email() : "sistema";
     }
 }

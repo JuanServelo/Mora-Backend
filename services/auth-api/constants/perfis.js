@@ -1,9 +1,13 @@
 /**
  * Perfis de acesso do Mora.
  *
- * Modelo simplificado: 6 perfis em 3 camadas. Substitui os 11 anteriores, que
+ * Modelo simplificado: 7 perfis em 3 camadas. Substitui os 11 anteriores, que
  * distinguiam papéis que na prática tinham as mesmas permissões (síndico
  * contratante x operacional, proprietário residente x locatário x ocupante).
+ *
+ * Eram 6 até `TERCEIRO` entrar, para o funcionário terceirizado que atua no
+ * condomínio: ele precisa ser cadastrado e registrado na portaria, mas não
+ * entra no sistema.
  *
  * A distinção entre morador proprietário e inquilino não se perde: ela vive na
  * flag `responsavelFinanceiro` do usuário, que é o que a cobrança precisa saber.
@@ -22,6 +26,8 @@ export const PERFIS = {
   DONO_ALUGUEL: 'DONO_ALUGUEL',
   /** Visitante recorrente pré-autorizado. Sem acesso ao sistema. */
   CONVIDADO: 'CONVIDADO',
+  /** Funcionário terceirizado que atua no condomínio. Sem acesso ao sistema por padrão. */
+  TERCEIRO: 'TERCEIRO',
 };
 
 /** Rótulos para exibição. */
@@ -31,7 +37,8 @@ export const PERFIS_LABEL = {
   [PERFIS.PORTEIRO]: 'Porteiro',
   [PERFIS.MORADOR]: 'Morador',
   [PERFIS.DONO_ALUGUEL]: 'Dono Aluguel',
-  [PERFIS.CONVIDADO]: 'Convidado',
+  [PERFIS.CONVIDADO]: 'Visitante',
+  [PERFIS.TERCEIRO]: 'Terceiro',
 };
 
 /* ------------------------------------------------------------- camadas --- */
@@ -43,6 +50,7 @@ export const PERFIS_PLATAFORMA = [PERFIS.ADMIN_GERAL];
 export const PERFIS_CONDOMINIO = [
   PERFIS.ADMIN_SINDICO,
   PERFIS.PORTEIRO,
+  PERFIS.TERCEIRO,
 ];
 
 /** Alcance de uma unidade: exigem `unidadeId`. */
@@ -55,7 +63,7 @@ export const PERFIS_UNIDADE = [
 export const PERFIS_EXIGEM_UNIDADE = PERFIS_UNIDADE;
 
 /** Perfis sem login: existem como registro, não como conta. */
-export const PERFIS_SEM_ACESSO = [PERFIS.CONVIDADO];
+export const PERFIS_SEM_ACESSO = [PERFIS.CONVIDADO, PERFIS.TERCEIRO];
 
 /** Quem efetivamente ocupa a unidade — exclui o dono que não mora nela. */
 export const PERFIS_OCUPANTE_UNIDADE = [PERFIS.MORADOR, PERFIS.CONVIDADO];
@@ -68,12 +76,14 @@ export const PERMISSOES_CADASTRO = {
     PERFIS.ADMIN_GERAL,
     PERFIS.ADMIN_SINDICO,
     PERFIS.PORTEIRO,
+    PERFIS.TERCEIRO,
     PERFIS.MORADOR,
     PERFIS.DONO_ALUGUEL,
     PERFIS.CONVIDADO,
   ],
   [PERFIS.ADMIN_SINDICO]: [
     PERFIS.PORTEIRO,
+    PERFIS.TERCEIRO,
     PERFIS.MORADOR,
     PERFIS.DONO_ALUGUEL,
     PERFIS.CONVIDADO,
@@ -99,6 +109,15 @@ export const PERFIS_GESTAO_USUARIOS = [
 ];
 
 /** Operam as funcionalidades de portaria. */
+/**
+ * Perfis que atuam como "funcionário responsável".
+ *
+ * Fonte única: vale tanto para a aba Funcionários do registro de entrada e
+ * saída quanto para o responsável da reserva de evento do condomínio (RN-04).
+ * Incluir ou remover um perfil aqui reflete nas duas telas.
+ */
+export const PERFIS_FUNCIONARIO = [PERFIS.PORTEIRO, PERFIS.ADMIN_SINDICO];
+
 export const PERFIS_PORTARIA = [
   PERFIS.ADMIN_GERAL,
   PERFIS.ADMIN_SINDICO,

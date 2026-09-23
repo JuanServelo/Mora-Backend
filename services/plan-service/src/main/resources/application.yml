@@ -1,0 +1,70 @@
+server:
+  port: 8093
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: plan-service
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora_plan}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:Vibers@2112}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+      pool-name: HikariPoolPlans
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+
+  sql:
+    init:
+      mode: always
+
+  jpa.defer-datasource-initialization: true
+
+  cloud:
+    consul:
+      host: ${SPRING_CLOUD_CONSUL_HOST:localhost}
+      port: ${SPRING_CLOUD_CONSUL_PORT:8500}
+      discovery:
+        register: true
+        instance-id: ${spring.application.name}:${random.value}
+        prefer-ip-address: false
+        hostname: plan-service
+        tags:
+          - "traefik.enable=true"
+          - "traefik.http.routers.plan.rule=PathPrefix(`/api/plans`)"
+          - "traefik.http.routers.plan.entrypoints=web"
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+    compatibility-verifier:
+      enabled: false
+
+jwt:
+  secret: ${JWT_SECRET:changeme-insecure-default}
+
+# Swagger / OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

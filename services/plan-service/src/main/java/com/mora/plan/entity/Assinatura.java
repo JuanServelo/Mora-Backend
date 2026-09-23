@@ -15,13 +15,17 @@ import java.time.LocalDateTime;
  * `maxUsersPerCondominium` e `activeModules` não eram aplicáveis.
  */
 @Entity
-@Table(
-    name = "tb_assinaturas",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uq_assinatura_condominio_ativa",
-        columnNames = {"condominio_id", "status"}
-    )
-)
+/*
+ * A unicidade "uma assinatura ATIVA por condominio" NAO e declarada aqui.
+ *
+ * UNIQUE (condominio_id, status) parecia resolver, mas vale para todos os
+ * status: dois registros CANCELADA do mesmo condominio tambem colidiam, e o
+ * cliente so conseguia trocar de plano uma vez na vida.
+ *
+ * O correto e um indice unico parcial (WHERE status = 'ATIVA'), que o JPA nao
+ * expressa. Ele e criado por docker/corrigir-constraint-assinaturas.sql.
+ */
+@Table(name = "tb_assinaturas")
 @Getter
 @Setter
 @NoArgsConstructor

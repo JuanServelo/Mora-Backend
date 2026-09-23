@@ -1,5 +1,6 @@
 import express from 'express';
 import { autenticar, exigirAdminGeral } from '../middleware/auth.js';
+import { montarReceita } from '../services/receitaService.js';
 import {
   montarDashboard,
   montarResumoCondominio,
@@ -33,15 +34,40 @@ function condominioDoAtor(req) {
 
 // ── Plataforma: exclusivo do Admin Geral ────────────────────────────────────
 
+/** `meses` e `status` chegam por query e são aplicados na origem do dado. */
 router.get('/dashboard', exigirAdminGeral, async (req, res) => {
-  const r = await montarDashboard(req.authorization);
+  const r = await montarDashboard(req.authorization, {
+    meses: req.query.meses,
+    status: req.query.status,
+  });
+  if (seErro(r, res)) return;
+  res.json(r);
+});
+
+/**
+ * Receita da plataforma com as assinaturas.
+ *
+ * Separado do /dashboard de propósito: o painel carrega a cada visita, e essa
+ * agregação percorre todas as assinaturas. Quem quer só os números de uso não
+ * deve pagar o custo de quem quer os de dinheiro.
+ */
+router.get('/receita', exigirAdminGeral, async (req, res) => {
+  const r = await montarReceita(req.authorization, {
+    meses: req.query.meses,
+    plano: req.query.plano,
+  });
   if (seErro(r, res)) return;
   res.json(r);
 });
 
 /** Exportação em CSV dos indicadores da plataforma. */
 router.get('/dashboard/exportar', exigirAdminGeral, async (req, res) => {
-  const r = await montarDashboard(req.authorization);
+  // Mesmo recorte da tela: exportar o total enquanto o painel mostra um
+  // filtro seria entregar um arquivo que não bate com o que se vê.
+  const r = await montarDashboard(req.authorization, {
+    meses: req.query.meses,
+    status: req.query.status,
+  });
   if (seErro(r, res)) return;
 
   const linhas = [
