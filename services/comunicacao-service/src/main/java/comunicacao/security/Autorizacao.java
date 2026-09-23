@@ -66,6 +66,18 @@ public final class Autorizacao {
     }
 
     /**
+     * Se quem está pedindo fala em nome da administração.
+     *
+     * É a chave da visibilidade das conversas: a gestão enxerga toda conversa
+     * do tipo `ADMINISTRACAO` do seu condomínio **sem ser participante** — é
+     * assim que a pendência de um morador chega até ela. Vira participante ao
+     * responder, não ao abrir.
+     */
+    public static boolean ehGestao() {
+        return ehSindico() || ehAdminGeral();
+    }
+
+    /**
      * Exige quem possa **enxergar a visão da administração**: síndico ou Admin
      * Geral.
      *

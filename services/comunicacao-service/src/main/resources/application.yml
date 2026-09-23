@@ -42,6 +42,13 @@ spring:
         health-check-path: /actuator/health
         health-check-interval: 15s
 
+# O servico consulta o auth-api para resolver nome e foto da contraparte de uma
+# conversa, sempre em nome de quem pediu (repassando o Bearer). Sem isso a
+# conversa aparece sem o nome — falha macia, de proposito.
+auth:
+  api:
+    url: ${AUTH_API_URL:http://auth-api:3001}
+
 jwt:
   secret: ${JWT_SECRET:changeme-insecure-default}
 

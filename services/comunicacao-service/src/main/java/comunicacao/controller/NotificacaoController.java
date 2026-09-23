@@ -7,6 +7,7 @@ import comunicacao.security.AuthContext;
 import comunicacao.security.Autorizacao;
 import comunicacao.security.JwtClaims;
 import comunicacao.service.ChatService;
+import comunicacao.service.ConversaService;
 import comunicacao.service.NotificacaoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ public class NotificacaoController {
 
     private final NotificacaoService notificacaoService;
     private final ChatService chatService;
+    private final ConversaService conversaService;
 
     @GetMapping
     public Page<Notificacao> listar(@PageableDefault(size = 20) Pageable pageable) {
@@ -53,9 +55,16 @@ public class NotificacaoController {
     @GetMapping("/resumo")
     public Map<String, Long> resumo() {
         String userId = currentUserId();
+        // Soma os dois modelos de conversa que o serviço tem: o chat direto
+        // entre dois usuários e as conversas com assunto, que incluem o formato
+        // ADMINISTRACAO. Para quem olha o sino as duas coisas são a mesma —
+        // "tem mensagem esperando".
+        long conversas = chatService.contarNaoLidas(userId)
+                + conversaService.contarConversasNaoLidas();
+
         return Map.of(
                 "naoLidas", notificacaoService.contarNaoLidas(userId),
-                "conversasNaoLidas", chatService.contarNaoLidas(userId)
+                "conversasNaoLidas", conversas
         );
     }
 

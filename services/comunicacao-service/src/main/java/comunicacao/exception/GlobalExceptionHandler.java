@@ -29,6 +29,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    @ExceptionHandler(DadosInvalidosException.class)
+    public ResponseEntity<Map<String, Object>> handleDadosInvalidos(DadosInvalidosException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(OperacaoInvalidaException.class)
     public ResponseEntity<Map<String, Object>> handleInvalida(OperacaoInvalidaException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());

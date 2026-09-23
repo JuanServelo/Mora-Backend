@@ -120,6 +120,9 @@ services:
       - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      # Resolve nome e foto da contraparte de uma conversa, sempre em nome de
+      # quem pediu. Sem isto a conversa aparece sem o nome — falha macia.
+      - AUTH_API_URL=http://auth-api:3001
       # Credencial que outro servico apresenta para publicar notificacao sem
       # usuario logado — o caso e o fechamento de competencia do financeiro,
       # que roda por job. Sem ela, /interno responde 503 em vez de ficar aberta.
