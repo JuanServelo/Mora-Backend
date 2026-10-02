@@ -3,7 +3,9 @@ package comunicacao.service;
 import comunicacao.exception.RecursoNaoEncontradoException;
 import comunicacao.model.ArtigoConhecimento;
 import comunicacao.model.enums.CategoriaArtigo;
+import comunicacao.repository.ArtigoAvaliacaoRepository;
 import comunicacao.repository.ArtigoConhecimentoRepository;
+import comunicacao.repository.PerguntaFaqRepository;
 import comunicacao.security.AuthContext;
 import comunicacao.security.CondominioUtils;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,8 @@ import java.util.UUID;
 public class ArtigoService {
 
     private final ArtigoConhecimentoRepository artigoRepository;
+    private final ArtigoAvaliacaoRepository avaliacaoRepository;
+    private final PerguntaFaqRepository perguntaRepository;
 
     public ArtigoConhecimento criar(ArtigoConhecimento artigo) {
         var claims = AuthContext.get();
@@ -50,6 +54,8 @@ public class ArtigoService {
         if (!artigoRepository.existsById(id)) {
             throw new RecursoNaoEncontradoException("Artigo não encontrado com id: " + id);
         }
+        avaliacaoRepository.deleteByArtigoId(id);
+        perguntaRepository.desvincularArtigo(id);
         artigoRepository.deleteById(id);
     }
 
