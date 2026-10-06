@@ -57,6 +57,19 @@ setupPassport();
 
 const app = express();
 
+/**
+ * Proxy de confiança, para o limitador de login enxergar o IP do cliente.
+ *
+ * Desligado por padrão, e de propósito: hoje o front chama o auth-api direto,
+ * sem proxy no meio. Ligado nessa situação, qualquer um mandaria um
+ * `X-Forwarded-For` inventado e ganharia um balde novo a cada requisição.
+ * Ligue só quando houver proxy na frente — `TRUST_PROXY=1` para um salto.
+ */
+const trustProxy = process.env.TRUST_PROXY;
+if (trustProxy && trustProxy !== 'false') {
+  app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+}
+
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '100kb' }));

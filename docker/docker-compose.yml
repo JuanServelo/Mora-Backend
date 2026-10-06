@@ -207,6 +207,16 @@ services:
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - MAIL_FROM=${MAIL_FROM}
+      # Estavam no .env.example mas nao chegavam ao container. Sem as tres
+      # ADMIN_SEED_*, um banco novo nascia sem nenhuma conta para entrar; sem
+      # SESSION_SECRET, a sessao do OAuth caia no JWT_SECRET. Default vazio:
+      # o auth-api ja trata a ausencia (pula o seed, avisa da sessao).
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      - ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL:-}
+      - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:-}
+      - ADMIN_SEED_NOME=${ADMIN_SEED_NOME:-Admin}
+      # So com proxy na frente. Ver app.js do auth-api.
+      - TRUST_PROXY=${TRUST_PROXY:-}
       # A regra de turno do funcionário vive no portaria-service; o auth-api
       # a consulta antes de registrar a entrada (RF-09).
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
@@ -247,6 +257,8 @@ services:
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - PLAN_SERVICE_URL=http://plan-service:8093
       - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      # Inadimplência e multas dos painéis do síndico.
+      - FINANCEIRO_SERVICE_URL=http://financeiro:3004
       - TZ=America/Sao_Paulo
 
   # 7.95. Financeiro (Node) — faturas, cobrancas, multas e prestacao de contas
