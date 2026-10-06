@@ -6,6 +6,7 @@ import {
   montarResumoCondominio,
   montarPainelCondominio,
 } from '../services/dashboardService.js';
+import { montarOperacional, montarEstrategico } from '../services/painelService.js';
 import { paraCsv } from '../utils/csv.js';
 
 const router = express.Router();
@@ -123,5 +124,42 @@ router.get('/painel', async (req, res) => {
   if (seErro(r, res)) return;
   res.json(r);
 });
+
+// ── Painéis do síndico (RF-18) ──────────────────────────────────────────────
+
+/**
+ * Só o síndico, e não o Admin Geral.
+ *
+ * Os painéis consultam o comunicacao e o financeiro com o token de quem pede.
+ * Para o Admin Geral, que não tem condomínio no token, o comunicacao devolveria
+ * os avisos de todos os clientes misturados. Ele tem o painel da plataforma.
+ */
+function exigirSindico(req, res, next) {
+  if (req.perfil !== 'ADMIN_SINDICO') {
+    return res.status(403).json({ sucesso: false, mensagem: 'Os painéis do condomínio são do síndico.' });
+  }
+  if (!req.claims.condominioId) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Seu usuário não está vinculado a um condomínio.' });
+  }
+  next();
+}
+
+// O Express 4 não espera a Promise do handler: um erro inesperado na
+// agregação deixaria a requisição sem resposta e derrubaria o processo.
+const assincrono = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+const JANELAS = [3, 6, 12];
+
+router.get('/painel/operacional', exigirSindico, assincrono(async (req, res) => {
+  res.json(await montarOperacional(req.claims.condominioId, req.authorization));
+}));
+
+router.get('/painel/estrategico', exigirSindico, assincrono(async (req, res) => {
+  const meses = Number(req.query.meses ?? 6);
+  if (!JANELAS.includes(meses)) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Use meses=3, 6 ou 12.' });
+  }
+  res.json(await montarEstrategico(req.claims.condominioId, meses, req.authorization));
+}));
 
 export default router;

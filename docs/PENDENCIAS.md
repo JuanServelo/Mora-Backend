@@ -1,275 +1,185 @@
 # Pendências do projeto
 
-Levantamento do que falta, medido contra a
-[especificação](ESPECIFICACAO-PROJETO.md) e os critérios de avaliação, com o
-sistema rodando em 10/09/2026.
+O que falta no Mora, medido contra a [especificação](ESPECIFICACAO-PROJETO.md) e
+os critérios de avaliação.
 
-Cada afirmação aqui foi verificada em código, em banco ou por requisição — não é
-estimativa. Onde há número, ele veio de uma medição.
-
----
-
-## 1. Critérios de avaliação
-
-| # | Critério | Situação |
-|---|---|---|
-| 1 | Contém pelo menos 80% do escopo acordado | ⚠️ **Abaixo** |
-| 2 | Processo ágil e sprints documentadas | ⚠️ **Existe, fora do repositório** |
-| 3 | Frontend bem acabado | ✅ |
-| 4 | Backend RESTful com JSON | ✅ |
-| 5 | Dados persistidos em banco | ✅ |
-| 6 | 2 perfis validados no front **e** no back | ⚠️ **Falha nos serviços Java** |
-| 7 | Dashboard com informações, filtros e gráficos | ✅ |
-| 8 | Git organizado com participação de todos | ✅ |
-
-Cinco atendidos, três parciais.
-
----
-
-## 2. O achado mais sério: os serviços Java não autenticam
-
-**Prioridade máxima.** Não é só um critério de nota — são dados de um cliente
-acessíveis a outro, e a qualquer pessoa sem conta.
-
-### O que foi demonstrado
-
-Sem nenhum token:
-
-```
-GET /apartamentos   → 200
-GET /blocos         → 200
-GET /areas-comuns   → 200
-GET /api/plans      → 200
-```
-
-`GET /apartamentos` devolveu **12 apartamentos dos três condomínios**, com bloco
-e número. E um morador do Parque Verde pedindo
-`?condominioId=cond-vista-mar` recebeu **as 4 unidades do outro cliente**.
-
-Os serviços Node recusam a mesma requisição: 401 sem token, e o morador que pede
-outro condomínio recebe o dele.
-
-### Por que acontece
-
-`portaria-service/security/AuthFilter.java` lê o token e, quando ele falha,
-deixa passar:
-
-```java
-try {
-    AuthContext.set(jwtUtil.parse(token));
-} catch (Exception ignored) {
-    // Token inválido — contexto permanece vazio; service lança 403 se a rota exigir auth
-}
-chain.doFilter(request, response);
-```
-
-O comentário promete um 403 que não existe: em todo o `portaria-service`, **só o
-`VeiculoService` consulta o `AuthContext`**. O `plan-service` não tem sequer um
-filtro.
-
-### Por que o frontend não cobre
-
-As 62 verificações de perfil do frontend decidem o que a **tela** mostra. Somem
-no instante em que alguém usa `curl`, Postman ou a aba de rede do navegador.
-
-O sistema é multi-inquilino: nos serviços Java, o `condominioId` é **um
-parâmetro que o cliente escolhe**, não uma regra que o servidor aplica.
-
-### O que fazer
-
-Na ordem, do mais barato ao mais caro:
-
-1. **Rejeitar token ausente ou inválido com 401** — trocar o
-   `catch (Exception ignored)` por uma resposta. Sozinho, fecha o buraco maior
-2. **Derivar o `condominioId` do token**, ignorando o da query para quem não é
-   Admin Geral
-3. **Exigir perfil nas rotas de escrita** — hoje qualquer um cadastra bloco e
-   apartamento
-
-O `middleware/escopo.js` do `financeiro-service` já faz exatamente isso e serve
-de modelo.
-
----
-
-## 3. Serviços que não existem
-
-| Serviço | Spec | Realidade |
-|---|---|---|
-| `comunicacao-service` | Java · 8094 · `mora` | ✅ **existe** — ver abaixo |
-| `ocorrencias-service` | Java · 8095 · `mora_ocorrencias` | ❌ Nem código nem banco |
-
-### `comunicacao-service` — dois serviços, um sobreviveu
-
-Foi construído duas vezes em paralelo: em Java, migrando avisos e artigos para
-fora do portaria, e em Node, com conversas, relatório de leitura e notificações
-deduplicadas. Os dois pediam o mesmo prefixo no Traefik. Ficou o Java, e o que
-o Node fazia está sendo trazido para dentro dele.
-
-| Recurso | Onde está | Estado |
-|---|---|---|
-| Avisos | `mora.avisos` + `AvisoController` (comunicacao) | ✅ migrado do portaria |
-| Base de conhecimento | `mora.artigos_conhecimento` + `ArtigoController` | ✅ migrado do portaria |
-| Confirmação de leitura | `mora.aviso_leituras` | ⚠️ registra, mas sem denominador nem recorte por público |
-| Chat | `chat_mensagens`, direto entre dois usuários | ⚠️ falta o formato "falar com a administração" |
-| Notificações | `notificacoes` | ⚠️ sem `chaveUnica`, sem `origem`/`dados` e sem rota interna para job |
-
-#### Autorização: o que foi fechado
-
-| Item | Como estava |
+| Repositório | Base |
 |---|---|
-| ~~Sem checagem de perfil~~ | ✅ `security/Autorizacao.java`. Escrever é do síndico; o Admin Geral acompanha sem escrever; convidado e terceirizado não leem |
-| ~~Sem checagem de condomínio nas rotas por id~~ | ✅ Toda rota por id compara o condomínio e responde **404**, não 403 |
-| ~~`POST /notificacoes/admin` aberta~~ | ✅ Exige a gestão. Qualquer usuário autenticado escrevia na caixa de entrada de qualquer pessoa, em qualquer condomínio |
-| ~~`GET /avisos` e `GET /artigos` expunham rascunho~~ | ✅ Visão da gestão. Devolviam o não publicado para qualquer um |
-| ~~Filtro por categoria vazava entre condomínios~~ | ✅ `listarPublicados` mantém o recorte. Pedir categoria trocava o filtro de condomínio pelo de categoria |
-| ~~Handler genérico vazava mensagem de erro~~ | ✅ Mensagem genérica para o cliente, detalhe no log |
-| ~~Id de usuário era `UUID`~~ | ✅ `VARCHAR`. O auth-api numera usuários com `integer`, e `UUID.fromString("32")` derrubava com 500 **toda** rota que precisa saber quem pede — confirmação de leitura, caixa de notificações e chat nunca funcionaram. As três tabelas estavam vazias |
-
-> **Como isso passou despercebido:** o frontend deles consumia apenas `artigos` e `avisos`, que
-> não olham o usuário. `notificacaoApi` e `chatApi` existiam no client sem nenhuma tela usando.
-> O defeito só apareceu quando as telas trazidas do outro lado exercitaram esse caminho.
-
-#### Autorização: o que continua aberto
-
-| Item | Efeito |
-|---|---|
-| **`@RequestBody Aviso` cru** | O cliente manda `id`, `criadoEm` e `condominioId` junto. O `condominioId` é sobrescrito pela claim ao criar, mas o resto entra |
-| **`jwt.secret` com default** | `changeme-insecure-default` no `application.yml`: sem segredo o serviço sobe inseguro em vez de recusar |
-| **Sem `publicoAlvo` no recorte** | O morador recebe comunicado dirigido a funcionário |
-
-O desenho do serviço Node, com o raciocínio de cada regra, está no commit
-`0786c66`. Detalhes do serviço atual em
-[docs/servicos/comunicacao-service.md](servicos/comunicacao-service.md).
-
-**O que ainda falta para a centralização ser real:** o `financeiro` continua
-gravando notificação na tabela dele. A rota interna está pronta e verificada, mas
-o corte exige mudar também a leitura no frontend — senão a notificação passa a
-viver em dois lugares.
-
-### `ocorrencias-service` — RF-14
-
-Nada existe. Há `reclamacoes` no `auth-api`, que cobre o registro da ocorrência,
-mas não ordem de serviço, responsável nem prazo.
-
-### Serviço fora da especificação
-
-O **`vagas-service`** roda na 8092 e **não aparece na especificação** — as vagas
-estão atribuídas ao portaria no documento (RF-5). Ou a spec incorpora o serviço,
-ou o serviço se funde ao portaria.
+| Backend | `fa5bcf5` + multas, contratos, prestação de contas, painéis e limitador (05/10, ainda sem commit) |
+| Frontend | `32f789b` + telas correspondentes (05/10, ainda sem commit) |
 
 ---
 
-## 4. Requisitos funcionais
+## 1. Resumo
 
-### Completos (8)
-
-RF-1 autenticação · RF-2 usuários e vínculos · RF-3 clientes · RF-4 planos e
-assinaturas · RF-8 chaves · RF-12 comunicados · RF-13 mensagens e notificações ·
-RF-18 dashboards
-
-> **RF-12 conta como completo, com uma ressalva:** os três pedaços que a spec
-> pede existem — avisos, artigos e confirmação de leitura — mas repartidos entre
-> o `portaria-service` e o `comunicacao-service`. Funciona; a spec descreve tudo
-> num serviço só.
-
-### Parciais — a lacuna exata
-
-| RF | O que a spec pede e **não existe** |
+| Requisitos funcionais | Quantidade |
 |---|---|
-| **5** Estrutura | Vagas em serviço separado, não no portaria como documentado |
-| **6** Acessos | **Pré-autorização pelo morador** — nenhum código |
-| **7** Entregas | **Notificação ao destinatário** — o `EntregaService` não notifica |
-| **9** Funcionários | **Controle de jornada** — há tabelas de turno, falta o fluxo |
-| **10** Reservas | **Não há tabela de reservas em banco nenhum.** Só o cadastro de área comum. Faltam solicitação, aprovação, conflito, antecedência e taxa |
-| **11** Assembleias | Videoconferência existe (`meet_link`, `google_event_id`), mas `tb_poll_vote` guarda **`usuario_id`, não `unidade_id`** — a apuração por unidade que a spec pede é impossível |
-| **14** Ocorrências | **Ordem de serviço, responsável e prazo** |
-| **16** Cobranças | **Multas** — tabela existe, sem model, service ou endpoint |
+| ✅ Completos | 13 |
+| ⚠️ Parciais | 5 |
+| 📋 Não iniciados | 0 |
 
-### Planejados que seguem planejados
+**72% completos**, ou ~86% contando parcial como meio ponto. A meta do critério
+1 é 80%.
 
-| RF | Estado real |
-|---|---|
-| **15** Contratos de locação | **Só a tabela.** Sem model, service, endpoint ou tela |
-| **17** Prestação de contas | **Só as tabelas** `lancamentos` e `prestacao_contas` |
+### Critérios de avaliação pendentes
 
-### A especificação está desatualizada
-
-O documento marca **RF-16 como planejado**, mas ele tem regras de taxa, rateio,
-fração ideal, contas de consumo, fechamento de competência, faturas, baixa
-manual, KPIs e gateway de pagamento. Falta só a multa.
-
-E lista o `financeiro-service` fora dos serviços em operação, quando ele roda na
-3004 com 14 tabelas e migrações versionadas.
-
-| | Spec diz | Real |
+| # | Critério | O que falta |
 |---|---|---|
-| Implementados | 3 | **8** |
-| Parciais | 10 | 8 |
-| Planejados | 5 | 2 |
+| 1 | Pelo menos 80% do escopo | Faltam 5 requisitos parciais (seção 3) |
+| 2 | Processo ágil documentado | As sprints estão em `atividades/`, fora do repositório (seção 9) |
+| 6 | 2 perfis validados no front **e** no back | `meeting-service` sem autenticação e escrita do portaria sem perfil (seção 2) |
 
-**44% completos**, ou ~67% contando parcial como meio ponto. Ainda abaixo dos 80%
-do critério 1, mas o `comunicacao-service` moveu dois RFs de uma vez.
-
----
-
-## 5. Processo ágil — a correção mais barata da lista
-
-**Sprints 0 a 5 estão documentadas**, com cronograma, PERT-CPM, atas de reunião,
-matriz de comunicação e registro de mudanças.
-
-O problema: está tudo em `atividades/`, que **nunca foi commitado** — aparece
-como `??` no git. O avaliador não vai ver.
-
-**Um commit resolve.** Converte um critério parcial em atendido.
+Os critérios 3, 4, 5, 7 e 8 estão atendidos.
 
 ---
 
-## 6. Dívidas menores
+## 2. Defeitos — prioridade alta
 
-| Item | Onde | Impacto |
+### 2.1 `meeting-service` sem autenticação
+
+O serviço não tem filtro nem leitura de JWT. Qualquer pessoa que alcance a porta
+cria reunião, lança ata e vota.
+
+O voto recebe **`usuarioId` no corpo** (`VoteRequestDTO`), então dá para votar
+como qualquer pessoa trocando um número.
+
+**Correção:** copiar o `AuthFilter` do `plan-service`, tirar `usuarioId` do DTO
+e ler o usuário da claim.
+
+### 2.2 Portaria: escrita sem perfil e com o condomínio vindo do corpo
+
+**12 serviços sem checagem de perfil:** `Aluguel`, `Apartamento`, `AreaComun`,
+`Bloco`, `Entrega`, `FuncionamentoAreaComum`, `Funcionario`, `Morador`, `Turno`,
+`Usuario`, `Vaga` e `Visitante`. Um morador autenticado cadastra bloco,
+apartamento, vaga e funcionário.
+
+**12 rotas recebem a entidade crua** (`@RequestBody Bloco`, `Vaga`,
+`Funcionario`, `Morador`…), com o `condominioId` dentro. O `BlocoService` usa o
+valor do corpo como veio: **um morador do condomínio A cria um bloco no
+condomínio B**.
+
+**Correção:** checar perfil nos 12 serviços, como `ReservaService` e
+`VeiculoService` já fazem, e sobrescrever `condominioId` com
+`CondominioUtils.condominioIdEfetivo()` antes de salvar.
+
+### 2.3 Notificações do financeiro não chegam
+
+O financeiro publica fatura fechada e vencida em
+`POST /api/comunicacao/interno/notificacoes`, com `X-Servico-Token`. O
+`comunicacao-service` **não tem essa rota**, e o `AuthFilter` dele exige Bearer
+em tudo que não é `/actuator`. O financeiro registra um `warn` e segue, então a
+falha é silenciosa: **o morador não recebe aviso de cobrança**.
+
+**Correção:** criar a rota interna no comunicacao:
+
+- autenticada por `X-Servico-Token`, com comparação em tempo constante, e
+  liberada no `AuthFilter`
+- sem `SERVICO_TOKEN` configurado, responde **503** (fechada, não aberta)
+- coluna `chave_unica` com índice único parcial; reenvio com a mesma chave
+  responde **200 com `repetida: true`**
+- colunas `origem` e `dados` (JSONB) em `notificacoes`
+
+---
+
+## 3. Requisitos funcionais incompletos
+
+### Parciais
+
+| RF | Requisito | Serviço | O que falta |
+|---|---|---|---|
+| 7 | Entregas | portaria | **Notificar o destinatário** ao registrar a encomenda |
+| 10 | Reservas | portaria | **Antecedência mínima** para solicitar |
+| 11 | Assembleias e votações | meeting | **Voto por unidade** (`tb_poll_vote` guarda usuário) e autenticação (2.1) |
+| 13 | Mensagens e notificações | comunicacao | **Notificação disparada por evento** (2.3) |
+| 14 | Ocorrências e ordens de serviço | `ocorrencias-service` (a criar) | **Ordem de serviço, responsável e prazo.** Hoje só há a reclamação, no `auth-api`. Decidido em 05/10: o RF-14 não fica no `auth-api` |
+
+### Lacunas dentro de requisitos completos
+
+| RF | O que falta | Efeito |
 |---|---|---|
-| Senha real do Postgres como valor padrão | `docker/docker-compose.yml`, 6 ocorrências, já no histórico | Segredo em repositório compartilhado. Rotacionar, depois trocar por placeholder |
-| Identidades git duplicadas | Ambos os repos | 5 pessoas aparecem como 9 autores. Um `.mailmap` consolida |
-| `logs/plan-service.log` versionado | Backend | Gera conflito toda vez que alguém roda o serviço |
-| Rótulos de perfil antigos | `Perfil.jsx` diz *"Lessee, Occupant e Guest"* | Modelo de 11 perfis virou 6 há tempo |
-| `HISTORIAS-DE-USUARIO.md` | `docs/` | Ainda descreve 11 perfis e 28 RFs |
-| Numeração de RF divergente | `HISTORIAS-DE-USUARIO.md` × `docs/servicos/` | Deslocada em um. Alguém vai implementar o escopo errado achando que acertou |
-| Sem `trust proxy` no `auth-api` | Limitador de login | Atrás do Traefik, **todos os usuários dividem um balde de 10 tentativas** |
-| Chave PIX não cadastrada | Conta Asaas | Boleto funciona; PIX é recusado até cadastrar |
-| `credentials.json` assado na imagem | `meeting-service` | Lido do classpath, então entra no jar no build. Quem tem a imagem tem a credencial — mesma classe do item da senha acima. Montar por volume, como já é feito com `tokens/`, resolve |
-| `meeting-service` não sobe sem a credencial | `meeting-service` | `Exited (1)`. A imagem antiga rodava porque foi construída numa máquina que tinha o arquivo; rebuild em outra máquina derruba o serviço. Está documentado em [ARQUIVOS-NECESSARIOS.md](ARQUIVOS-NECESSARIOS.md) |
-| `docker/.env.example` estava incompleto | `docker/` | Faltavam `MAIL_*`, `ASAAS_*`, `SESSION_SECRET`, `ADMIN_SEED_*` e `SERVICO_TOKEN`. Quem copiava o exemplo subia uma stack onde e-mail e cobrança falhavam em silêncio. **Corrigido** |
+| 4 | **Trava por plano no servidor** | Os módulos fora do plano só somem da interface; a API continua respondendo |
+| 12 | **Recorte por `publicoAlvo`** | O morador recebe comunicado dirigido a funcionário |
+| 12 | **`GET /avisos/leituras`** | A aba de confirmação de leitura de Comunicados fica sem o panorama |
+| 12 | **`POST /avisos/imagem`** | O campo de imagem do aviso não envia |
+| 18 | **Assembleias nos painéis** | O painel estratégico não traz participação em assembleias: o meeting-service não autentica nem filtra por condomínio (2.1) |
+| 18 | **Contagem agregada no banco** | Os painéis contam sobre as listas que as fontes devolvem, no gestao-geral. O RNF-20 pede agregação no banco; exige endpoints de contagem nos serviços Java |
 
 ---
 
-## 7. Ordem sugerida
+## 4. Requisitos não-funcionais
 
-### Agora
+| # | Requisito | O que falta |
+|---|---|---|
+| RNF-01 | JWT em todo endpoint | `meeting-service` (2.1) |
+| RNF-02 | Segredos sem default no repositório | `jwt.secret` com default `changeme-insecure-default` no comunicacao; senha do Postgres em 15 arquivos (seção 6) |
+| RNF-03 | Autorização no servidor | Escrita do portaria (2.2), meeting (2.1) e trava por plano (RF-4) |
+| RNF-16 | Filtro por condomínio em toda consulta | Escrita do portaria (2.2) e todo o meeting |
 
-1. **Fechar a autenticação nos serviços Java** — segurança real e critério 6
-2. **Commitar `atividades/`** — critério 2, custo de um commit
+---
 
-### Depois, por custo-benefício
+## 5. Testes
 
-Os três primeiros ficam no `financeiro-service`, que já tem migrações,
-autorização e padrão estabelecido — saem muito mais rápido que abrir serviço
-novo:
+| Serviço | Situação |
+|---|---|
+| `comunicacao-service` | Nenhum teste automatizado; só `verificar-autorizacao.mjs`, rodado à mão |
+| `plan-service` | Nenhum teste |
+| `portaria-service` | 2 arquivos — não cobrem a autorização |
+| `meeting-service` | 1 arquivo |
+| `financeiro` | Contrato de acesso só das rotas de multas, contratos e prestação; as rotas de faturas, taxas e contas de consumo não têm |
 
-3. **Multas (RF-16)** — fecha o RF por inteiro; tabela e padrão prontos
-4. **Contratos de locação (RF-15)** — tabela pronta, e "responsável financeiro"
-   já existe no `auth-api`
-5. **Prestação de contas (RF-17)** — duas tabelas prontas; é CRUD mais publicação
-6. **Voto por unidade (RF-11)** — trocar `usuario_id` por `unidade_id`
-7. **Cortar as notificações do `financeiro` para o `comunicacao-service`** — a
-   rota interna já existe; falta trocar a leitura no frontend
+O `auth-api` (425 testes) é o único com contrato de acesso cobrindo todas as
+rotas. O `gestao-geral` tem os painéis e o acesso a eles cobertos (22 testes).
 
-### Decisões de escopo pendentes
+---
 
-- **`comunicacao-service` e `ocorrencias-service` vão existir?** Se não, corrigir
-  a especificação em vez de deixá-los como dívida documentada
-- **`vagas-service` entra na spec ou funde no portaria?**
-- **Avisos e base de conhecimento migram** do portaria para o
-  `comunicacao-service`, ou ficam onde estão? Hoje funcionam lá, e só a
-  confirmação de leitura mora no serviço novo
-- **Reservas (RF-10)** é um dos três pilares declarados do produto e não tem uma
-  linha de código. Entra no escopo ou sai da visão?
+## 6. Repositório e infraestrutura
+
+| Item | Onde | O que fazer |
+|---|---|---|
+| Senha do Postgres versionada | 15 arquivos: compose, `application.*` de 5 serviços, READMEs e docs | Rotacionar e trocar por placeholder |
+| `node_modules/` rastreado | Backend, 5.881 arquivos | Remover do índice e ignorar |
+| `logs/plan-service.log` rastreado | Backend | Remover do índice e ignorar |
+| `credentials.json` do meeting | Lido do classpath | Montar por volume, como `tokens/`; sem ele o serviço não sobe |
+| Código morto | `services/vagas-service`, `services/portaria-frontend`, `services/.idea` | Remover |
+| Identidades git duplicadas | Ambos os repositórios | Criar `.mailmap` |
+| Chave PIX | Conta Asaas | Cadastrar no painel do Asaas; até lá, só boleto funciona |
+| Controllers `async` sem tratamento de erro | `financeiro`, rotas antigas (faturas, cadastros, contas de consumo) | No Express 4, um erro ali deixa a requisição sem resposta e derruba o processo. As rotas novas já usam `utils/assincrono.js`; estender às antigas |
+| `ocorrencias-service` | — | Não existe (ver RF-14) |
+
+---
+
+## 7. Documentação a atualizar
+
+| Documento | O que está errado |
+|---|---|
+| [ESPECIFICACAO-PROJETO.md](ESPECIFICACAO-PROJETO.md) | Fala em 6 perfis (são 7, com `TERCEIRO`); diz que avisos e conhecimento ficam no portaria (estão no comunicacao); tabela de status dos RFs e roadmap desatualizados |
+| [HISTORIAS-DE-USUARIO.md](HISTORIAS-DE-USUARIO.md) | Numeração de RF diferente da spec — lá o RF-01 é *Planos*, na spec é *Autenticação* |
+
+---
+
+## 8. Ordem sugerida
+
+### Defeitos
+
+1. Autenticação no `meeting-service` (2.1)
+2. Perfil e condomínio na escrita do portaria (2.2)
+3. Rota interna de notificações no comunicacao (2.3)
+
+### Escopo, por custo-benefício
+
+4. Voto por unidade (RF-11) — mesmos arquivos do item 1
+5. Recorte por `publicoAlvo` (RF-12)
+6. Notificar entrega (RF-7) — depende do item 3
+7. Antecedência mínima na reserva (RF-10)
+8. Ordem de serviço no `ocorrencias-service` (RF-14)
+
+Com os itens 1 a 7 feitos: **17 de 18 completos (94%)**. O 8 fecha os 18.
+
+---
+
+## 9. Decisões pendentes
+
+| Decisão | Contexto |
+|---|---|
+| Versionar a documentação de sprints | Está em `atividades/Gestao-de-Projetos/` (`.md`), mas `atividades/` inteira está no `.gitignore`. Sugestão: versionar só essa subpasta |
+| Trava por plano no servidor | Hoje só a interface consulta o plano |

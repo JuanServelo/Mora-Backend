@@ -1,12 +1,10 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import dotenv from 'dotenv';
-import dashboardRoutes from './routes/dashboard.js';
+// Primeiro: em ESM os imports são avaliados antes do corpo do arquivo, então um
+// `dotenv.config()` mais abaixo rodaria depois de os módulos já terem lido o env.
+import 'dotenv/config';
+
+import { app } from './app.js';
 import { PORT, SERVICOS, ehProducao } from './config/servicos.js';
 import { registrarNoConsul } from './config/consul.js';
-
-dotenv.config();
 
 // O segredo é compartilhado com o auth-api para validar os tokens que ele emite.
 if (!process.env.JWT_SECRET) {
@@ -14,23 +12,13 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-const app = express();
-
-app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
-app.use(express.json({ limit: '32kb' }));
-
-app.use('/api/gestao', dashboardRoutes);
-
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', servico: 'gestao-geral' });
-});
-
 const server = app.listen(PORT, async () => {
   console.log(`gestao-geral rodando em http://localhost:${PORT}`);
-  console.log(`  auth-api: ${SERVICOS.auth}`);
-  console.log(`  portaria: ${SERVICOS.portaria}`);
-  console.log(`  plan:     ${SERVICOS.plan}`);
+  console.log(`  auth-api:    ${SERVICOS.auth}`);
+  console.log(`  portaria:    ${SERVICOS.portaria}`);
+  console.log(`  plan:        ${SERVICOS.plan}`);
+  console.log(`  comunicacao: ${SERVICOS.comunicacao}`);
+  console.log(`  financeiro:  ${SERVICOS.financeiro}`);
   if (!ehProducao()) console.log('  ambiente: desenvolvimento');
   await registrarNoConsul();
 });
