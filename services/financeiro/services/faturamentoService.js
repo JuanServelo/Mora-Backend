@@ -3,7 +3,10 @@ import * as tiposTaxaModel from '../models/tiposTaxaModel.js';
 import * as contasConsumoModel from '../models/contasConsumoModel.js';
 import * as fracaoModel from '../models/fracaoModel.js';
 import * as faturasModel from '../models/faturasModel.js';
+import * as multasModel from '../models/multasModel.js';
 import * as notificacaoService from './notificacaoService.js';
+import { emTransacao } from '../config/database.js';
+import { faturavel, estornoPendente } from '../utils/multas.js';
 import * as emailService from './emailFinanceiroService.js';
 import { listarUnidades } from '../clients/portariaClient.js';
 import { listarResidentesPorUnidade } from '../clients/authClient.js';
@@ -37,6 +40,25 @@ function competenciaLabel(competenciaDate) {
 }
 
 /**
+ * Separa as multas candidatas por unidade: as que já podem ser cobradas e as
+ * canceladas que precisam ser estornadas.
+ *
+ * A multa ainda no prazo de recurso fica de fora e entra num fechamento
+ * futuro — cobrá-la agora tiraria do morador o direito de contestar.
+ */
+export function agruparMultas(multas, diasRecurso, hoje = new Date()) {
+  const porUnidade = new Map();
+  for (const m of multas) {
+    const grupo = porUnidade.get(m.unidadeId) ?? { cobrar: [], estornar: [] };
+    if (faturavel(m, diasRecurso, hoje)) grupo.cobrar.push(m);
+    else if (estornoPendente(m)) grupo.estornar.push(m);
+    else continue;
+    porUnidade.set(m.unidadeId, grupo);
+  }
+  return porUnidade;
+}
+
+/**
  * Fecha a competência de um condomínio: gera uma fatura por unidade,
  * composta por taxas recorrentes + contas de consumo + taxa da plataforma.
  *
@@ -61,12 +83,15 @@ export async function fecharCompetencia(condominioId, competenciaInput, authoriz
   const vencimento = calcularVencimento(competencia, regras.diaFechamento, regras.diaVencimento);
   const label = competenciaLabel(competencia);
 
-  const [taxas, contas, unidadesR, fracoesAll] = await Promise.all([
+  const [taxas, contas, unidadesR, fracoesAll, multasCandidatas] = await Promise.all([
     tiposTaxaModel.listar(condominioId, { incluirInativos: false }),
     contasConsumoModel.listarParaFaturamento(condominioId, competencia),
     listarUnidades(condominioId, authorization),
     fracaoModel.listarPorCondominio(condominioId),
+    multasModel.listarParaFaturamento(condominioId),
   ]);
+
+  const multasPorUnidade = agruparMultas(multasCandidatas, regras.diasRecursoMulta);
 
   if (!unidadesR.ok) {
     return erro('Não foi possível obter as unidades do condomínio. Tente novamente.', 503);
@@ -147,6 +172,23 @@ export async function fecharCompetencia(condominioId, competenciaInput, authoriz
       if (valor > 0) itens.push({ tipo: 'TAXA_PLATAFORMA', descricao: 'Plataforma Mora', valorCentavos: valor });
     }
 
+    // Multas da unidade com o prazo de recurso vencido, e estornos de multas
+    // canceladas depois de cobradas. O `origemId` é o que liga o item à multa
+    // na gravação abaixo.
+    const { cobrar = [], estornar = [] } = multasPorUnidade.get(unidade.id) ?? {};
+    for (const m of cobrar) {
+      itens.push({
+        tipo: 'MULTA', descricao: `Multa: ${m.motivo}`.slice(0, 200),
+        valorCentavos: m.valorCentavos, origemId: m.id,
+      });
+    }
+    for (const m of estornar) {
+      itens.push({
+        tipo: 'ESTORNO', descricao: `Estorno de multa cancelada: ${m.motivo}`.slice(0, 200),
+        valorCentavos: -m.valorCentavos, origemId: m.id,
+      });
+    }
+
     const total = itens.reduce((s, i) => s + i.valorCentavos, 0);
     if (total <= 0) {
       resultados.push({ unidadeId: unidade.id, status: 'sem_valor' });
@@ -178,7 +220,15 @@ export async function fecharCompetencia(condominioId, competenciaInput, authoriz
         continue;
       }
 
-      await faturasModel.criarItens(fatura.id, itens);
+      // Item e marcação da multa na mesma transação: se a marcação falhasse
+      // depois do item gravado, a multa seria cobrada de novo no mês seguinte.
+      await emTransacao(async (cliente) => {
+        const criados = await faturasModel.criarItens(fatura.id, itens, cliente);
+        for (const item of criados) {
+          if (item.tipo === 'MULTA') await multasModel.vincularItem(cliente, item.origemId, item.id);
+          if (item.tipo === 'ESTORNO') await multasModel.vincularEstorno(cliente, item.origemId, item.id);
+        }
+      });
 
       // Notificação in-app
       await notificacaoService.criar(
@@ -241,13 +291,21 @@ export async function previewCompetencia(condominioId, competenciaInput, authori
     ? competenciaInput + '-01'
     : competenciaInput;
 
-  const [regras, taxas, contas, unidadesR, fracoesAll] = await Promise.all([
+  const [regras, taxas, contas, unidadesR, fracoesAll, multasCandidatas] = await Promise.all([
     regrasTaxaModel.obterOuCriar(condominioId),
     tiposTaxaModel.listar(condominioId, { incluirInativos: false }),
     contasConsumoModel.listarParaFaturamento(condominioId, competencia),
     listarUnidades(condominioId, authorization),
     fracaoModel.listarPorCondominio(condominioId),
+    multasModel.listarParaFaturamento(condominioId),
   ]);
+
+  let multasACobrar = 0;
+  let estornosDeMulta = 0;
+  for (const g of agruparMultas(multasCandidatas, regras.diasRecursoMulta).values()) {
+    multasACobrar += g.cobrar.length;
+    estornosDeMulta += g.estornar.length;
+  }
 
   if (!unidadesR.ok) return erro('Não foi possível obter as unidades.', 503);
 
@@ -265,6 +323,8 @@ export async function previewCompetencia(condominioId, competenciaInput, authori
     faturasExistentes: existentesSet.size,
     taxas: taxas.length,
     contasDeConsumo: contas.length,
+    multasACobrar,
+    estornosDeMulta,
     modoRateio: regras.modo,
     fracoesCadastradas: fracoesAll.length,
     totalMilesimos,
