@@ -121,4 +121,19 @@ public class PollService {
 
         pollVoteRepository.save(vote);
     }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000) // Executa a cada 1 minuto
+    @Transactional
+    public void encerrarVotacoesExpiradasAutomaticamente() {
+        java.util.List<Poll> votacoesExpiradas = pollRepository.findByStatusAndDataHoraFimBefore(
+                PollStatus.ABERTA, java.time.LocalDateTime.now());
+        
+        if (!votacoesExpiradas.isEmpty()) {
+            for (Poll poll : votacoesExpiradas) {
+                poll.setStatus(PollStatus.ENCERRADA);
+            }
+            pollRepository.saveAll(votacoesExpiradas);
+            System.out.println("Votações encerradas automaticamente: " + votacoesExpiradas.size());
+        }
+    }
 }

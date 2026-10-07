@@ -9,4 +9,5 @@ import java.util.List;
 
 public interface PollRepository extends JpaRepository<Poll, Long> {
     List<Poll> findByCondominioId(String condominioId);
+    List<Poll> findByStatusAndDataHoraFimBefore(com.mora.meeting.enums.PollStatus status, LocalDateTime dataHora);
 }
