@@ -13,6 +13,5 @@ public interface PollMapper {
     @Mapping(target = "opcoes", ignore = true)
     Poll toEntity(PollRequestDTO dto);
 
-    @Mapping(source = "meeting.id", target = "meetingId")
     PollResponseDTO toResponseDto(Poll poll);
 }

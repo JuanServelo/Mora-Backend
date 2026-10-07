@@ -27,10 +27,6 @@ public class Poll {
     @Column(name = "condominio_id")
     private String condominioId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meeting_id")
-    private Meeting meeting;
-
     private PollStatus status;
 
     @Builder.Default

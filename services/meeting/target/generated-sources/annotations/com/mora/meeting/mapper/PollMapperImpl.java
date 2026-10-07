@@ -3,7 +3,6 @@ package com.mora.meeting.mapper;
 import com.mora.meeting.dto.poll.PollOptionDTO;
 import com.mora.meeting.dto.poll.PollRequestDTO;
 import com.mora.meeting.dto.poll.PollResponseDTO;
-import com.mora.meeting.entity.Meeting;
 import com.mora.meeting.entity.Poll;
 import com.mora.meeting.entity.PollOption;
 import java.util.ArrayList;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-09-19T02:39:13-0300",
+    date = "2026-10-06T22:27:14-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Oracle Corporation)"
 )
 @Component
@@ -41,7 +40,6 @@ public class PollMapperImpl implements PollMapper {
 
         PollResponseDTO.PollResponseDTOBuilder pollResponseDTO = PollResponseDTO.builder();
 
-        pollResponseDTO.meetingId( pollMeetingId( poll ) );
         pollResponseDTO.id( poll.getId() );
         pollResponseDTO.titulo( poll.getTitulo() );
         pollResponseDTO.descricao( poll.getDescricao() );
@@ -49,21 +47,6 @@ public class PollMapperImpl implements PollMapper {
         pollResponseDTO.opcoes( pollOptionListToPollOptionDTOList( poll.getOpcoes() ) );
 
         return pollResponseDTO.build();
-    }
-
-    private Long pollMeetingId(Poll poll) {
-        if ( poll == null ) {
-            return null;
-        }
-        Meeting meeting = poll.getMeeting();
-        if ( meeting == null ) {
-            return null;
-        }
-        Long id = meeting.getId();
-        if ( id == null ) {
-            return null;
-        }
-        return id;
     }
 
     protected PollOptionDTO pollOptionToPollOptionDTO(PollOption pollOption) {
