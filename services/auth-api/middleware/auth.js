@@ -40,6 +40,9 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+    // O token bruto segue disponivel: chamadas a outros servicos precisam
+    // repassa-lo, senao eles respondem 401 e a resposta vira "nao encontrado".
+    req.token = token;
     req.userId = usuario.id;
     req.user = usuario;
     req.userPerfil = usuario.getPerfilEfetivo();
