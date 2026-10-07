@@ -22,6 +22,7 @@ public class Poll {
 
     private String titulo;
     private String descricao;
+    private java.time.LocalDateTime dataHoraFim;
 
     /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
     @Column(name = "condominio_id")

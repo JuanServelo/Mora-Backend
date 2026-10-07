@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-10-06T22:27:14-0300",
+    date = "2026-10-06T22:40:01-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Oracle Corporation)"
 )
 @Component
@@ -28,6 +28,7 @@ public class PollMapperImpl implements PollMapper {
 
         poll.titulo( dto.getTitulo() );
         poll.descricao( dto.getDescricao() );
+        poll.condominioId( dto.getCondominioId() );
 
         return poll.build();
     }

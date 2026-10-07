@@ -35,7 +35,10 @@ public class GoogleMeetConfig {
 
         InputStream in = GoogleMeetConfig.class.getResourceAsStream("/credentials.json");
         if (in == null) {
-            throw new FileNotFoundException("Arquivo credentials.json não encontrado no classpath.");
+            System.err.println("AVISO: Arquivo credentials.json não encontrado no classpath. Funcionalidades do Google Meet estarão indisponíveis.");
+            return new Meet.Builder(HTTP_TRANSPORT, JSON_FACTORY, request -> {})
+                    .setApplicationName(APPLICATION_NAME)
+                    .build();
         }
 
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
