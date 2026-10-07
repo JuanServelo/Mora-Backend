@@ -34,6 +34,10 @@ public class Poll {
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PollOption> opcoes = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PollVote> votos = new ArrayList<>();
+
     public void addOption(String descricao) {
         PollOption option = new PollOption();
         option.setDescricao(descricao);

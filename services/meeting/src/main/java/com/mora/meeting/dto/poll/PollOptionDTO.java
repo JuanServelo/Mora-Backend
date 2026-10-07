@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class PollOptionDTO {
     private Long id;
     private String descricao;
+    private Integer quantidadeVotos;
 }

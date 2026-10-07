@@ -21,4 +21,5 @@ public class PollResponseDTO {
 
     private PollStatus status;
     private List<PollOptionDTO> opcoes;
+    private List<Long> usuariosQueVotaram;
 }
