@@ -50,7 +50,7 @@ export async function listarUsuariosEscopo(ator, filtros = {}) {
 
 export async function emitirConvite(ator, dados) {
   const perfilAtor = ator.getPerfilEfetivo();
-  const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro, condominioId: condominioIdDados } = dados;
+  const { email, perfil, unidadeId, nomePrecadastro, cpfPrecadastro, condominioId: condominioIdDados, token } = dados;
   const condominioId = condominioIdDados || ator.condominioId;
 
   if (!podeCadastrarPerfil(perfilAtor, perfil)) {
@@ -84,6 +84,7 @@ export async function emitirConvite(ator, dados) {
   }
 
   const validacao = await validarDadosConviteAdmin({
+    token,
     email,
     perfil,
     unidadeId: unidadeEfetiva,

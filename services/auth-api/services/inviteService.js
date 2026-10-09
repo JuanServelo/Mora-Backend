@@ -194,6 +194,7 @@ export async function validarDadosConviteAdmin({
   nomePrecadastro,
   cpfPrecadastro,
   condominioId = CONDOMINIO_DEFAULT,
+  token = null,
 }) {
   if (perfilExigeUnidade(perfil) && !unidadeId) {
     return { sucesso: false, mensagem: 'Unidade é obrigatória para este perfil.' };
@@ -204,7 +205,7 @@ export async function validarDadosConviteAdmin({
   }
 
   if (unidadeId) {
-    const ok = await validarUnidadeExiste(unidadeId);
+    const ok = await validarUnidadeExiste(unidadeId, token);
     if (!ok) {
       return { sucesso: false, mensagem: 'Unidade não encontrada.' };
     }
