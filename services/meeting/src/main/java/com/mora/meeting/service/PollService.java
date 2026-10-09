@@ -3,13 +3,11 @@ package com.mora.meeting.service;
 import com.mora.meeting.dto.poll.VoteRequestDTO;
 import com.mora.meeting.dto.poll.PollRequestDTO;
 import com.mora.meeting.dto.poll.PollResponseDTO;
-import com.mora.meeting.entity.Meeting;
+import com.mora.meeting.mapper.PollMapper;
 import com.mora.meeting.entity.Poll;
 import com.mora.meeting.entity.PollOption;
 import com.mora.meeting.entity.PollVote;
 import com.mora.meeting.enums.PollStatus;
-import com.mora.meeting.mapper.PollMapper;
-import com.mora.meeting.repository.MeetingRepository;
 import com.mora.meeting.repository.PollRepository;
 import com.mora.meeting.repository.PollVoteRepository;
 import jakarta.validation.constraints.NotNull;
@@ -22,19 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class PollService {
 
     private final PollRepository pollRepository;
-    private final MeetingRepository meetingRepository;
     private final PollMapper pollMapper;
     private final PollVoteRepository pollVoteRepository;
 
     @Transactional
     public PollResponseDTO createPoll(@NotNull PollRequestDTO dto) {
 
-        // Valida se a reunião existe antes de vincular a votação
-        Meeting meeting = meetingRepository.findById(dto.getMeetingId())
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + dto.getMeetingId()));
-
         Poll poll = pollMapper.toEntity(dto);
-        poll.setMeeting(meeting);
         poll.setStatus(PollStatus.ABERTA);
 
         if (dto.getOpcoes() != null && !dto.getOpcoes().isEmpty()) {
@@ -57,17 +49,8 @@ public class PollService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<PollResponseDTO> listPollsByMeeting(Long meetingId) {
-        return pollRepository.findByMeetingId(meetingId).stream()
-                .map(pollMapper::toResponseDto)
-                .collect(java.util.stream.Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public java.util.List<PollResponseDTO> listPollsByDate(java.time.LocalDate data) {
-        java.time.LocalDateTime start = data.atStartOfDay();
-        java.time.LocalDateTime end = data.atTime(23, 59, 59);
-        return pollRepository.findByMeetingDate(start, end).stream()
+    public java.util.List<PollResponseDTO> listPollsByCondominio(String condominioId) {
+        return pollRepository.findByCondominioId(condominioId).stream()
                 .map(pollMapper::toResponseDto)
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -137,5 +120,20 @@ public class PollService {
         vote.setUsuarioId(usuarioLogadoId);
 
         pollVoteRepository.save(vote);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000) // Executa a cada 1 minuto
+    @Transactional
+    public void encerrarVotacoesExpiradasAutomaticamente() {
+        java.util.List<Poll> votacoesExpiradas = pollRepository.findByStatusAndDataHoraFimBefore(
+                PollStatus.ABERTA, java.time.LocalDateTime.now());
+        
+        if (!votacoesExpiradas.isEmpty()) {
+            for (Poll poll : votacoesExpiradas) {
+                poll.setStatus(PollStatus.ENCERRADA);
+            }
+            pollRepository.saveAll(votacoesExpiradas);
+            System.out.println("Votações encerradas automaticamente: " + votacoesExpiradas.size());
+        }
     }
 }
