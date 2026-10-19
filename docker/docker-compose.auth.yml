@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_DB=auth_db
       - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=Vibers@2112
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
     ports:
       - "5432:5432"
     volumes:
