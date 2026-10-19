@@ -139,3 +139,26 @@ export async function vincularEstorno(cliente, multaId, faturaItemId) {
     [multaId, faturaItemId],
   );
 }
+
+/**
+ * Multas por mês, agregadas no banco — para o painel estratégico do síndico.
+ *
+ * O mês é o do fuso do condomínio: uma multa aplicada às 22h do dia 31 não
+ * pode cair no mês seguinte por causa do UTC.
+ */
+export async function contarPorMes(condominioId, meses) {
+  const { rows } = await consultar(
+    `SELECT to_char(date_trunc('month', criado_em AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM') AS mes,
+            COUNT(*)::int AS aplicadas,
+            (COUNT(*) FILTER (WHERE status = 'CANCELADA'))::int AS canceladas,
+            COALESCE(SUM(valor_centavos) FILTER (WHERE status <> 'CANCELADA'), 0)::bigint AS "valorCentavos"
+       FROM multas
+      WHERE condominio_id = $1
+        AND criado_em AT TIME ZONE 'America/Sao_Paulo'
+            >= date_trunc('month', now() AT TIME ZONE 'America/Sao_Paulo') - make_interval(months => $2 - 1)
+      GROUP BY 1
+      ORDER BY 1`,
+    [condominioId, meses],
+  );
+  return rows;
+}

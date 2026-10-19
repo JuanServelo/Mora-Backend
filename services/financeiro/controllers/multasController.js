@@ -14,6 +14,12 @@ export async function listar(req, res) {
   res.json({ sucesso: true, total: multas.length, multas });
 }
 
+export async function porMes(req, res) {
+  const r = await service.porMes(req.escopo.condominioId, req.query.meses);
+  if (seErro(r, res)) return;
+  res.json({ sucesso: true, meses: r });
+}
+
 export async function aplicar(req, res) {
   const r = await service.aplicar(
     req.escopo.condominioId, req.body ?? {}, req.escopo.usuarioId, req.authorization,
