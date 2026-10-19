@@ -45,6 +45,13 @@ export async function listar(condominioId, filtros = {}) {
   return multas.map((m) => comPrazo(m, dias));
 }
 
+/** Série mensal de multas, agregada no banco. Janela de 3, 6 ou 12 meses. */
+export async function porMes(condominioId, mesesTexto) {
+  const meses = Number(mesesTexto ?? 6);
+  if (![3, 6, 12].includes(meses)) return erro('Use meses=3, 6 ou 12.');
+  return model.contarPorMes(condominioId, meses);
+}
+
 export async function listarDaUnidade(condominioId, unidadeId) {
   return listar(condominioId, { unidadeId });
 }

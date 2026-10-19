@@ -14,10 +14,11 @@ import * as financeiro from '../clients/financeiroClient.js';
  * Cada bloco é independente: fonte fora do ar vira bloco `null` e entra em
  * `fontesIndisponiveis`, e o resto do painel aparece normalmente.
  *
- * As contagens são feitas aqui, sobre as listas que as fontes já devolvem. O
- * RNF-20 pede agregação no banco; isso exigiria endpoints de contagem nos
- * serviços Java, e o volume de um condomínio não justifica ainda. O contrato
- * deste endpoint não muda quando isso for feito.
+ * Agregação no banco (RNF-20): ocorrências (auth-api), leitura de avisos
+ * (comunicacao) e multas e faturas (financeiro) chegam já contadas, em SQL, por
+ * quem é dono do dado. Só o portaria ainda é contado aqui, sobre as listas que
+ * ele devolve — falta a ele um endpoint de contagem. O contrato deste endpoint
+ * não muda quando isso for feito.
  */
 
 const FUSO = 'America/Sao_Paulo';
@@ -69,21 +70,24 @@ export function destinatariosDoAviso(publicoAlvo, porPerfil = {}) {
 }
 
 const RESERVA_CONTA = (r) => !['CANCELADA', 'RECUSADA', 'EXPIRADA'].includes(r.status);
-const OCORRENCIA_ABERTA = (o) => o.status !== 'RESOLVIDO';
 const menor = (valores) => valores.filter(Boolean).sort()[0] ?? null;
 
 // ── Operacional ─────────────────────────────────────────────────────────────
 
 /**
- * Situação de agora. Cada argumento é a lista da fonte, ou `null` se ela não
- * respondeu.
+ * Situação de agora. Cada argumento é o que a fonte devolveu, ou `null` se ela
+ * não respondeu.
+ *
+ * - `ocorrencias`: a situação atual agregada pelo auth-api
+ *   (`{ abertas, pendentes, emAnalise, maisAntigaDesde }`);
+ * - `avisos`: o panorama do comunicacao — só os vigentes, cada um com
+ *   `confirmacoes`.
  */
-export function resumirOperacional(fontes, agora = new Date()) {
+export function resumirOperacional(fontes) {
   const {
     entregas, reservasPendentes, pessoasDentro, visitantesDentro,
-    reclamacoes, conversas, avisos, leituras, porPerfil, kpis,
+    ocorrencias, conversas, avisos, porPerfil, kpis,
   } = fontes;
-  const hoje = hojeLocal(agora);
 
   const entregasBloco = entregas && {
     aguardandoRetirada: entregas.length,
@@ -101,16 +105,12 @@ export function resumirOperacional(fontes, agora = new Date()) {
     visitantesDentro: visitantesDentro ? visitantesDentro.length : null,
   };
 
-  let ocorrenciasBloco = null;
-  if (reclamacoes) {
-    const abertas = reclamacoes.filter(OCORRENCIA_ABERTA);
-    ocorrenciasBloco = {
-      abertas: abertas.length,
-      pendentes: reclamacoes.filter((o) => o.status === 'PENDENTE').length,
-      emAnalise: reclamacoes.filter((o) => o.status === 'EM_ANALISE').length,
-      maisAntigaDesde: menor(abertas.map((o) => o.createdAt)),
-    };
-  }
+  const ocorrenciasBloco = ocorrencias && {
+    abertas: ocorrencias.abertas ?? 0,
+    pendentes: ocorrencias.pendentes ?? 0,
+    emAnalise: ocorrencias.emAnalise ?? 0,
+    maisAntigaDesde: ocorrencias.maisAntigaDesde ?? null,
+  };
 
   const conversasBloco = conversas && {
     abertas: conversas.filter((c) => !c.encerradaEm).length,
@@ -119,13 +119,12 @@ export function resumirOperacional(fontes, agora = new Date()) {
 
   let avisosBloco = null;
   if (avisos) {
-    const vigentes = avisos.filter((a) => a.publicado && a.dataInicio <= hoje && a.dataFim >= hoje);
     avisosBloco = {
-      vigentes: vigentes.length,
+      vigentes: avisos.length,
       // Sem a contagem de usuários, a taxa não tem denominador. Melhor não
       // mostrar porcentagem nenhuma do que mostrar uma inventada.
-      leitura: vigentes.map((a) => {
-        const lidas = leituras?.[a.id] ?? null;
+      leitura: avisos.map((a) => {
+        const lidas = a.confirmacoes ?? null;
         const total = porPerfil ? destinatariosDoAviso(a.publicoAlvo, porPerfil) : null;
         return {
           id: a.id,
@@ -150,7 +149,7 @@ export function resumirOperacional(fontes, agora = new Date()) {
     entregas: entregasBloco || null,
     reservas: reservasBloco || null,
     presenca: presencaBloco || null,
-    ocorrencias: ocorrenciasBloco,
+    ocorrencias: ocorrenciasBloco || null,
     conversas: conversasBloco || null,
     avisos: avisosBloco,
     financeiro: financeiroBloco || null,
@@ -159,8 +158,14 @@ export function resumirOperacional(fontes, agora = new Date()) {
 
 // ── Estratégico ─────────────────────────────────────────────────────────────
 
-/** Séries mensais da janela `meses`. Mesma convenção de `null` por fonte. */
-export function resumirEstrategico({ reservas, reclamacoes, kpisPorMes, multas }, meses) {
+/**
+ * Séries mensais da janela `meses`. Mesma convenção de `null` por fonte.
+ *
+ * `ocorrencias` e `multasPorMes` chegam agregadas por mês; mês sem linha vira
+ * zero. As séries seguem a janela daqui, e não a da fonte, para todos os
+ * gráficos do painel terem os mesmos meses.
+ */
+export function resumirEstrategico({ reservas, ocorrencias, kpisPorMes, multasPorMes }, meses) {
   const naJanela = (mes) => mes && meses.includes(mes);
   const serie = (fn) => meses.map((mes) => ({ mes, ...fn(mes) }));
 
@@ -179,29 +184,17 @@ export function resumirEstrategico({ reservas, reclamacoes, kpisPorMes, multas }
   }
 
   let ocorrenciasBloco = null;
-  if (reclamacoes) {
-    const resolvidas = reclamacoes.filter((o) => o.status === 'RESOLVIDO');
-    const porCategoria = new Map();
-    for (const o of reclamacoes.filter((x) => naJanela(mesDe(x.createdAt)))) {
-      porCategoria.set(o.category, (porCategoria.get(o.category) ?? 0) + 1);
-    }
-    // Tempo até resolver usa `updatedAt` da resolvida como aproximação: a
-    // reclamação não guarda a data em que foi resolvida, e a última alteração
-    // de uma resolvida costuma ser a própria resolução.
-    const tempos = resolvidas
-      .filter((o) => naJanela(mesDe(o.updatedAt)))
-      .map((o) => (new Date(o.updatedAt) - new Date(o.createdAt)) / 86_400_000)
-      .filter((d) => d >= 0);
+  if (ocorrencias) {
+    const doMes = new Map((ocorrencias.porMes ?? []).map((m) => [m.mes, m]));
     ocorrenciasBloco = {
       porMes: serie((mes) => ({
-        abertas: reclamacoes.filter((o) => mesDe(o.createdAt) === mes).length,
-        resolvidas: resolvidas.filter((o) => mesDe(o.updatedAt) === mes).length,
+        abertas: doMes.get(mes)?.abertas ?? 0,
+        resolvidas: doMes.get(mes)?.resolvidas ?? 0,
       })),
-      porCategoria: [...porCategoria].map(([categoria, total]) => ({ categoria, total }))
-        .sort((a, b) => b.total - a.total),
-      tempoMedioResolucaoDias: tempos.length
-        ? Math.round((tempos.reduce((s, d) => s + d, 0) / tempos.length) * 10) / 10
-        : null,
+      porCategoria: ocorrencias.porCategoria ?? [],
+      // Calculado no auth-api, com o `updatedAt` da resolvida como data de
+      // resolução — a ocorrência não guarda quando foi resolvida.
+      tempoMedioResolucaoDias: ocorrencias.tempoMedioResolucaoDias ?? null,
     };
   }
 
@@ -221,16 +214,16 @@ export function resumirEstrategico({ reservas, reclamacoes, kpisPorMes, multas }
   };
 
   let multasBloco = null;
-  if (multas) {
-    const daJanela = multas.filter((m) => naJanela(mesDe(m.criadoEm)));
+  if (multasPorMes) {
+    const doMes = new Map(multasPorMes.map((m) => [m.mes, m]));
     multasBloco = {
       porMes: serie((mes) => {
-        const doMes = daJanela.filter((m) => mesDe(m.criadoEm) === mes);
+        const m = doMes.get(mes);
         return {
-          aplicadas: doMes.length,
-          canceladas: doMes.filter((m) => m.status === 'CANCELADA').length,
-          valorCentavos: doMes.filter((m) => m.status !== 'CANCELADA')
-            .reduce((s, m) => s + m.valorCentavos, 0),
+          aplicadas: m?.aplicadas ?? 0,
+          canceladas: m?.canceladas ?? 0,
+          // A soma é `bigint` no Postgres, e o driver a entrega como texto.
+          valorCentavos: Number(m?.valorCentavos ?? 0),
         };
       }),
     };
@@ -253,37 +246,34 @@ const lista = (r, chave) => {
   return Array.isArray(d) ? d : null;
 };
 
+/** Objeto de uma resposta, ou `null` se a fonte falhou ou veio sem ele. */
+const objeto = (r, chave) => {
+  if (!r.ok) return null;
+  const d = chave ? r.dados?.[chave] : r.dados;
+  return d && typeof d === 'object' && !Array.isArray(d) ? d : null;
+};
+
 export async function montarOperacional(condominioId, authorization) {
   const competencia = hojeLocal().slice(0, 7);
 
-  const [entregas, pendentes, dentro, visitantes, reclamacoes, conversas, avisos, resumo, kpis] =
+  const [entregas, pendentes, dentro, visitantes, ocorrencias, conversas, panorama, resumo, kpis] =
     await Promise.all([
       portaria.listar('/entregas/pendentes', authorization),
       portaria.listar('/reservas/pendentes', authorization),
       portaria.listar('/atendimento/dentro', authorization),
       portaria.listar('/visitantes/dentro', authorization),
-      auth.listarReclamacoes(authorization),
+      // Aqui só a situação atual interessa; a menor janela poupa as séries.
+      auth.estatisticasReclamacoes(1, authorization),
       comunicacao.listarConversas(authorization),
-      comunicacao.listarAvisos(authorization),
+      comunicacao.panoramaDeLeitura(authorization),
       auth.resumoCondominio(condominioId, authorization),
       financeiro.kpisDaCompetencia(competencia, authorization),
     ]);
 
-  const listaAvisos = lista(avisos);
-  const hoje = hojeLocal();
-  let leituras = null;
-  if (listaAvisos) {
-    const vigentes = listaAvisos.filter((a) => a.publicado && a.dataInicio <= hoje && a.dataFim >= hoje);
-    const respostas = await Promise.all(vigentes.map((a) => comunicacao.leiturasDoAviso(a.id, authorization)));
-    leituras = Object.fromEntries(
-      vigentes.map((a, i) => [a.id, respostas[i].ok ? (respostas[i].dados?.totalLeituras ?? 0) : null]),
-    );
-  }
-
   const fontesIndisponiveis = new Set();
   if (![entregas, pendentes, dentro, visitantes].every((r) => r.ok)) fontesIndisponiveis.add('portaria-service');
-  if (!reclamacoes.ok || !resumo.ok) fontesIndisponiveis.add('auth-api');
-  if (!conversas.ok || !avisos.ok) fontesIndisponiveis.add('comunicacao-service');
+  if (!ocorrencias.ok || !resumo.ok) fontesIndisponiveis.add('auth-api');
+  if (!conversas.ok || !panorama.ok) fontesIndisponiveis.add('comunicacao-service');
   if (!kpis.ok) fontesIndisponiveis.add('financeiro');
 
   return {
@@ -295,10 +285,9 @@ export async function montarOperacional(condominioId, authorization) {
       reservasPendentes: lista(pendentes),
       pessoasDentro: lista(dentro),
       visitantesDentro: lista(visitantes),
-      reclamacoes: lista(reclamacoes, 'reclamacoes'),
+      ocorrencias: objeto(ocorrencias, 'atual'),
       conversas: lista(conversas, 'conversas'),
-      avisos: listaAvisos,
-      leituras,
+      avisos: lista(panorama, 'avisos'),
       porPerfil: resumo.ok ? (resumo.dados?.resumo?.usuarios?.porPerfil ?? null) : null,
       kpis: kpis.ok ? kpis.dados : null,
     }),
@@ -309,10 +298,10 @@ export async function montarOperacional(condominioId, authorization) {
 export async function montarEstrategico(condominioId, numeroMeses, authorization) {
   const meses = ultimosMeses(numeroMeses);
 
-  const [reservas, reclamacoes, multas, ...kpis] = await Promise.all([
+  const [reservas, ocorrencias, multas, ...kpis] = await Promise.all([
     portaria.listar('/reservas', authorization),
-    auth.listarReclamacoes(authorization),
-    financeiro.listarMultas(authorization),
+    auth.estatisticasReclamacoes(numeroMeses, authorization),
+    financeiro.multasPorMes(numeroMeses, authorization),
     ...meses.map((mes) => financeiro.kpisDaCompetencia(mes, authorization)),
   ]);
 
@@ -323,7 +312,7 @@ export async function montarEstrategico(condominioId, numeroMeses, authorization
 
   const fontesIndisponiveis = new Set();
   if (!reservas.ok) fontesIndisponiveis.add('portaria-service');
-  if (!reclamacoes.ok) fontesIndisponiveis.add('auth-api');
+  if (!ocorrencias.ok) fontesIndisponiveis.add('auth-api');
   if (!multas.ok || !kpis.every((k) => k.ok)) fontesIndisponiveis.add('financeiro');
 
   return {
@@ -333,9 +322,9 @@ export async function montarEstrategico(condominioId, numeroMeses, authorization
     meses,
     ...resumirEstrategico({
       reservas: lista(reservas),
-      reclamacoes: lista(reclamacoes, 'reclamacoes'),
+      ocorrencias: objeto(ocorrencias),
       kpisPorMes,
-      multas: lista(multas, 'multas'),
+      multasPorMes: lista(multas, 'meses'),
     }, meses),
     // Assembleias (RF-11) ficam de fora até o meeting-service autenticar e
     // filtrar por condomínio: consultá-lo hoje traria dado de outros clientes.

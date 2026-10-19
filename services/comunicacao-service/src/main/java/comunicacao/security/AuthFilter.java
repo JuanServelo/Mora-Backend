@@ -16,9 +16,24 @@ public class AuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
+    /**
+     * Caminhos que não usam o JWT de usuário.
+     *
+     * - `/actuator`: checagem de saúde do Consul.
+     * - `/interno/`: chamada entre serviços; autenticada pelo `X-Servico-Token`
+     *   no próprio controller.
+     * - `/uploads/`: imagens dos avisos — a tag `<img>` não manda Bearer.
+     * - `/swagger-ui`, `/v3/api-docs`: documentação da API. Descreve as rotas,
+     *   não expõe dado; cada rota continua exigindo token.
+     */
+    private static final java.util.List<String> LIVRES = java.util.List.of(
+            "/actuator", "/interno/", "/uploads/", "/swagger-ui", "/v3/api-docs");
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getServletPath().startsWith("/actuator");
+        String caminho = request.getServletPath();
+        return "OPTIONS".equalsIgnoreCase(request.getMethod())
+                || LIVRES.stream().anyMatch(caminho::startsWith);
     }
 
     @Override

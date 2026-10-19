@@ -17,7 +17,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora}
     username: ${POSTGRES_USER:admin}
-    password: ${POSTGRES_PASSWORD:Vibers@2112}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:

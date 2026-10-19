@@ -7,6 +7,7 @@ os critérios de avaliação.
 |---|---|
 | Backend | `fa5bcf5` + multas, contratos, prestação de contas, painéis e limitador (05/10, ainda sem commit) |
 | Frontend | `32f789b` + telas correspondentes (05/10, ainda sem commit) |
+| Atualização | 18/10, branch `feat/pendencias-joao`: rota interna de notificações, público-alvo e leitura de avisos, agregação no banco, limpeza do repositório |
 
 ---
 
@@ -14,18 +15,18 @@ os critérios de avaliação.
 
 | Requisitos funcionais | Quantidade |
 |---|---|
-| ✅ Completos | 13 |
-| ⚠️ Parciais | 5 |
+| ✅ Completos | 14 |
+| ⚠️ Parciais | 4 |
 | 📋 Não iniciados | 0 |
 
-**72% completos**, ou ~86% contando parcial como meio ponto. A meta do critério
+**78% completos**, ou ~89% contando parcial como meio ponto. A meta do critério
 1 é 80%.
 
 ### Critérios de avaliação pendentes
 
 | # | Critério | O que falta |
 |---|---|---|
-| 1 | Pelo menos 80% do escopo | Faltam 5 requisitos parciais (seção 3) |
+| 1 | Pelo menos 80% do escopo | Faltam 4 requisitos parciais (seção 3) |
 | 2 | Processo ágil documentado | As sprints estão em `atividades/`, fora do repositório (seção 9) |
 | 6 | 2 perfis validados no front **e** no back | `meeting-service` sem autenticação e escrita do portaria sem perfil (seção 2) |
 
@@ -62,22 +63,14 @@ condomínio B**.
 `VeiculoService` já fazem, e sobrescrever `condominioId` com
 `CondominioUtils.condominioIdEfetivo()` antes de salvar.
 
-### 2.3 Notificações do financeiro não chegam
+### ~~2.3 Notificações do financeiro não chegam~~ — resolvido
 
-O financeiro publica fatura fechada e vencida em
-`POST /api/comunicacao/interno/notificacoes`, com `X-Servico-Token`. O
-`comunicacao-service` **não tem essa rota**, e o `AuthFilter` dele exige Bearer
-em tudo que não é `/actuator`. O financeiro registra um `warn` e segue, então a
-falha é silenciosa: **o morador não recebe aviso de cobrança**.
-
-**Correção:** criar a rota interna no comunicacao:
-
-- autenticada por `X-Servico-Token`, com comparação em tempo constante, e
-  liberada no `AuthFilter`
-- sem `SERVICO_TOKEN` configurado, responde **503** (fechada, não aberta)
-- coluna `chave_unica` com índice único parcial; reenvio com a mesma chave
-  responde **200 com `repetida: true`**
-- colunas `origem` e `dados` (JSONB) em `notificacoes`
+O `comunicacao-service` ganhou `POST /interno/notificacoes`, autenticada por
+`X-Servico-Token` (503 sem token configurado, reenvio com a mesma `chave_unica`
+responde 200 com `repetida: true`). O financeiro também chamava o caminho errado
+(com o prefixo do gateway, indo direto ao container), o que dava 404. Coberto
+pelo teste de API em `tests-api/`: a multa aplicada chega ao sino do morador, uma
+vez só.
 
 ---
 
@@ -90,7 +83,6 @@ falha é silenciosa: **o morador não recebe aviso de cobrança**.
 | 7 | Entregas | portaria | **Notificar o destinatário** ao registrar a encomenda |
 | 10 | Reservas | portaria | **Antecedência mínima** para solicitar |
 | 11 | Assembleias e votações | meeting | **Voto por unidade** (`tb_poll_vote` guarda usuário) e autenticação (2.1) |
-| 13 | Mensagens e notificações | comunicacao | **Notificação disparada por evento** (2.3) |
 | 14 | Ocorrências e ordens de serviço | `ocorrencias-service` (a criar) | **Ordem de serviço, responsável e prazo.** Hoje só há a reclamação, no `auth-api`. Decidido em 05/10: o RF-14 não fica no `auth-api` |
 
 ### Lacunas dentro de requisitos completos
@@ -98,11 +90,8 @@ falha é silenciosa: **o morador não recebe aviso de cobrança**.
 | RF | O que falta | Efeito |
 |---|---|---|
 | 4 | **Trava por plano no servidor** | Os módulos fora do plano só somem da interface; a API continua respondendo |
-| 12 | **Recorte por `publicoAlvo`** | O morador recebe comunicado dirigido a funcionário |
-| 12 | **`GET /avisos/leituras`** | A aba de confirmação de leitura de Comunicados fica sem o panorama |
-| 12 | **`POST /avisos/imagem`** | O campo de imagem do aviso não envia |
 | 18 | **Assembleias nos painéis** | O painel estratégico não traz participação em assembleias: o meeting-service não autentica nem filtra por condomínio (2.1) |
-| 18 | **Contagem agregada no banco** | Os painéis contam sobre as listas que as fontes devolvem, no gestao-geral. O RNF-20 pede agregação no banco; exige endpoints de contagem nos serviços Java |
+| 18 | **Contagem agregada do portaria** | Ocorrências, leitura de avisos e multas já chegam agregadas no banco (RNF-20). Só entregas, reservas e presença ainda são contadas no gestao-geral: falta um endpoint de contagem no portaria |
 
 ---
 
@@ -111,7 +100,7 @@ falha é silenciosa: **o morador não recebe aviso de cobrança**.
 | # | Requisito | O que falta |
 |---|---|---|
 | RNF-01 | JWT em todo endpoint | `meeting-service` (2.1) |
-| RNF-02 | Segredos sem default no repositório | `jwt.secret` com default `changeme-insecure-default` no comunicacao; senha do Postgres em 15 arquivos (seção 6) |
+| RNF-02 | Segredos sem default no repositório | ✅ Resolvido nos arquivos: o compose exige `POSTGRES_PASSWORD` e `JWT_SECRET`, e nenhum serviço tem default. A senha antiga segue no histórico do Git |
 | RNF-03 | Autorização no servidor | Escrita do portaria (2.2), meeting (2.1) e trava por plano (RF-4) |
 | RNF-16 | Filtro por condomínio em toda consulta | Escrita do portaria (2.2) e todo o meeting |
 
@@ -121,14 +110,18 @@ falha é silenciosa: **o morador não recebe aviso de cobrança**.
 
 | Serviço | Situação |
 |---|---|
-| `comunicacao-service` | Nenhum teste automatizado; só `verificar-autorizacao.mjs`, rodado à mão |
+| `comunicacao-service` | 26 testes JUnit: público-alvo, token da rota interna e deduplicação, validação de imagem, relatório de leitura, segredo do JWT |
 | `plan-service` | Nenhum teste |
 | `portaria-service` | 2 arquivos — não cobrem a autorização |
 | `meeting-service` | 1 arquivo |
 | `financeiro` | Contrato de acesso só das rotas de multas, contratos e prestação; as rotas de faturas, taxas e contas de consumo não têm |
 
-O `auth-api` (425 testes) é o único com contrato de acesso cobrindo todas as
-rotas. O `gestao-geral` tem os painéis e o acesso a eles cobertos (22 testes).
+O `auth-api` (441 testes) é o único com contrato de acesso cobrindo todas as
+rotas. O `gestao-geral` tem os painéis e o acesso a eles cobertos (23 testes).
+
+**Teste de API ponta a ponta:** `tests-api/`, collection Postman rodada pelo
+Newman contra a stack no ar: 50 requisições e 98 asserções. Cobre auth-api,
+comunicacao, financeiro e gestao-geral, e apaga o que criou.
 
 ---
 
@@ -136,15 +129,15 @@ rotas. O `gestao-geral` tem os painéis e o acesso a eles cobertos (22 testes).
 
 | Item | Onde | O que fazer |
 |---|---|---|
-| Senha do Postgres versionada | 15 arquivos: compose, `application.*` de 5 serviços, READMEs e docs | Rotacionar e trocar por placeholder |
-| `node_modules/` rastreado | Backend, 5.881 arquivos | Remover do índice e ignorar |
-| `logs/plan-service.log` rastreado | Backend | Remover do índice e ignorar |
 | `credentials.json` do meeting | Lido do classpath | Montar por volume, como `tokens/`; sem ele o serviço não sobe |
-| Código morto | `services/vagas-service`, `services/portaria-frontend`, `services/.idea` | Remover |
-| Identidades git duplicadas | Ambos os repositórios | Criar `.mailmap` |
 | Chave PIX | Conta Asaas | Cadastrar no painel do Asaas; até lá, só boleto funciona |
-| Controllers `async` sem tratamento de erro | `financeiro`, rotas antigas (faturas, cadastros, contas de consumo) | No Express 4, um erro ali deixa a requisição sem resposta e derruba o processo. As rotas novas já usam `utils/assincrono.js`; estender às antigas |
+| `ASAAS_WEBHOOK_TOKEN` | `docker/.env` e painel do Asaas | Gerar e configurar nos dois lados; vazio, o webhook não confere quem chama |
 | `ocorrencias-service` | — | Não existe (ver RF-14) |
+
+Resolvidos em 18/10: senha do Postgres e `JWT_SECRET` fora dos arquivos;
+`node_modules/`, `logs/` e `services/meeting/target` fora do índice; código morto
+(`vagas-service`, `portaria-frontend`, `.idea`) removido; `.mailmap`; tratamento
+de erro `async` nas rotas antigas do financeiro; `auth-api` registrado no Consul.
 
 ---
 
@@ -163,17 +156,15 @@ rotas. O `gestao-geral` tem os painéis e o acesso a eles cobertos (22 testes).
 
 1. Autenticação no `meeting-service` (2.1)
 2. Perfil e condomínio na escrita do portaria (2.2)
-3. Rota interna de notificações no comunicacao (2.3)
 
 ### Escopo, por custo-benefício
 
-4. Voto por unidade (RF-11) — mesmos arquivos do item 1
-5. Recorte por `publicoAlvo` (RF-12)
-6. Notificar entrega (RF-7) — depende do item 3
-7. Antecedência mínima na reserva (RF-10)
-8. Ordem de serviço no `ocorrencias-service` (RF-14)
+3. Voto por unidade (RF-11) — mesmos arquivos do item 1
+4. Notificar entrega (RF-7) — a rota interna do comunicacao já existe
+5. Antecedência mínima na reserva (RF-10)
+6. Ordem de serviço no `ocorrencias-service` (RF-14)
 
-Com os itens 1 a 7 feitos: **17 de 18 completos (94%)**. O 8 fecha os 18.
+Com os itens 1 a 5 feitos: **17 de 18 completos (94%)**. O 6 fecha os 18.
 
 ---
 

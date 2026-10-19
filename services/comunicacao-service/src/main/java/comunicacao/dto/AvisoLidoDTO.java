@@ -17,6 +17,11 @@ import java.util.UUID;
  *
  * É um superconjunto da entidade, então quem consumia `GET /avisos/ativos`
  * esperando o aviso cru continua encontrando todos os campos onde estavam.
+ *
+ * `destinatario` diz se o aviso é **para** quem pediu. A gestão recebe todos os
+ * avisos do condomínio — precisa ver o que publicou —, mas não é destinatária
+ * deles: sem este campo, a tela inicial do síndico listava os próprios
+ * comunicados como "não lidos".
  */
 public record AvisoLidoDTO(
         UUID id,
@@ -32,10 +37,11 @@ public record AvisoLidoDTO(
         LocalDateTime criadoEm,
         LocalDateTime atualizadoEm,
         boolean lido,
-        LocalDateTime lidoEm
+        LocalDateTime lidoEm,
+        boolean destinatario
 ) {
 
-    public static AvisoLidoDTO de(Aviso aviso, LocalDateTime lidoEm) {
+    public static AvisoLidoDTO de(Aviso aviso, LocalDateTime lidoEm, boolean destinatario) {
         return new AvisoLidoDTO(
                 aviso.getId(),
                 aviso.getTitulo(),
@@ -50,7 +56,8 @@ public record AvisoLidoDTO(
                 aviso.getCriadoEm(),
                 aviso.getAtualizadoEm(),
                 lidoEm != null,
-                lidoEm
+                lidoEm,
+                destinatario
         );
     }
 }

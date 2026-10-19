@@ -5,8 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import comunicacao.model.enums.TipoNotificacao;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -54,4 +57,27 @@ public class Notificacao {
 
     @Column(name = "lida_em")
     private LocalDateTime lidaEm;
+
+    /**
+     * Quem publicou, quando veio de outro serviço (`financeiro`, ...).
+     * Nulo para o que nasce aqui mesmo.
+     */
+    @Column(length = 30)
+    private String origem;
+
+    /**
+     * Identifica o evento de origem, para não notificar duas vezes.
+     *
+     * O fechamento do mês pode rodar de novo, e a mesma fatura vencida pode ser
+     * avisada pelo webhook e pelo job diário. O índice único é **parcial**
+     * (`WHERE chave_unica IS NOT NULL`, na `fase8`): quem publica sem chave não
+     * colide com todos os outros que também não têm.
+     */
+    @Column(name = "chave_unica", length = 200)
+    private String chaveUnica;
+
+    /** O que o publicador quis anexar (id da fatura, da multa...), como JSONB. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> dados;
 }

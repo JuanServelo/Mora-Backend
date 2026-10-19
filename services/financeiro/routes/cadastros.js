@@ -3,6 +3,7 @@ import { autenticar, exigirPerfis, PERFIS_GESTAO } from '../middleware/auth.js';
 import { resolverEscopo, exigirEscrita } from '../middleware/escopo.js';
 import * as taxas from '../services/taxaService.js';
 import * as fracoes from '../services/fracaoService.js';
+import { protegerRotas } from '../utils/assincrono.js';
 
 const router = express.Router();
 
@@ -89,4 +90,6 @@ router.post('/fracoes/aplicar-lote', admW, async (req, res) => {
   res.json({ sucesso: true, ...r });
 });
 
-export default router;
+// Erro num handler async vira 500 com mensagem genérica, em vez de deixar a
+// requisição sem resposta e derrubar o processo (Express 4).
+export default protegerRotas(router);

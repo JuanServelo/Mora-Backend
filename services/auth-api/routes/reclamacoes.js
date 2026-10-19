@@ -3,6 +3,7 @@ import Reclamacao from '../models/Reclamacao.js';
 import User from '../models/User.js';
 import authMiddleware, { adminMiddleware } from '../middleware/auth.js';
 import { PERFIS } from '../constants/perfis.js';
+import { estatisticasReclamacoes } from '../services/estatisticasService.js';
 
 const router = express.Router();
 
@@ -118,6 +119,27 @@ router.get('/todas', authMiddleware, adminMiddleware, async (req, res) => {
 });
 
 // PATCH /api/reclamacoes/:id — gestão responde ou altera o status
+/**
+ * Totais das ocorrências para o painel do síndico: situação atual, abertas e
+ * resolvidas por mês, por categoria e tempo médio de resolução.
+ *
+ * Mesmo escopo e mesma permissão de `/todas` — os números de um condomínio só
+ * para a gestão dele. `meses` (1 a 24, padrão 6) recorta as séries.
+ */
+router.get('/estatisticas', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const escopo = escopoDoAtor(req);
+    const estatisticas = await estatisticasReclamacoes({
+      condominioId: escopo.condominioId ?? null,
+      meses: req.query.meses,
+    });
+    res.json({ sucesso: true, ...estatisticas });
+  } catch (err) {
+    console.error('Erro ao montar estatísticas de reclamações:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar estatísticas' });
+  }
+});
+
 router.patch('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { status, response } = req.body;
