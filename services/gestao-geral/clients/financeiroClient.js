@@ -8,7 +8,7 @@ export function kpisDaCompetencia(competencia, authorization) {
   return buscar(`${BASE()}/admin/faturas/kpis?competencia=${encodeURIComponent(competencia)}`, authorization);
 }
 
-/** Multas do condomínio de quem pede. */
-export function listarMultas(authorization) {
-  return buscar(`${BASE()}/admin/multas`, authorization);
+/** Multas aplicadas, canceladas e valor por mês ("YYYY-MM"), agregadas no banco do financeiro. */
+export function multasPorMes(meses, authorization) {
+  return buscar(`${BASE()}/admin/multas/por-mes?meses=${encodeURIComponent(meses)}`, authorization);
 }

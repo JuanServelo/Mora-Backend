@@ -3,14 +3,13 @@ import { buscar } from './httpClient.js';
 
 // O comunicacao-service recorta tudo pelo condomínio do token repassado.
 
-/** Avisos do condomínio, inclusive rascunhos — é a visão da gestão. */
-export function listarAvisos(authorization) {
-  return buscar(`${SERVICOS.comunicacao}/avisos`, authorization);
-}
-
-/** Quantas confirmações de leitura um aviso recebeu. */
-export function leiturasDoAviso(avisoId, authorization) {
-  return buscar(`${SERVICOS.comunicacao}/avisos/${encodeURIComponent(avisoId)}/leituras`, authorization);
+/**
+ * Avisos vigentes e publicados do condomínio, cada um com o total de
+ * confirmações de leitura — contadas numa consulta agrupada no comunicacao.
+ * Antes era uma chamada por aviso.
+ */
+export function panoramaDeLeitura(authorization) {
+  return buscar(`${SERVICOS.comunicacao}/avisos/leituras`, authorization);
 }
 
 /** Conversas que a gestão enxerga, com a contagem de não lidas. */

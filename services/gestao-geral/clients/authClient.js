@@ -26,9 +26,15 @@ export function resumoCondominio(id, authorization) {
   );
 }
 
-/** Ocorrências do condomínio de quem pede — o auth-api recorta pelo token. */
-export function listarReclamacoes(authorization) {
-  return buscar(`${SERVICOS.auth}/api/reclamacoes/todas`, authorization);
+/**
+ * Totais das ocorrências do condomínio de quem pede, já agregados no auth-api:
+ * situação atual e as séries dos últimos `meses`. O auth-api recorta pelo token.
+ */
+export function estatisticasReclamacoes(meses, authorization) {
+  return buscar(
+    `${SERVICOS.auth}/api/reclamacoes/estatisticas?meses=${encodeURIComponent(meses)}`,
+    authorization,
+  );
 }
 
 export function listarCondominios(authorization) {
