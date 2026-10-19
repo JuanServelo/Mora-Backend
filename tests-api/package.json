@@ -1,0 +1,13 @@
+{
+  "name": "mora-tests-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "montar": "node montar-collection.mjs",
+    "test": "node montar-collection.mjs && node rodar.mjs"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}
