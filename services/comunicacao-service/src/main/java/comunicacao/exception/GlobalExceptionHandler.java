@@ -53,6 +53,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleArquivoGrande(Exception ex) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Arquivo grande demais: o limite é 5 MB.");
+    }
+
+    @ExceptionHandler({org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
+    public ResponseEntity<Map<String, Object>> handleParteAusente(Exception ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Envie o arquivo no campo 'imagem'.");
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleNotReadable(HttpMessageNotReadableException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido ou malformado.");

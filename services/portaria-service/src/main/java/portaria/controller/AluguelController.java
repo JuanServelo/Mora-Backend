@@ -15,15 +15,22 @@ import portaria.service.AluguelService;
 
 import java.util.List;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/alugueis")
 @RequiredArgsConstructor
+@Tag(name = "Aluguel de vagas", description = "Morador disponibiliza a própria vaga e outro morador a aluga, com aprovação do dono.")
 public class AluguelController {
 
     private final AluguelService aluguelService;
 
     @PostMapping("/disponibilizar")
+    @Operation(summary = "Disponibilizar minha vaga", description = "Coloca a vaga da unidade para aluguel no período.")
+    @ApiResponse(responseCode = "201", description = "Disponibilidade criada.")
     public ResponseEntity<DisponibilidadeVagaResponseDTO> disponibilizar(
             @Valid @RequestBody DisponibilidadeVagaRequestDTO dto) {
         var resultado = aluguelService.disponibilizar(dto, currentUserId());
@@ -32,6 +39,8 @@ public class AluguelController {
     }
 
     @GetMapping("/disponiveis")
+    @Operation(summary = "Vagas disponíveis para aluguel", description = "As vagas que outros moradores disponibilizaram.")
+    @ApiResponse(responseCode = "200", description = "Disponibilidades.")
     public List<DisponibilidadeVagaResponseDTO> listarDisponiveis() {
         return aluguelService.listarDisponibilidadesAtivas(CondominioUtils.condominioIdEfetivo()).stream()
                 .map(DisponibilidadeVagaResponseDTO::fromEntity)
@@ -39,6 +48,8 @@ public class AluguelController {
     }
 
     @GetMapping("/minhas-disponibilidades")
+    @Operation(summary = "Minhas vagas disponibilizadas", description = "O que quem chama colocou para aluguel.")
+    @ApiResponse(responseCode = "200", description = "Disponibilidades.")
     public List<DisponibilidadeVagaResponseDTO> minhasDisponibilidades() {
         return aluguelService.listarMinhasDisponibilidades(currentUserId()).stream()
                 .map(DisponibilidadeVagaResponseDTO::fromEntity)
@@ -46,12 +57,16 @@ public class AluguelController {
     }
 
     @DeleteMapping("/disponibilidades/{id}")
-    public ResponseEntity<Void> cancelarDisponibilidade(@PathVariable String id) {
+    @Operation(summary = "Retirar vaga do aluguel", description = "Cancela a disponibilidade.")
+    @ApiResponse(responseCode = "200", description = "Cancelada.")
+    public ResponseEntity<Void> cancelarDisponibilidade(@Parameter(description = "Id do aluguel ou da disponibilidade.", example = "0b1c2d3e-4f5a-4b6c-7d8e-9f0a1b2c3d4e") @PathVariable String id) {
         aluguelService.cancelarDisponibilidade(id, currentUserId());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/solicitar")
+    @Operation(summary = "Solicitar aluguel", description = "Pede uma vaga disponível no período, por diária ou mensalidade.")
+    @ApiResponse(responseCode = "201", description = "Solicitação criada.")
     public ResponseEntity<AluguelVagaResponseDTO> solicitar(
             @Valid @RequestBody AluguelVagaRequestDTO dto) {
         var aluguel = aluguelService.solicitar(dto, currentUserId());
@@ -60,24 +75,32 @@ public class AluguelController {
     }
 
     @PostMapping("/{id}/aprovar")
-    public AluguelVagaResponseDTO aprovar(@PathVariable String id) {
+    @Operation(summary = "Aprovar aluguel", description = "O dono da vaga aprova a solicitação.")
+    @ApiResponse(responseCode = "200", description = "Aluguel aprovado.")
+    public AluguelVagaResponseDTO aprovar(@Parameter(description = "Id do aluguel ou da disponibilidade.", example = "0b1c2d3e-4f5a-4b6c-7d8e-9f0a1b2c3d4e") @PathVariable String id) {
         return AluguelVagaResponseDTO.fromEntity(aluguelService.aprovar(id, currentUserId()));
     }
 
     @PostMapping("/{id}/recusar")
+    @Operation(summary = "Recusar aluguel", description = "O dono da vaga recusa, com justificativa.")
+    @ApiResponse(responseCode = "200", description = "Aluguel recusado.")
     public AluguelVagaResponseDTO recusar(
-            @PathVariable String id,
+            @Parameter(description = "Id do aluguel ou da disponibilidade.", example = "0b1c2d3e-4f5a-4b6c-7d8e-9f0a1b2c3d4e") @PathVariable String id,
             @Valid @RequestBody RecusaAluguelRequestDTO recusaDTO) {
         return AluguelVagaResponseDTO.fromEntity(
                 aluguelService.recusar(id, currentUserId(), recusaDTO.justificativa()));
     }
 
     @PostMapping("/{id}/cancelar")
-    public AluguelVagaResponseDTO cancelar(@PathVariable String id) {
+    @Operation(summary = "Cancelar aluguel", description = "Cancela o aluguel; pode haver penalidade, conforme o prazo.")
+    @ApiResponse(responseCode = "200", description = "Aluguel cancelado.")
+    public AluguelVagaResponseDTO cancelar(@Parameter(description = "Id do aluguel ou da disponibilidade.", example = "0b1c2d3e-4f5a-4b6c-7d8e-9f0a1b2c3d4e") @PathVariable String id) {
         return AluguelVagaResponseDTO.fromEntity(aluguelService.cancelar(id, currentUserId()));
     }
 
     @GetMapping("/historico/solicitante")
+    @Operation(summary = "Aluguéis que pedi", description = "Histórico como quem aluga, filtrável por status.")
+    @ApiResponse(responseCode = "200", description = "Aluguéis.")
     public List<AluguelVagaResponseDTO> historicoComoSolicitante(
             @RequestParam(required = false) StatusAluguel status) {
         UUID id = currentUserId();
@@ -88,6 +111,8 @@ public class AluguelController {
     }
 
     @GetMapping("/historico/proprietario")
+    @Operation(summary = "Aluguéis das minhas vagas", description = "Histórico como dono da vaga, filtrável por status.")
+    @ApiResponse(responseCode = "200", description = "Aluguéis.")
     public List<AluguelVagaResponseDTO> historicoComoProprietario(
             @RequestParam(required = false) StatusAluguel status) {
         UUID id = currentUserId();

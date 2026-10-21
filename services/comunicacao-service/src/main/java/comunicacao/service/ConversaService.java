@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Conversas do RF-13.
@@ -502,9 +503,13 @@ public class ConversaService {
 
     /** Corpo do POST que abre a conversa. */
     public record NovaConversa(
+            @Schema(description = "ADMINISTRACAO (morador falando com a administração) ou DIRETA (entre pessoas nomeadas; só a gestão abre).", example = "ADMINISTRACAO")
             TipoConversa tipo,
+            @Schema(description = "Assunto da conversa.", example = "Vazamento no teto do banheiro")
             String assunto,
+            @Schema(description = "Primeira mensagem.", example = "Boa tarde. Apareceu uma mancha de umidade no teto do banheiro do 101, acho que vem do 201.")
             String corpo,
+            @Schema(description = "Só em DIRETA: id de com quem falar.", example = "4")
             String destinatarioId
     ) {}
 }

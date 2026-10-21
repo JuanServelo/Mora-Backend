@@ -7,5 +7,13 @@ public enum TipoNotificacao {
     ALUGUEL_VAGA,
     PRE_AUTORIZACAO,
     CHAT,
-    SISTEMA
+    SISTEMA,
+
+    // Publicados pelo financeiro pela rota interna. Os nomes são os que ele já
+    // manda; o frontend (`utils/notificacoes.js`) decide ícone e destino por eles.
+    NOVA_FATURA,
+    FATURA_VENCIDA,
+    PAGAMENTO_CONFIRMADO,
+    MULTA_APLICADA,
+    MULTA_JULGADA
 }

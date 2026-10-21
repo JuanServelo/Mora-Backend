@@ -45,6 +45,27 @@ public class AvisoLeituraService {
         return leituraRepository.countByAvisoId(avisoId);
     }
 
+    /** Confirmações de cada aviso da lista, agrupadas no banco. */
+    @Transactional(readOnly = true)
+    public Map<UUID, Long> confirmacoesPorAviso(List<UUID> avisos) {
+        Map<UUID, Long> porAviso = new HashMap<>();
+        if (avisos.isEmpty()) return porAviso;
+        for (Object[] linha : leituraRepository.contarPorAviso(avisos)) {
+            porAviso.put((UUID) linha[0], (Long) linha[1]);
+        }
+        return porAviso;
+    }
+
+    /** Quem leu este aviso, e quando. */
+    @Transactional(readOnly = true)
+    public Map<String, LocalDateTime> leiturasDoAviso(UUID avisoId) {
+        Map<String, LocalDateTime> porUsuario = new HashMap<>();
+        for (AvisoLeitura leitura : leituraRepository.findByAvisoId(avisoId)) {
+            porUsuario.put(leitura.getUsuarioId(), leitura.getLidoEm());
+        }
+        return porUsuario;
+    }
+
     @Transactional(readOnly = true)
     public List<UUID> avisosLidosPeloUsuario(String usuarioId) {
         return leituraRepository.findAvisosLidosByUsuario(usuarioId);

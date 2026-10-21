@@ -13,6 +13,7 @@ import { removerColunasLegado } from './migrations/migrate-remover-legado.js';
 import { garantirColunasInvites } from './migrations/migrate-invites.js';
 import { migrarPerfilTerceiro } from './migrations/migrate-terceiro.js';
 import { PERFIS, STATUS_USUARIO } from './constants/perfis.js';
+import { registrarNoConsul } from './config/consul.js';
 
 validarAmbiente();
 
@@ -82,6 +83,8 @@ const startServer = async () => {
 
   const server = app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
+    // Só depois de escutar: o Consul checa /api/health logo em seguida.
+    registrarNoConsul(PORT);
   });
 
   server.on('error', (err) => {

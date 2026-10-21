@@ -2,6 +2,7 @@ import express from 'express';
 import { autenticar, exigirPerfis, PERFIS_GESTAO, PERFIS_UNIDADE } from '../middleware/auth.js';
 import { resolverEscopo, resolverUnidade, exigirEscrita } from '../middleware/escopo.js';
 import * as ctrl from '../controllers/faturasController.js';
+import { protegerRotas } from '../utils/assincrono.js';
 
 const router = express.Router();
 
@@ -97,4 +98,6 @@ router.get(
   ctrl.taxaPlataformaAdmin,
 );
 
-export default router;
+// Erro num handler async vira 500 com mensagem genérica, em vez de deixar a
+// requisição sem resposta e derrubar o processo (Express 4).
+export default protegerRotas(router);

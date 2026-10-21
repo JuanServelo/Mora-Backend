@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/mora_plan
     username: admin
-    password: Vibers@2112
+    password: ${SPRING_DATASOURCE_PASSWORD}
 
   cloud:
     consul:

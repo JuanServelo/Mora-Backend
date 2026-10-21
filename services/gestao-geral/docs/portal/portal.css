@@ -1,0 +1,82 @@
+:root {
+  --texto: #1f2937;
+  --suave: #4b5563;
+  --linha: #e5e7eb;
+  --fundo-cabecalho: #f9fafb;
+  --ok: #047857;
+  --fora: #b91c1c;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.topo,
+.sumario {
+  max-width: 1460px;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.topo h1 {
+  margin: 24px 0 8px;
+  font-size: 28px;
+}
+
+.topo p {
+  margin: 0 0 16px;
+  color: var(--suave);
+  line-height: 1.5;
+  max-width: 900px;
+}
+
+.sumario h2 {
+  font-size: 20px;
+  margin: 16px 0 8px;
+}
+
+.tabela {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--linha);
+  vertical-align: top;
+}
+
+th {
+  background: var(--fundo-cabecalho);
+  font-weight: 600;
+}
+
+td:nth-child(5) {
+  font-variant-numeric: tabular-nums;
+}
+
+.ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.fora {
+  color: var(--fora);
+  font-weight: 600;
+}
+
+/* O Swagger UI traz a própria barra; a do topo da página já identifica o portal. */
+.swagger-ui .topbar .link {
+  display: none;
+}

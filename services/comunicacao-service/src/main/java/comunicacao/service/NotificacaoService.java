@@ -4,6 +4,7 @@ import comunicacao.exception.RecursoNaoEncontradoException;
 import comunicacao.model.Notificacao;
 import comunicacao.model.enums.TipoNotificacao;
 import comunicacao.repository.NotificacaoRepository;
+import comunicacao.exception.DadosInvalidosException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +34,93 @@ public class NotificacaoService {
         n.setMensagem(mensagem);
         n.setReferenciaId(referenciaId);
         return notificacaoRepository.save(n);
+    }
+
+    /**
+     * Uma notificação publicada por outro serviço.
+     *
+     * Os campos são os que o financeiro já manda: o formato da rota não mudou
+     * quando o comunicacao passou de Node para Java.
+     */
+    public record Publicacao(
+            @Schema(description = "Condomínio do destinatário.", example = "cond-parque-verde")
+            String condominioId,
+            @Schema(description = "Id do destinatário (auth-api).", example = "4")
+            String usuarioId,
+            @Schema(description = "Serviço que publica.", example = "financeiro")
+            String origem,
+            @Schema(description = "Um dos tipos de TipoNotificacao.", example = "MULTA_APLICADA")
+            String tipo,
+            @Schema(description = "Título mostrado no sino.", example = "Multa aplicada à sua unidade")
+            String titulo,
+            @Schema(description = "Texto da notificação.", example = "Barulho após as 22h em dia de semana — R$ 150,00. Você pode recorrer até 28/10.")
+            String mensagem,
+            @Schema(description = "O que anexar (id da fatura, da multa).", example = "{\"multaId\": \"9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9\"}")
+            Map<String, Object> dados,
+            @Schema(description = "Identifica o evento; reenvio com a mesma chave não duplica.", example = "financeiro:MULTA_APLICADA:9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9")
+            String chaveUnica
+    ) {}
+
+    /** `repetida` é verdadeiro quando a chave já tinha sido publicada antes. */
+    public record Resultado(Notificacao notificacao, boolean repetida) {}
+
+    /**
+     * Grava a notificação de outro serviço — uma vez só por `chaveUnica`.
+     *
+     * Reenvio com a mesma chave devolve a notificação já existente, e não erro:
+     * um erro faria o publicador entender que falhou e, se tentasse de novo,
+     * tentaria para sempre. Duas publicações simultâneas com a mesma chave
+     * podem passar as duas pela conferência abaixo; aí o índice único recusa a
+     * segunda, e o controller a trata como repetida.
+     */
+    public Resultado publicarDeServico(Publicacao p) {
+        if (isBlank(p.usuarioId()) || isBlank(p.condominioId())) {
+            throw new DadosInvalidosException("Informe usuarioId e condominioId.");
+        }
+        if (isBlank(p.titulo())) {
+            throw new DadosInvalidosException("Informe o título da notificação.");
+        }
+        TipoNotificacao tipo;
+        try {
+            tipo = TipoNotificacao.valueOf(String.valueOf(p.tipo()).toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new DadosInvalidosException("Tipo de notificação desconhecido: " + p.tipo());
+        }
+
+        String chave = isBlank(p.chaveUnica()) ? null : p.chaveUnica().trim();
+        if (chave != null) {
+            var existente = notificacaoRepository.findByChaveUnica(chave);
+            if (existente.isPresent()) return new Resultado(existente.get(), true);
+        }
+
+        Notificacao n = new Notificacao();
+        n.setDestinatarioId(p.usuarioId());
+        n.setCondominioId(p.condominioId());
+        n.setTipo(tipo);
+        n.setTitulo(p.titulo());
+        n.setMensagem(isBlank(p.mensagem()) ? p.titulo() : p.mensagem());
+        n.setOrigem(isBlank(p.origem()) ? null : p.origem());
+        n.setChaveUnica(chave);
+        n.setDados(p.dados());
+        n.setReferenciaId(referenciaDe(p.dados()));
+        return new Resultado(notificacaoRepository.saveAndFlush(n), false);
+    }
+
+    /** Busca pela chave — usada quando o índice único recusa uma publicação simultânea. */
+    @Transactional(readOnly = true)
+    public Notificacao buscarPorChave(String chaveUnica) {
+        return notificacaoRepository.findByChaveUnica(chaveUnica).orElse(null);
+    }
+
+    /** O id da fatura ou da multa vira a referência que a tela usa para abrir o destino. */
+    private static String referenciaDe(Map<String, Object> dados) {
+        if (dados == null) return null;
+        Object ref = dados.getOrDefault("faturaId", dados.get("multaId"));
+        return ref == null ? null : String.valueOf(ref);
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     public Notificacao marcarLida(String id) {

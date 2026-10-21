@@ -41,7 +41,7 @@ services:
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
     ports:
       # 5433 no host: a 5432 costuma estar ocupada por uma instalacao nativa do
       # PostgreSQL, que vence o bind e faz o host falhar a autenticacao.
@@ -70,34 +70,15 @@ services:
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       # Quem mora em qual unidade é dado do auth-api (RN-06).
       - AUTH_API_URL=http://auth-api:3001
       - TZ=America/Sao_Paulo
 
-  # 5. DESATIVADO — vagas-service migrado para portaria-service (Fase 3)
-  # vagas-service:
-  #   build:
-  #     context: ../services/vagas-service
-  #     dockerfile: Dockerfile
-  #   container_name: vagas-service
-  #   depends_on:
-  #     - consul
-  #     - postgres
-  #   networks:
-  #     - microservices-net
-  #   ports:
-  #     - "8092:8092"
-  #   environment:
-  #     - POSTGRES_HOST=postgres
-  #     - POSTGRES_DB=vagas_db
-  #     - POSTGRES_USER=${POSTGRES_USER:-admin}
-  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-  #     - SPRING_CLOUD_CONSUL_HOST=consul
-  #     - SPRING_CLOUD_CONSUL_PORT=8500
+  # 5. vagas-service: fundido no portaria-service (D11) e removido do repositório.
 
   # 5.5. Microservice: Comunicação — avisos, artigos, notificações, chat
   comunicacao-service:
@@ -116,8 +97,8 @@ services:
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       # Resolve nome e foto da contraparte de uma conversa, sempre em nome de
@@ -151,7 +132,7 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       - TZ=America/Sao_Paulo
@@ -174,10 +155,13 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_plan
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      # O application.properties do plan deixa o registro desligado por padrão;
+      # sem ele o Traefik não roteia /api/plans e o portal /docs não o alcança.
+      - SPRING_CLOUD_CONSUL_ENABLED=true
       - TZ=America/Sao_Paulo
 
   # 7. Auth API (Node.js)
@@ -198,8 +182,8 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=auth_db
       - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
@@ -220,6 +204,10 @@ services:
       # A regra de turno do funcionário vive no portaria-service; o auth-api
       # a consulta antes de registrar a entrada (RF-09).
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      # Registro no Consul, para o Traefik rotear /api/auth e companhia.
+      - CONSUL_HOST=consul
+      - CONSUL_PORT=8500
+      - SERVICE_HOST=auth-api
       - TZ=America/Sao_Paulo
     volumes:
       # As fotos de perfil sao gravadas em disco, e a coluna fotoUrl no banco
@@ -251,7 +239,7 @@ services:
       - CONSUL_PORT=8500
       - SERVICE_HOST=gestao-geral
       # Mesmo segredo do auth-api: valida os tokens que ele emite.
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - AUTH_API_URL=http://auth-api:3001
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
@@ -282,13 +270,13 @@ services:
       - CONSUL_PORT=8500
       - SERVICE_HOST=financeiro
       # Mesmo segredo do auth-api: valida os tokens que ele emite.
-      - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=mora_financeiro
       - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - AUTH_API_URL=http://auth-api:3001
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - PLAN_SERVICE_URL=http://plan-service:8093
