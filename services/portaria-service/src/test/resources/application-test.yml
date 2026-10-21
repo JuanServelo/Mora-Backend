@@ -4,6 +4,10 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  # Os scripts do Flyway são de PostgreSQL; no H2 dos testes o esquema sai
+  # das entidades.
+  flyway:
+    enabled: false
   jpa:
     hibernate:
       ddl-auto: create-drop

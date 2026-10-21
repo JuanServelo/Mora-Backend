@@ -25,9 +25,22 @@ spring:
       max-file-size: 5MB
       max-request-size: 6MB
 
+  # Quem cria e evolui o banco é o Flyway, com os scripts de db/migration.
+  # O `mora` é dividido com o portaria-service, então cada serviço tem a sua
+  # tabela de histórico. `baseline-version: 0` faz o V1 rodar também em banco
+  # que já existe (ele é idempotente): sem isso, o segundo serviço a subir
+  # num banco novo acharia o esquema "não vazio" e pularia o próprio V1.
+  flyway:
+    enabled: true
+    table: flyway_historico_comunicacao
+    baseline-on-migrate: true
+    baseline-version: 0
+
   jpa:
     hibernate:
-      ddl-auto: update
+      # O Hibernate só confere: se a entidade pedir coluna que o banco não tem,
+      # o serviço não sobe, em vez de criar a coluna por conta própria.
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false

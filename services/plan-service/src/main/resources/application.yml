@@ -22,18 +22,24 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
 
+  # O banco é do Flyway (db/migration). O application.properties tem a mesma
+  # configuração e prevalece sobre este arquivo.
+  flyway:
+    enabled: true
+    table: flyway_historico_plan
+    baseline-on-migrate: true
+    baseline-version: 0
+
   sql:
     init:
-      mode: always
-
-  jpa.defer-datasource-initialization: true
+      mode: never
 
   cloud:
     consul:
