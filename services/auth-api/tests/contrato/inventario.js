@@ -32,6 +32,7 @@ export const PUBLICA = 'publica';
 export const TOKEN = 'token';
 
 export const INVENTARIO = {
+  'GET /api/auth/docs/openapi.json': { acesso: PUBLICA },
   'POST /api/auth/forgot-password': { acesso: PUBLICA },
   'GET /api/auth/google': { acesso: PUBLICA },
   'GET /api/auth/google/callback': { acesso: PUBLICA },

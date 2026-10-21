@@ -19,6 +19,7 @@ import condominiosRoutes from './routes/condominios.js';
 import perfisRoutes from './routes/perfis.js';
 import portariaRoutes from './routes/portaria.js';
 import estatisticasRoutes from './routes/estatisticas.js';
+import { openapi } from './docs/openapi.js';
 import { ehProducao } from './config/regras.js';
 
 dotenv.config();
@@ -93,6 +94,8 @@ app.use(passport.initialize());
 const uploadDir = process.env.STORAGE_PATH || path.join(__dirname, 'uploads', 'avatars');
 app.use('/uploads/avatars', express.static(uploadDir));
 
+// Pública, como as dos outros serviços: o portal /docs do gateway a reúne.
+app.get('/api/auth/docs/openapi.json', (_req, res) => res.json(openapi));
 app.use('/api/auth', authRoutes);
 app.use('/api/invites', invitesRoutes);
 app.use('/api/user-management', userManagementRoutes);
