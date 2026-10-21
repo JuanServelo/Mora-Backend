@@ -28,9 +28,6 @@ public class MeetingRequestDTO {
     @Future(message = "A data de fim deve ser no futuro")
     private LocalDateTime dataHoraFim;
 
-    @NotNull(message = "O ID do organizador é obrigatório")
-    private Long idOrganizador;
-
     @NotNull(message = "A lista de convidados não pode ser nula")
     private List<Long> idConvidados;
 

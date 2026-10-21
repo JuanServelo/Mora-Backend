@@ -133,6 +133,9 @@ services:
       - "8091:8091"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
+      - AUTH_API_URL=http://auth-api:3001
+      - GOOGLE_MEET_ENABLED=${GOOGLE_MEET_ENABLED:-false}
       - PLAN_SERVICE_URL=http://plan-service:8093
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}

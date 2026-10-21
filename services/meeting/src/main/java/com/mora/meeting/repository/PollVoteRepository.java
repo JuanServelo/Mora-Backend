@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PollVoteRepository extends JpaRepository<PollVote, Long> {
 
-    // Retorna true se já existir um registro com esse usuário nessa votação
-    boolean existsByPollIdAndUsuarioId(Long pollId, Long usuarioId);
+    boolean existsByPollIdAndUnidadeId(Long pollId, String unidadeId);
+    boolean existsByPollIdAndUnidadeIdIsNull(Long pollId);
 }

@@ -12,8 +12,8 @@ Esta é a lista completa, por serviço, do que falta e do que para de funcionar 
 | Arquivo | Quem precisa | Sem ele |
 |---|---|---|
 | `docker/.env` | **Toda a stack** | Serviços sobem com senha e segredos default |
-| `services/meeting/src/main/resources/credentials.json` | meeting-service | **Não sobe** — `Exited (1)` |
-| `tokens/` (raiz do repositório) | meeting-service | Sobe, mas criar reunião no Meet falha |
+| Arquivo OAuth externo (`GOOGLE_MEET_CREDENTIALS_FILE`) | Integração opcional Google Meet | Serviço sobe normalmente; sem habilitar a integração, cria reuniões sem link Google |
+| `tokens/` (raiz do repositório) | Integração opcional Google Meet | Serviço sobe; integração habilitada sem token válido devolve 503 ao criar link |
 | `services/*/.env` | Só para rodar **fora** do Docker | Irrelevante se você usa `docker compose` |
 
 **Em 90% dos casos, `docker/.env` é o único arquivo que você precisa receber.** Os demais só
@@ -57,21 +57,18 @@ A chave começa com `$`, e ela quebra em dois lugares antes de chegar ao serviç
 
 ## 2. `meeting-service` — Google Meet
 
-O único serviço que precisa de arquivo além do `.env`, e o único que **não sobe** sem ele.
+O serviço sobe sem arquivo Google. A integração é opcional e fica desabilitada por padrão.
 
-### `services/meeting/src/main/resources/credentials.json`
+### Arquivo OAuth externo
 
-Credenciais OAuth 2.0 do projeto no Google Cloud. Sem o arquivo:
+Credenciais OAuth 2.0 do projeto no Google Cloud. Maven e Docker excluem `credentials.json`
+dos artefatos. O arquivo local em `services/meeting/src/main/resources/credentials.json`
+pode continuar guardado e ignorado pelo Git, mas não é mais lido do classpath.
 
-```
-FileNotFoundException: Arquivo credentials.json não encontrado no classpath
-Container meeting-service  Exited (1)
-```
-
-> **Atenção ao compartilhar:** o arquivo é lido do *classpath*, então é copiado para dentro da
-> imagem no build. Quem tem a imagem tem a credencial. É a mesma classe de problema da senha do
-> Postgres versionada — está anotado em [PENDENCIAS.md](PENDENCIAS.md). Montar por volume, como já
-> é feito com `tokens/`, resolveria.
+Para habilitar no Docker, defina `GOOGLE_MEET_CREDENTIALS_FILE` no `docker/.env` e adicione
+`-f docker/docker-compose.meet.yml` ao Compose. O arquivo é montado como secret somente em
+execução. Fora do Docker, use `GOOGLE_MEET_ENABLED=true` e `GOOGLE_MEET_CREDENTIALS_PATH`.
+O procedimento completo está em [meeting-service](servicos/meeting-service.md).
 
 ### `tokens/` — na raiz do repositório
 
@@ -81,7 +78,8 @@ alguém autoriza a conta Google uma vez.
 Gerado por `GoogleMeetAuthHelper` (abre o navegador e pede autorização), **não** copiado de outra
 pessoa: o token é vinculado à conta que autorizou.
 
-Sem ele o serviço sobe normalmente, mas criar reunião falha na hora de chamar a API do Meet.
+Sem ele o serviço sobe normalmente. Se a integração estiver habilitada, criar link retorna 503;
+com a integração desabilitada, reuniões são criadas normalmente com link nulo.
 
 ---
 

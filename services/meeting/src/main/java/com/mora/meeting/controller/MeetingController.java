@@ -31,7 +31,7 @@ public class MeetingController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar reuniões", description = "Lista todas as reuniões, opcionalmente filtrando por usuário.")
+    @Operation(summary = "Listar reuniões", description = "Lista reuniões do condomínio do JWT. Moradores veem apenas reuniões das quais participam; somente a gestão pode filtrar outro usuário do mesmo condomínio.")
     public ResponseEntity<List<MeetingResponseDTO>> listMeetings(@RequestParam(required = false) Long usuarioId) {
         List<MeetingResponseDTO> reunioes = meetingService.listMeetings(usuarioId);
         return ResponseEntity.ok(reunioes);

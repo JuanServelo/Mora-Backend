@@ -34,7 +34,7 @@ public class PlanModuleFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return "OPTIONS".equalsIgnoreCase(request.getMethod()) || module(request.getServletPath()) == null;
+        return "OPTIONS".equalsIgnoreCase(request.getMethod()) || module(path(request)) == null;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class PlanModuleFilter extends OncePerRequestFilter {
         }
         int status;
         try {
-            var check = HttpRequest.newBuilder(URI.create(planUrl + "/api/plans/access/" + module(request.getServletPath())))
+            var check = HttpRequest.newBuilder(URI.create(planUrl + "/api/plans/access/" + module(path(request))))
                     .timeout(Duration.ofSeconds(3)).header("Authorization", token).GET().build();
             status = client.send(check, HttpResponse.BodyHandlers.discarding()).statusCode();
         } catch (InterruptedException e) {
@@ -71,5 +71,9 @@ public class PlanModuleFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write("{\"sucesso\":false,\"mensagem\":\"" +
                 (status == 503 ? "Não foi possível verificar o plano." : "Acesso ao módulo não autorizado.") + "\"}");
+    }
+
+    private String path(HttpServletRequest request) {
+        return request.getRequestURI().substring(request.getContextPath().length());
     }
 }

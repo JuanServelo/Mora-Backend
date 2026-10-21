@@ -36,12 +36,14 @@ public class GoogleMeetAuthHelper {
 
             final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 
-            InputStream in = GoogleMeetAuthHelper.class.getResourceAsStream("/credentials.json");
-            if (in == null) {
-                throw new FileNotFoundException("Arquivo credentials.json não encontrado na pasta resources.");
+            String credentialsPath = args.length > 0 ? args[0] : System.getenv("GOOGLE_MEET_CREDENTIALS_PATH");
+            if (credentialsPath == null || credentialsPath.isBlank()) {
+                throw new FileNotFoundException("Informe o caminho externo como argumento ou GOOGLE_MEET_CREDENTIALS_PATH.");
             }
-
-            GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
+            GoogleClientSecrets clientSecrets;
+            try (var reader = java.nio.file.Files.newBufferedReader(Paths.get(credentialsPath), java.nio.charset.StandardCharsets.UTF_8)) {
+                clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, reader);
+            }
 
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
