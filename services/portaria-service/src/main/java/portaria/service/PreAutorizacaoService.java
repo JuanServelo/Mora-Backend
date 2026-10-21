@@ -34,6 +34,7 @@ public class PreAutorizacaoService {
     private final VagaRepository vagaRepository;
     private final portaria.repository.VisitanteRepository visitanteRepository;
     private final AtendimentoService atendimentoService;
+    private final NotificacaoPortariaService notificacoes;
 
     public PreAutorizacao cadastrar(String moradorId, String unidadeId, PreAutorizacaoRequestDTO request) {
         if (request.nomeVisitante() == null || request.nomeVisitante().isBlank()) {
@@ -198,6 +199,10 @@ public class PreAutorizacaoService {
         pa.setUtilizadaEm(LocalDateTime.now());
         pa.setAtualizadoEm(LocalDateTime.now());
         repository.save(pa);
+
+        // Avisa quem autorizou: é essa pessoa que está esperando a visita,
+        // não a unidade inteira.
+        notificacoes.visitantePreAprovadoEntrou(pa);
 
         return resposta;
     }

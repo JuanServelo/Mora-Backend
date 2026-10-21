@@ -17,3 +17,19 @@ spring:
       enabled: false
       discovery:
         register: false
+
+# O JwtUtil recusa chave com menos de 256 bits (RFC 7518). O default de
+# desenvolvimento tem 200 e derrubava o contexto nos testes. Valor fixo e
+# descartável: nada aqui assina token que saia do processo de teste.
+jwt:
+  secret: chave-de-teste-com-mais-de-32-caracteres-para-hmac-sha256
+
+# Sem esses endereços o cliente HTTP tenta resolver nomes do Docker.
+auth:
+  api:
+    url: http://localhost:0
+comunicacao:
+  service:
+    url: http://localhost:0
+servico:
+  token: ""

@@ -76,6 +76,10 @@ services:
       - SPRING_CLOUD_CONSUL_PORT=8500
       # Quem mora em qual unidade é dado do auth-api (RN-06).
       - AUTH_API_URL=http://auth-api:3001
+      # RF-7: aviso de encomenda. Sem SERVICO_TOKEN a entrega é registrada do
+      # mesmo jeito e só o aviso é pulado, com registro no log.
+      - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       - TZ=America/Sao_Paulo
 
   # 5. vagas-service: fundido no portaria-service (D11) e removido do repositório.
@@ -208,6 +212,9 @@ services:
       - CONSUL_HOST=consul
       - CONSUL_PORT=8500
       - SERVICE_HOST=auth-api
+      # Credencial das consultas entre servicos (/api/interno). O portaria
+      # usa para descobrir os sindicos ao avisar de reserva pendente.
+      - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       - TZ=America/Sao_Paulo
     volumes:
       # As fotos de perfil sao gravadas em disco, e a coluna fotoUrl no banco

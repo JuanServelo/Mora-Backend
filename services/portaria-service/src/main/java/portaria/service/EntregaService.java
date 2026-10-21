@@ -11,6 +11,7 @@ import portaria.model.Morador;
 import portaria.repository.EntregaRepository;
 import portaria.repository.MoradorRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,10 +25,11 @@ public class EntregaService {
 
     private final EntregaRepository entregaRepository;
     private final MoradorRepository moradorRepository;
+    private final NotificacaoPortariaService notificacoes;
 
     public Entrega cadastrar(EntregaRequestDTO dto) {
-        var claims = AuthContext.get();
-        String condominioId = (claims != null) ? claims.condominioId() : null;
+        Permissoes.exigirOperacao("registrar entregas");
+        String condominioId = Permissoes.condominioParaGravar(null);
 
         Entrega entrega = new Entrega();
         if (condominioId != null && !condominioId.isBlank() && !"default".equals(condominioId)) {
@@ -61,11 +63,17 @@ public class EntregaService {
         entrega.setDestinatario(dto.getDestinatarioNome());
         entrega.setNomeEntregador(dto.getRemetente() != null ? dto.getRemetente() : "");
         entrega.setRetirada(false);
-        return entregaRepository.save(entrega);
+
+        Entrega salva = entregaRepository.save(entrega);
+        notificacoes.entregaRecebida(salva);
+        return salva;
     }
 
+
     public Entrega atualizar(String id, EntregaRequestDTO dto) {
+        Permissoes.exigirOperacao("alterar entregas");
         Entrega entrega = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(entrega.getCondominioId());
 
         entrega.setDestinatarioId(dto.getDestinatarioId());
         entrega.setDestinatarioNome(dto.getDestinatarioNome());
@@ -104,10 +112,10 @@ public class EntregaService {
     }
 
     public void excluir(String id) {
-        if (!entregaRepository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("Entrega não encontrada com id: " + id);
-        }
-        entregaRepository.deleteById(id);
+        Permissoes.exigirOperacao("excluir entregas");
+        Entrega entrega = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(entrega.getCondominioId());
+        entregaRepository.deleteById(entrega.getId());
     }
 
     public Entrega retirar(String id, String recebedor) {
@@ -121,7 +129,13 @@ public class EntregaService {
         entrega.setDestinatario(entrega.getDestinatarioNome());
         entrega.setRetirada(true);
         entrega.setAtualizadoEm(LocalDateTime.now());
-        return entregaRepository.save(entrega);
+
+        Entrega salva = entregaRepository.save(entrega);
+        // Quem retirou sai da claim: o porteiro registra, mas a retirada é
+        // creditada a quem está autenticado levando a encomenda.
+        var claims = AuthContext.get();
+        notificacoes.entregaRetirada(salva, claims != null ? claims.authUserId() : null);
+        return salva;
     }
 
     public List<Entrega> listarTodas(String condominioId) {

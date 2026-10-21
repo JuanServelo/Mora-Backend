@@ -13,6 +13,7 @@ import portaria.repository.AreaComumHorarioRepository;
 import portaria.repository.AreaComunRepository;
 import portaria.repository.ReservaRepository;
 import portaria.util.FuncionamentoUtils;
+import portaria.security.Permissoes;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,7 +49,9 @@ public class FuncionamentoAreaComumService {
     }
 
     public FuncionamentoDTO salvar(String areaComumId, FuncionamentoDTO dto) {
+        Permissoes.exigirAdmin("definir o funcionamento dos espaços");
         AreaComum area = buscarArea(areaComumId);
+        Permissoes.exigirMesmoCondominio(area.getCondominioId());
         if (dto.modo() == null) {
             throw new OperacaoInvalidaException("Informe o modo de funcionamento do espaço.");
         }

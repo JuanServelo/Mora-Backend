@@ -8,6 +8,7 @@ import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Funcionario;
 import portaria.repository.FuncionarioRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 
 import java.util.List;
 
@@ -19,13 +20,11 @@ public class FuncionarioService {
     private final FuncionarioRepository funcionarioRepository;
 
     public Funcionario cadastrar(Funcionario funcionario) {
+        Permissoes.exigirAdmin("cadastrar funcionários");
         funcionarioRepository.findByCpf(funcionario.getCpf()).ifPresent(f -> {
             throw new OperacaoInvalidaException("Já existe um funcionário cadastrado com o CPF: " + funcionario.getCpf());
         });
-        var claims = AuthContext.get();
-        if (claims != null && claims.condominioId() != null && !"default".equals(claims.condominioId())) {
-            funcionario.setCondominioId(claims.condominioId());
-        }
+        funcionario.setCondominioId(Permissoes.condominioParaGravar(funcionario.getCondominioId()));
         return funcionarioRepository.save(funcionario);
     }
 
@@ -49,7 +48,9 @@ public class FuncionarioService {
     }
 
     public Funcionario atualizar(String id, Funcionario dados) {
+        Permissoes.exigirAdmin("alterar funcionários");
         Funcionario funcionario = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(funcionario.getCondominioId());
         funcionario.setNome(dados.getNome());
         funcionario.setCargo(dados.getCargo());
         funcionario.setMatricula(dados.getMatricula());
@@ -58,7 +59,9 @@ public class FuncionarioService {
     }
 
     public void desativar(String id) {
+        Permissoes.exigirAdmin("desativar funcionários");
         Funcionario funcionario = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(funcionario.getCondominioId());
         funcionario.setAtivo(false);
         funcionarioRepository.save(funcionario);
     }
