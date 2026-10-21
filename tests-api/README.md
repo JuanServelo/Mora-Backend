@@ -1,6 +1,6 @@
 # Teste de API — Postman + Newman
 
-Fluxos ponta a ponta contra a stack rodando: 50 requisições e 98 asserções. A execução apaga o que criou.
+Fluxos ponta a ponta contra a stack rodando: 57 requisições e 130 asserções. A execução apaga o que criou.
 
 ## Rodar
 
@@ -27,6 +27,7 @@ Os dois ficam vazios nos arquivos de propósito. O `npm test` os lê na hora da 
 
 | Pasta | Verifica |
 |---|---|
+| 00 Documentação | Portal `/docs` e a especificação de cada serviço pelo gateway: toda operação com sumário, descrição e exemplos |
 | 00 Infraestrutura | Serviços no Consul; auth-api sem `/api/portaria`; Swagger do comunicacao e do portaria |
 | 01 Autenticação | Login de cada perfil; e-mail inexistente recusado |
 | 02 auth-api | Estatísticas de ocorrências agregadas no banco; recorte por condomínio; 401/403; gateway leva `/api/portaria` ao portaria |

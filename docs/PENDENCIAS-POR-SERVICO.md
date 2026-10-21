@@ -89,8 +89,9 @@ O mais crítico: mantém em risco o critério obrigatório 6 (perfis validados n
 |---|---|---|
 | 🔴 | **Duas tabelas de assinatura em paralelo** | `tb_subscriptions` e `tb_assinaturas`. O front lê só a segunda: nos condomínios `qa-*` todo item com módulo some do menu |
 | 🟡 | **RF-4: trava por plano só no front** | Nenhum serviço consulta o plano; quem chama a API direto usa módulo não contratado |
-| ⚪ | Fora do Consul | Não aparecia no catálogo na última checagem |
-| ⚪ | Sem testes; Swagger bloqueado | Swagger responde 401 |
+| ✅ | No Consul | O `application.properties` deixava o registro desligado; o compose agora liga (`SPRING_CLOUD_CONSUL_ENABLED=true`), e o gateway roteia `/api/plans` e `/api/assinaturas` (branch `feat/docs-api`) |
+| ✅ | Swagger | springdoc 2.8.9 (o 2.3.0 dava 500 no Boot 3.5), liberado no filtro e documentado no portal `/docs` |
+| ⚪ | Sem testes | Nenhum teste automatizado |
 
 ---
 
@@ -149,6 +150,6 @@ O mais crítico: mantém em risco o critério obrigatório 6 (perfis validados n
 1. **meeting-service** — autenticação, voto pela claim, filtro por condomínio *(Luana Akemi)*
 2. **portaria-service** — perfil e condomínio na escrita *(Juan Servelo)*
 3. **RF-7 e RF-10** no portaria — aviso de entrega e antecedência *(Juan Servelo)*. A rota interna de notificações do comunicacao, de que o RF-7 depende, já existe
-4. **Swagger liberado** no meeting e no plan — usado na apresentação *(Luana Akemi)*. Comunicacao e portaria já respondem
+4. **meeting-service no ar** com o `credentials.json`, para aparecer no portal `/docs` *(Luana Akemi)*. Os outros seis serviços já estão documentados lá
 
 Os itens 1 e 2 tiram do risco o critério obrigatório 6. O 3 dá folga ao critério de 80% do escopo.
