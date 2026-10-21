@@ -23,10 +23,13 @@ public class AuthFilter extends OncePerRequestFilter {
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String caminho = request.getServletPath();
+        String caminho = request.getRequestURI().substring(request.getContextPath().length());
         return caminho.startsWith("/actuator")
                 || caminho.startsWith("/api/plans/v3/api-docs")
                 || caminho.startsWith("/api/plans/swagger-ui")
+                || caminho.equals("/swagger-ui.html")
+                || caminho.startsWith("/swagger-ui/")
+                || caminho.startsWith("/v3/api-docs")
                 || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 
@@ -48,6 +51,18 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         try {
+            String path = request.getRequestURI().substring(request.getContextPath().length());
+            boolean geral = "ADMIN_GERAL".equals(AuthContext.get().perfil());
+            boolean leitura = "GET".equals(request.getMethod());
+            boolean assinatura = path.startsWith("/api/assinaturas") || path.startsWith("/api/plans/subscriptions");
+            String marcador = "/condominio/";
+            int inicio = path.indexOf(marcador);
+            boolean proprio = inicio >= 0 && path.substring(inicio + marcador.length()).split("/")[0]
+                    .equals(AuthContext.get().condominioId());
+            if (!geral && (!leitura || (assinatura && !proprio))) {
+                response.setStatus(403);
+                return;
+            }
             chain.doFilter(request, response);
         } finally {
             AuthContext.clear();

@@ -15,7 +15,7 @@ O que ainda falta em cada serviço do Mora, e quem responde por ele.
 | `meeting-service` | **Luana Akemi** | João Victor | 🔴 3 · 🟡 1 · ⚪ 1 | **1 — crítico** |
 | `portaria-service` | **Juan Servelo** | Ray Govaski | 🔴 2 · 🟡 2 · ⚪ 1 | **2** |
 | `comunicacao-service` | **João Victor** | Juan Servelo | ✅ todas | — |
-| `plan-service` | **Luana Akemi** | João Victor | 🔴 1 · 🟡 1 · ⚪ 2 | 4 |
+| `plan-service` | **Luana Akemi** | João Victor | ⚪ 1 | 1 |
 | `ocorrencias-service` | **RAY** | — | 🟡 1 (não existe) | 5 |
 | `financeiro` | **João Victor** | — | ⚪ 2 (configuração no Asaas) | 6 |
 | `auth-api` | **João Victor** | Juan Servelo | ✅ todas | — |
@@ -87,11 +87,11 @@ O mais crítico: mantém em risco o critério obrigatório 6 (perfis validados n
 
 | | Pendência | Detalhe |
 |---|---|---|
-| 🔴 | **Duas tabelas de assinatura em paralelo** | `tb_subscriptions` e `tb_assinaturas`. O front lê só a segunda: nos condomínios `qa-*` todo item com módulo some do menu |
-| 🟡 | **RF-4: trava por plano só no front** | Nenhum serviço consulta o plano; quem chama a API direto usa módulo não contratado |
-| ✅ | No Consul | O `application.properties` deixava o registro desligado; o compose agora liga (`SPRING_CLOUD_CONSUL_ENABLED=true`), e o gateway roteia `/api/plans` e `/api/assinaturas` (branch `feat/docs-api`) |
-| ✅ | Swagger | springdoc 2.8.9 (o 2.3.0 dava 500 no Boot 3.5), liberado no filtro e documentado no portal `/docs` |
-| ⚪ | Sem testes | Nenhum teste automatizado |
+| ✅ | **Fonte única de assinatura** | As duas APIs usam `tb_assinaturas`. Migração automática importa o legado e preserva a origem em `tb_subscriptions_legacy`; histórico e conflitos cobertos por teste |
+| ✅ | **RF-4: contratação de módulos nas APIs** | Portaria, comunicação, reuniões/votações, financeiro e rotas de portaria/reclamações do auth-api consultam o plano. Sem contratação: 403; falha na consulta: 503 |
+| ✅ | Configuração do Consul | Configuração consolidada no YAML; Compose habilita registro e roteamento. Perfil local pode desabilitar |
+| ✅ | Swagger e testes | OpenAPI, redirecionamento e assets públicos validados; testes de integração de assinatura/migração e bloqueios nos serviços |
+| ⚪ | Validar atualização na stack | Reconstruir imagens, executar a migração no PostgreSQL e confirmar registro saudável no Consul e rotas pelo Traefik. Docker indisponível no ambiente desta correção. Passos em `docs/servicos/plan-service.md` |
 
 ---
 

@@ -9,7 +9,7 @@ spring:
     name: plan-service
 
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora_plan}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora_plan}}
     username: ${SPRING_DATASOURCE_USERNAME:admin}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -37,24 +37,28 @@ spring:
 
   cloud:
     consul:
+      enabled: ${SPRING_CLOUD_CONSUL_ENABLED:true}
       host: ${SPRING_CLOUD_CONSUL_HOST:localhost}
       port: ${SPRING_CLOUD_CONSUL_PORT:8500}
       discovery:
-        register: true
+        register: ${SPRING_CLOUD_CONSUL_ENABLED:true}
         instance-id: ${spring.application.name}:${random.value}
         prefer-ip-address: false
-        hostname: plan-service
+        hostname: ${SERVICE_HOSTNAME:plan-service}
         tags:
           - "traefik.enable=true"
           - "traefik.http.routers.plan.rule=PathPrefix(`/api/plans`) || PathPrefix(`/api/assinaturas`)"
           - "traefik.http.routers.plan.entrypoints=web"
         health-check-path: /actuator/health
         health-check-interval: 15s
+    service-registry:
+      auto-registration:
+        enabled: ${SPRING_CLOUD_CONSUL_ENABLED:true}
     compatibility-verifier:
       enabled: false
 
 jwt:
-  secret: ${JWT_SECRET:changeme-insecure-default}
+  secret: ${JWT_SECRET}
 
 # Swagger / OpenAPI
 springdoc:

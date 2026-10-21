@@ -60,6 +60,15 @@ public class Assinatura {
     @Column(name = "observacao", length = 500)
     private String observacao;
 
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
+    @Column(name = "updated_by", length = 100)
+    private String updatedBy;
+
+    @Column(name = "legacy_subscription_id", unique = true)
+    private Long legacySubscriptionId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

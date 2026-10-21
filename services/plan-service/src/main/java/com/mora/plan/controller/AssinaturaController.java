@@ -19,7 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/assinaturas")
 @RequiredArgsConstructor
-@Tag(name = "Assinaturas", description = "Assinatura de cada condomínio, com vigência e status. É o modelo que o front e o gestao-geral leem. Exige token; o serviço ainda não restringe por perfil.")
+@Tag(name = "Assinaturas", description = "Assinatura de cada condomínio, com vigência e status. Escritas exigem ADMIN_GERAL; leitura restrita ao próprio condomínio.")
 public class AssinaturaController {
 
     private final AssinaturaService assinaturaService;

@@ -22,6 +22,10 @@ import { PERFIS, STATUS_USUARIO } from '../../constants/perfis.js';
  * isso `nega: []` significa "a decisão não é de perfil", nunca "liberado".
  */
 const comoUsuario = (usuario) => vi.spyOn(User, 'findByPk').mockResolvedValue(usuario);
+// Isolate the local role barrier; plan denials and outages have their own suite.
+const realFetch = globalThis.fetch;
+globalThis.fetch = (url, options) => String(url).includes('/api/plans/access/')
+  ? Promise.resolve({ status: 204 }) : realFetch(url, options);
 
 /**
  * Os perfis exercitados contra cada rota.

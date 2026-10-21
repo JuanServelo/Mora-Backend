@@ -74,6 +74,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      - PLAN_SERVICE_URL=http://plan-service:8093
       # Quem mora em qual unidade é dado do auth-api (RN-06).
       - AUTH_API_URL=http://auth-api:3001
       - TZ=America/Sao_Paulo
@@ -101,6 +102,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      - PLAN_SERVICE_URL=http://plan-service:8093
       # Resolve nome e foto da contraparte de uma conversa, sempre em nome de
       # quem pediu. Sem isto a conversa aparece sem o nome — falha macia.
       - AUTH_API_URL=http://auth-api:3001
@@ -131,6 +133,7 @@ services:
       - "8091:8091"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
+      - PLAN_SERVICE_URL=http://plan-service:8093
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
@@ -159,8 +162,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
-      # O application.properties do plan deixa o registro desligado por padrão;
-      # sem ele o Traefik não roteia /api/plans e o portal /docs não o alcança.
+      # O registro permite ao Traefik rotear os planos e sua documentação.
       - SPRING_CLOUD_CONSUL_ENABLED=true
       - TZ=America/Sao_Paulo
 
@@ -185,6 +187,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - PLAN_SERVICE_URL=http://plan-service:8093
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}

@@ -21,6 +21,8 @@ import portariaRoutes from './routes/portaria.js';
 import estatisticasRoutes from './routes/estatisticas.js';
 import { openapi } from './docs/openapi.js';
 import { ehProducao } from './config/regras.js';
+import { exigirModulo } from './middleware/plano.js';
+import authMiddleware from './middleware/auth.js';
 
 dotenv.config();
 
@@ -100,10 +102,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/invites', invitesRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/users', usersRoutes);
-app.use('/api/reclamacoes', reclamacoesRoutes);
+app.use('/api/reclamacoes', authMiddleware, exigirModulo('reclamacoes'), reclamacoesRoutes);
 app.use('/api/condominios', condominiosRoutes);
 app.use('/api/perfis', perfisRoutes);
-app.use('/api/portaria', portariaRoutes);
+app.use('/api/portaria', authMiddleware, exigirModulo('portaria'), portariaRoutes);
 app.use('/api/estatisticas', estatisticasRoutes);
 
 app.get('/api/health', (req, res) => {
