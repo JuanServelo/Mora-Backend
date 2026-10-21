@@ -10,5 +10,13 @@ node_modules/
 **/target/
 *.jar
 
+# Logs de execução local.
+logs/
+*.log
+
 # Relatorios de cobertura: gerados a cada execucao dos testes.
 coverage/
+
+# Material de aula e anotacoes locais — nao fazem parte do produto.
+atividades/
+.claude/

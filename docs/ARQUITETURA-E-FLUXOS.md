@@ -440,7 +440,7 @@ O `docker-compose.yml` define valores default para segredos, repetidos em todos 
 e está commitado:
 
 ```yaml
-- POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+- POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
 - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
 ```
 
@@ -527,7 +527,7 @@ Ordenado por impacto:
 
 | # | Ponto | Impacto |
 |---|---|---|
-| 1 | Segredos com valor default commitados (`Vibers@2112`, `JWT_SECRET`) | Crítico — permite forjar token com qualquer perfil |
+| 1 | Segredos com valor default commitados (senha do Postgres, `JWT_SECRET`) — **resolvido**: o compose agora exige os dois no `docker/.env` e os serviços não têm valor padrão | Crítico — permitia forjar token com qualquer perfil |
 | 2 | 4 dos 5 serviços sem autorização efetiva, com portas expostas no host | Crítico — dados acessíveis sem token |
 | 3 | `condominioId` ausente na maioria das tabelas de domínio | Alto — vazamento entre condomínios |
 | 4 | Dados mestres (bloco/apartamento/morador) triplicados sem sincronização | Alto — divergência inevitável |

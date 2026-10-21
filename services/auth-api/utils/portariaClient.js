@@ -5,13 +5,27 @@ const getPortariaUrl = () =>
  * Valida se unidade existe no portaria-service.
  * Retorna true se indisponível (modo degradado) para não bloquear dev local.
  */
-export async function validarUnidadeExiste(unidadeId) {
+export async function validarUnidadeExiste(unidadeId, token) {
   if (!unidadeId) return false;
   try {
     const res = await fetch(`${getPortariaUrl()}/apartamentos/${unidadeId}`, {
+      headers: {
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       signal: AbortSignal.timeout(3000),
     });
-    return res.ok;
+    if (res.ok) return true;
+    if (res.status === 404) return false;
+
+    // 401/403 significa que o token nao chegou aqui, nao que a unidade nao
+    // exista. Reprovar neste caso diria "Unidade nao encontrada" para toda
+    // unidade valida — que foi exatamente o bug. Falha aberta, como no
+    // avaliar-entrada: problema de infraestrutura nao vira erro de cadastro.
+    console.warn(
+      `[portariaClient] validar-unidade respondeu HTTP ${res.status} — validação ignorada`,
+    );
+    return true;
   } catch {
     console.warn('[portariaClient] Serviço indisponível — pulando validação de unidade');
     return true;

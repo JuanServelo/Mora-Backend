@@ -1,5 +1,7 @@
 package comunicacao.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,19 +17,26 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<Map<String, Object>> handleNaoEncontrado(RecursoNaoEncontradoException ex) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(OperacaoInvalidaException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalida(OperacaoInvalidaException ex) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
     @ExceptionHandler(AcessoNegadoException.class)
     public ResponseEntity<Map<String, Object>> handleAcessoNegado(AcessoNegadoException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(DadosInvalidosException.class)
+    public ResponseEntity<Map<String, Object>> handleDadosInvalidos(DadosInvalidosException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(OperacaoInvalidaException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalida(OperacaoInvalidaException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -44,14 +53,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleArquivoGrande(Exception ex) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Arquivo grande demais: o limite é 5 MB.");
+    }
+
+    @ExceptionHandler({org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
+    public ResponseEntity<Map<String, Object>> handleParteAusente(Exception ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Envie o arquivo no campo 'imagem'.");
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleNotReadable(HttpMessageNotReadableException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido ou malformado.");
     }
 
+    /**
+     * Rede de segurança para o que não foi previsto.
+     *
+     * A mensagem devolvida é genérica de propósito: a da exceção costuma
+     * carregar nome de tabela e trecho de SQL, e isso ia inteiro para quem
+     * chamou. O detalhe vai para o log, onde serve para diagnóstico sem servir
+     * de mapa para quem está sondando o serviço.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno: " + ex.getMessage());
+        log.error("erro não tratado", ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno.");
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String mensagem) {

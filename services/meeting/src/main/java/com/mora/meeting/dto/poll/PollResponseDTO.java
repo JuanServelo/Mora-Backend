@@ -17,7 +17,9 @@ public class PollResponseDTO {
     private Long id;
     private String titulo;
     private String descricao;
-    private Long meetingId;
+    private java.time.LocalDateTime dataHoraFim;
+
     private PollStatus status;
     private List<PollOptionDTO> opcoes;
+    private List<Long> usuariosQueVotaram;
 }

@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface ChatMensagemRepository extends JpaRepository<ChatMensagem, String> {
 
@@ -16,12 +15,12 @@ public interface ChatMensagemRepository extends JpaRepository<ChatMensagem, Stri
            OR (m.remetenteId = :usuarioB AND m.destinatarioId = :usuarioA)
         ORDER BY m.enviadoEm ASC
         """)
-    List<ChatMensagem> findConversa(@Param("usuarioA") UUID usuarioA,
-                                    @Param("usuarioB") UUID usuarioB);
+    List<ChatMensagem> findConversa(@Param("usuarioA") String usuarioA,
+                                    @Param("usuarioB") String usuarioB);
 
     List<ChatMensagem> findByCondominioIdOrderByEnviadoEmDesc(String condominioId);
 
-    List<ChatMensagem> findByDestinatarioIdAndLidaFalse(UUID destinatarioId);
+    List<ChatMensagem> findByDestinatarioIdAndLidaFalse(String destinatarioId);
 
-    long countByDestinatarioIdAndLidaFalse(UUID destinatarioId);
+    long countByDestinatarioIdAndLidaFalse(String destinatarioId);
 }

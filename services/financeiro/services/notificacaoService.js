@@ -1,5 +1,4 @@
 import { SERVICOS, TOKEN_SERVICO } from '../config/servicos.js';
-import * as notificacoesModel from '../models/notificacoesModel.js';
 
 /**
  * Publica a notificação no `comunicacao-service`.
@@ -25,7 +24,11 @@ export async function criar(usuarioId, condominioId, tipo, titulo, mensagem, met
   }
 
   try {
-    const resposta = await fetch(`${SERVICOS.comunicacao}/api/comunicacao/interno/notificacoes`, {
+    // Sem o prefixo `/api/comunicacao`: a chamada vai direto ao container
+    // (`COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094`), e esse prefixo
+    // só existe passando pelo Traefik, que o remove. Com ele, a rota dava 404 e
+    // nenhuma notificação chegava.
+    const resposta = await fetch(`${SERVICOS.comunicacao}/interno/notificacoes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,31 +72,13 @@ export async function criar(usuarioId, condominioId, tipo, titulo, mensagem, met
  * repetir é melhor que engolir.
  */
 function chaveDe(tipo, metadados) {
-  const faturaId = metadados?.faturaId;
-  return faturaId ? `financeiro:${tipo}:${faturaId}` : null;
+  // A multa tem a mesma necessidade da fatura: aplicar e julgar são eventos
+  // únicos, e um reenvio não pode avisar o morador duas vezes.
+  const origemId = metadados?.faturaId ?? metadados?.multaId;
+  return origemId ? `financeiro:${tipo}:${origemId}` : null;
 }
 
-/* ------------------------------------------------------------------------- */
-/* Leitura: só o que sobrou da tabela local.                                  */
-/*                                                                            */
-/* O frontend passou a ler a caixa de entrada no comunicacao-service. Estas    */
-/* funções continuam servindo as rotas antigas, que ainda devolvem os          */
-/* registros gravados antes da virada — quem tiver uma aba velha aberta não    */
-/* recebe erro. Escrita nova não passa mais por aqui.                          */
-/* ------------------------------------------------------------------------- */
-
-export async function listar(usuarioId) {
-  return notificacoesModel.listarPorUsuario(usuarioId);
-}
-
-export async function naoLidas(usuarioId) {
-  return notificacoesModel.contarNaoLidas(usuarioId);
-}
-
-export async function marcarLida(id, usuarioId) {
-  return notificacoesModel.marcarLida(id, usuarioId);
-}
-
-export async function marcarTodasLidas(usuarioId) {
-  return notificacoesModel.marcarTodasLidas(usuarioId);
-}
+// As funções de leitura da tabela local saíram junto com as rotas
+// `/notificacoes`, que nenhuma tela usava desde que a caixa de entrada passou a
+// ser lida no comunicacao-service. A tabela continua no banco, com os registros
+// antigos, para `scripts/migrar-notificacoes.js` levá-los ao comunicacao.

@@ -20,6 +20,16 @@ async function contar(caminho, condominioId, authorization) {
 }
 
 /**
+ * Uma listagem do portaria, para o painel do síndico.
+ *
+ * Sem `?condominioId=`: o síndico só enxerga o próprio condomínio, e o portaria
+ * tira isso do token que repassamos. Devolve `{ ok, dados }` como o `buscar`.
+ */
+export function listar(caminho, authorization) {
+  return buscar(`${SERVICOS.portaria}${caminho}`, authorization);
+}
+
+/**
  * Estrutura física de um condomínio: blocos, apartamentos e áreas comuns.
  * Devolve `{ ok: false }` se o portaria estiver indisponível — quem chama
  * decide se degrada ou falha.

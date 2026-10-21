@@ -1,0 +1,846 @@
+{
+  "schemas": {
+    "CriarVeiculoDTO": {
+      "placa": "BRA2E19",
+      "modelo": "Honda Fit",
+      "cor": "Prata",
+      "obs": "Adesivo do condomínio no para-brisa",
+      "tipoProprietario": "MORADOR",
+      "categoria": "CARRO",
+      "proprietarioId": "4",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e"
+    },
+    "VeiculoResponseDTO": {
+      "id": "1f3e5a7c-9b2d-4e6f-a8c0-2d4f6b8a0c1e",
+      "placa": "BRA2E19",
+      "modelo": "Honda Fit",
+      "cor": "Prata",
+      "obs": "Adesivo do condomínio no para-brisa",
+      "categoria": "CARRO",
+      "proprietarioId": "4",
+      "proprietarioNome": "Ana Souza",
+      "proprietarioCpf": "100.000.010-90",
+      "tipoProprietario": "MORADOR",
+      "visitanteNome": null,
+      "visitanteSaiu": null,
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "vagaNumero": "G-12",
+      "vagaLocalizacao": "Garagem, subsolo 1",
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "apartamentoNumero": "101",
+      "status": "DENTRO",
+      "dataEntrada": "2026-10-20T08:12:00",
+      "dataSaida": null,
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00"
+    },
+    "Vaga": {
+      "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "numero": "G-12",
+      "localizacao": "Garagem, subsolo 1",
+      "condominioId": "cond-parque-verde",
+      "tipo": "COBERTA",
+      "ativa": true,
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00"
+    },
+    "VagaResponseDTO": {
+      "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "numero": "G-12",
+      "localizacao": "Garagem, subsolo 1",
+      "tipo": "COBERTA",
+      "ativa": true,
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "apartamentoNumero": "101"
+    },
+    "Morador": {
+      "id": "4",
+      "nome": "Ana Souza",
+      "cpf": "100.000.010-90",
+      "email": "morador1.verde@mora.test",
+      "telefone": "(41) 99876-1001",
+      "ativo": true,
+      "condominioId": "cond-parque-verde",
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00",
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "blocoNome": "Bloco A",
+      "apartamentoNumero": "101"
+    },
+    "AtualizarMeuVeiculoDTO": {
+      "modelo": "Honda Fit",
+      "cor": "Prata",
+      "obs": "Adesivo do condomínio no para-brisa",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e"
+    },
+    "MeuVeiculoDTO": {
+      "id": "1f3e5a7c-9b2d-4e6f-a8c0-2d4f6b8a0c1e",
+      "placa": "BRA2E19",
+      "modelo": "Honda Fit",
+      "cor": "Prata",
+      "obs": "Adesivo do condomínio no para-brisa",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "vagaNumero": "G-12",
+      "status": "DENTRO",
+      "pessoas": [
+        {
+          "pessoaId": "4",
+          "nome": "Ana Souza"
+        }
+      ]
+    },
+    "PessoaVinculadaDTO": {
+      "pessoaId": "4",
+      "nome": "Ana Souza"
+    },
+    "DiaDTO": {
+      "diaSemana": "MONDAY",
+      "posicao": 1,
+      "folga": false,
+      "inicio": "08:00",
+      "fim": "16:00"
+    },
+    "JornadaDTO": {
+      "id": "8f9e0d1c-2b3a-4c5d-8e7f-6a5b4c3d2e1f",
+      "authUserId": "3",
+      "nome": "Porteiro Residencial Parque Verde",
+      "situacao": "ATIVO",
+      "tipoJornada": "SEMANAL_FIXA",
+      "cicloInicio": "2026-10-01",
+      "cicloTamanho": 7,
+      "observacoes": "Escala da portaria diurna.",
+      "dias": [
+        {
+          "diaSemana": "MONDAY",
+          "posicao": 1,
+          "folga": false,
+          "inicio": "07:00",
+          "fim": "15:00"
+        },
+        {
+          "diaSemana": "SUNDAY",
+          "posicao": 7,
+          "folga": true,
+          "inicio": null,
+          "fim": null
+        }
+      ]
+    },
+    "Funcionario": {
+      "id": "3",
+      "nome": "Porteiro Residencial Parque Verde",
+      "cpf": "100.000.002-80",
+      "email": "porteiro.verde@mora.test",
+      "telefone": "(41) 99876-1003",
+      "ativo": true,
+      "condominioId": "cond-parque-verde",
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00",
+      "cargo": "Porteiro",
+      "matricula": "POR-0042",
+      "horarioEntrada": "07:00",
+      "horarioSaida": "15:00"
+    },
+    "FuncionamentoDTO": {
+      "modo": "HORARIOS_DEFINIDOS",
+      "aRevisar": false,
+      "horarios": [
+        {
+          "diaSemana": "MONDAY",
+          "fechado": false,
+          "abertura": "10:00",
+          "fechamento": "22:00"
+        },
+        {
+          "diaSemana": "SUNDAY",
+          "fechado": true,
+          "abertura": null,
+          "fechamento": null
+        }
+      ]
+    },
+    "HorarioDia": {
+      "diaSemana": "MONDAY",
+      "fechado": false,
+      "abertura": "10:00",
+      "fechamento": "22:00"
+    },
+    "EntregaRequestDTO": {
+      "destinatarioId": 4,
+      "moradorId": null,
+      "destinatarioNome": "Ana Souza",
+      "bloco": "Bloco A",
+      "apartamento": "101",
+      "descricao": "Caixa média",
+      "remetente": "Amazon",
+      "status": "PENDENTE",
+      "observacoes": "Sem observações.",
+      "dataRecebimento": "2026-10-20T10:15:00",
+      "dataRetirada": null,
+      "recebedorNome": null
+    },
+    "EntregaResponseDTO": {
+      "id": "3e5a7c9b-1d3f-4a6c-8e0b-2d4f6a8c0e1b",
+      "destinatarioId": 4,
+      "destinatarioNome": "Ana Souza",
+      "bloco": "Bloco A",
+      "apartamento": "101",
+      "descricao": "Caixa média",
+      "remetente": "Amazon",
+      "status": "RETIRADA",
+      "observacoes": "Sem observações.",
+      "dataRecebimento": "2026-10-20T10:15:00",
+      "dataRetirada": "2026-10-20T19:02:00",
+      "recebedorNome": "Ana Souza"
+    },
+    "Bloco": {
+      "id": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+      "nome": "Bloco A",
+      "sigla": "A",
+      "condominioId": "cond-parque-verde",
+      "descricao": "Bloco principal — Residencial Parque Verde",
+      "andares": 2,
+      "apartamentosPorAndar": 2,
+      "ativo": true,
+      "criadoEm": "2026-09-09T17:46:26.61694",
+      "atualizadoEm": "2026-09-09T17:46:26.616969"
+    },
+    "AreaComum": {
+      "id": "cf9f4897-b196-4186-83af-2d67678651c2",
+      "nome": "Salão de festas",
+      "condominioId": "cond-parque-verde",
+      "tipo": "SALAO",
+      "descricao": "Salão com cozinha equipada e dois banheiros",
+      "localizacao": "Térreo do Bloco A",
+      "capacidadeMaxima": 60,
+      "area": 120.0,
+      "podeReservar": true,
+      "taxaLocacao": 150.0,
+      "informacoesLimpeza": "Devolver limpo; a faxina pós-evento é por conta de quem reservou.",
+      "politicaCancelamento": "Cancelamento sem custo até 48h antes.",
+      "observacoes": "Som até as 22h.",
+      "modoFuncionamento": "HORARIOS_DEFINIDOS",
+      "funcionamentoARevisar": false,
+      "exigeAprovacao": true,
+      "ativo": true,
+      "criadoEm": "2026-09-23T14:44:45.775453",
+      "atualizadoEm": "2026-09-23T14:44:45.775471"
+    },
+    "ApartamentoRequestDTO": {
+      "numero": "101",
+      "andar": 1,
+      "blocoId": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+      "quartos": 2,
+      "areaMxComTotal": 62.5,
+      "observacoes": "Sem observações."
+    },
+    "ApartamentoResponseDTO": {
+      "id": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "numero": "101",
+      "andar": 1,
+      "blocoId": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+      "blocoNome": "Bloco A",
+      "quartos": 2,
+      "areaMxComTotal": 62.5,
+      "observacoes": null,
+      "ativo": true
+    },
+    "Apartamento": {
+      "id": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "numero": "101",
+      "andar": 1,
+      "bloco": {
+        "id": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+        "nome": "Bloco A",
+        "sigla": "A",
+        "condominioId": "cond-parque-verde",
+        "descricao": "Bloco principal — Residencial Parque Verde",
+        "andares": 2,
+        "apartamentosPorAndar": 2,
+        "ativo": true,
+        "criadoEm": "2026-09-09T17:46:26.61694",
+        "atualizadoEm": "2026-09-09T17:46:26.616969"
+      },
+      "quartos": 2,
+      "areaMxComTotal": 62.5,
+      "condominioId": "cond-parque-verde",
+      "observacoes": "Sem observações.",
+      "ativo": true,
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00"
+    },
+    "Visitante": {
+      "id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+      "nome": "Carlos Pereira",
+      "cpf": "100.000.050-80",
+      "email": null,
+      "telefone": "(41) 99700-2233",
+      "ativo": true,
+      "condominioId": "cond-parque-verde",
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00",
+      "documento": "12.345.678-9",
+      "motivoVisita": "Visita familiar",
+      "tipoVisita": "VISITA",
+      "empresa": null,
+      "destino": "Apartamento 101",
+      "apartamento": {
+        "id": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+        "numero": "101",
+        "andar": 1,
+        "bloco": {
+          "id": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+          "nome": "Bloco A",
+          "sigla": "A",
+          "condominioId": "cond-parque-verde",
+          "descricao": "Bloco principal — Residencial Parque Verde",
+          "andares": 2,
+          "apartamentosPorAndar": 2,
+          "ativo": true,
+          "criadoEm": "2026-09-09T17:46:26.61694",
+          "atualizadoEm": "2026-09-09T17:46:26.616969"
+        },
+        "quartos": 2,
+        "areaMxComTotal": 62.5,
+        "condominioId": "cond-parque-verde",
+        "observacoes": "Sem observações.",
+        "ativo": true,
+        "criadoEm": "2026-10-02T14:00:00",
+        "atualizadoEm": "2026-10-02T14:00:00"
+      },
+      "bloco": {
+        "id": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+        "nome": "Bloco A",
+        "sigla": "A",
+        "condominioId": "cond-parque-verde",
+        "descricao": "Bloco principal — Residencial Parque Verde",
+        "andares": 2,
+        "apartamentosPorAndar": 2,
+        "ativo": true,
+        "criadoEm": "2026-09-09T17:46:26.61694",
+        "atualizadoEm": "2026-09-09T17:46:26.616969"
+      },
+      "status": "DENTRO",
+      "horarioEntrada": "2026-10-20T14:05:00",
+      "horarioSaida": "2026-10-20T16:40:00"
+    },
+    "MovimentacaoVeiculoResponseDTO": {
+      "id": "6d8f0a2c-4e6b-4d8f-a0c2-e4f6a8b0c2d4",
+      "placa": "BRA2E19",
+      "modelo": "Honda Fit",
+      "veiculoId": "1f3e5a7c-9b2d-4e6f-a8c0-2d4f6b8a0c1e",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "vinculadoNome": "Ana Souza",
+      "registradoPorEntradaId": "3",
+      "registradoPorSaidaId": null,
+      "entradaEm": "2026-10-20T08:12:00",
+      "saidaEm": null
+    },
+    "CriarUsuarioDTO": {
+      "tipoUsuario": "MORADOR",
+      "nome": "Joana Ribeiro",
+      "cpf": "100.000.040-06",
+      "email": "joana.ribeiro@mora.test",
+      "telefone": "(41) 99876-1001",
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "blocoId": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+      "documento": null,
+      "motivoVisita": null,
+      "cargo": null,
+      "matricula": null,
+      "horarioEntrada": null,
+      "horarioSaida": null
+    },
+    "Turno": {
+      "id": "9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
+      "funcionario": "Porteiro Residencial Parque Verde",
+      "cargo": "Porteiro",
+      "condominioId": "cond-parque-verde",
+      "entradas": [
+        "2026-10-20T07:00:00"
+      ],
+      "saidas": [
+        "2026-10-20T15:02:00"
+      ]
+    },
+    "ReservaRequestDTO": {
+      "areaComumId": "cf9f4897-b196-4186-83af-2d67678651c2",
+      "inicio": "2026-11-14T18:00:00",
+      "fim": "2026-11-14T23:00:00",
+      "tipoReserva": "MORADOR",
+      "unidadeId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "responsavelId": null,
+      "descricaoEvento": "Aniversário de 30 anos",
+      "observacoes": "Cerca de 40 convidados."
+    },
+    "ReservaResponseDTO": {
+      "id": "51898a22-fb54-49d4-be61-55df90480a30",
+      "solicitanteId": "4",
+      "condominioId": "cond-parque-verde",
+      "areaComumId": "cf9f4897-b196-4186-83af-2d67678651c2",
+      "areaComumNome": "Salão de festas",
+      "inicio": "2026-11-14T18:00:00",
+      "fim": "2026-11-14T23:00:00",
+      "tipoReserva": "MORADOR",
+      "unidadeId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "responsavelId": "4",
+      "responsavelNome": "Ana Souza",
+      "responsavelPerfil": "MORADOR",
+      "descricaoEvento": "Aniversário de 30 anos",
+      "valorTotal": 150.0,
+      "status": "APROVADA",
+      "motivoRecusa": null,
+      "observacoes": "Cerca de 40 convidados.",
+      "aprovadoPorNome": "Síndico Residencial Parque Verde",
+      "aprovadoEm": "2026-11-02T10:00:00",
+      "canceladoPorNome": null,
+      "canceladoEm": null,
+      "criadoEm": "2026-10-05T20:18:54.500156",
+      "prazoDecisao": null
+    },
+    "FalhaLote": {
+      "reservaId": "f0e1d2c3-b4a5-4968-8776-655443322110",
+      "motivo": "Conflita com outra reserva aprovada no mesmo horário."
+    },
+    "ResultadoLote": {
+      "aprovadas": [
+        "f0e1d2c3-b4a5-4968-8776-655443322110"
+      ],
+      "falhas": [
+        {
+          "reservaId": "f0e1d2c3-b4a5-4968-8776-655443322110",
+          "motivo": "Conflita com outra reserva aprovada no mesmo horário."
+        }
+      ]
+    },
+    "PreAutorizacaoRequestDTO": {
+      "nomeVisitante": "Carlos Pereira",
+      "cpfVisitante": "100.000.050-80",
+      "telefoneVisitante": "(41) 99700-2233",
+      "tipoPessoa": "VISITA",
+      "empresa": null,
+      "placaVeiculo": "QWE4R56",
+      "modeloVeiculo": "Fiat Argo",
+      "corVeiculo": "Branco",
+      "validadeInicio": "2026-10-21",
+      "validadeFim": "2026-10-21",
+      "observacoes": "Vem buscar a chave do apartamento."
+    },
+    "PreAutorizacaoResponseDTO": {
+      "id": "a7b8c9d0-e1f2-4a3b-8c4d-5e6f7a8b9c0d",
+      "moradorId": "4",
+      "unidadeId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "condominioId": "cond-parque-verde",
+      "nomeVisitante": "Carlos Pereira",
+      "cpfVisitante": "100.000.050-80",
+      "telefoneVisitante": "(41) 99700-2233",
+      "tipoPessoa": "VISITA",
+      "empresa": null,
+      "placaVeiculo": "QWE4R56",
+      "modeloVeiculo": "Fiat Argo",
+      "corVeiculo": "Branco",
+      "validadeInicio": "2026-10-21",
+      "validadeFim": "2026-10-21",
+      "observacoes": "Vem buscar a chave do apartamento.",
+      "status": "AGUARDANDO",
+      "utilizadaEm": null,
+      "criadoEm": "2026-10-02T14:00:00"
+    },
+    "AtendimentoResponseDTO": {
+      "pessoa": {
+        "id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+        "nome": "Carlos Pereira",
+        "documento": "12.345.678-9",
+        "telefone": "(41) 99700-2233",
+        "tipoVisita": "VISITA",
+        "status": "DENTRO",
+        "horarioEntrada": "2026-10-20T14:05:00",
+        "horarioSaida": null,
+        "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+        "apartamentoNumero": "101",
+        "blocoNome": "Bloco A",
+        "empresa": null,
+        "destino": "Apartamento 101",
+        "condominioId": "cond-parque-verde",
+        "veiculoDentroPlaca": "QWE4R56",
+        "vagaDentroNumero": "V-03"
+      },
+      "veiculo": {
+        "id": "1f3e5a7c-9b2d-4e6f-a8c0-2d4f6b8a0c1e",
+        "placa": "BRA2E19",
+        "modelo": "Honda Fit",
+        "cor": "Prata",
+        "obs": "Adesivo do condomínio no para-brisa",
+        "categoria": "CARRO",
+        "proprietarioId": "4",
+        "proprietarioNome": "Ana Souza",
+        "proprietarioCpf": "100.000.010-90",
+        "tipoProprietario": "MORADOR",
+        "visitanteNome": null,
+        "visitanteSaiu": null,
+        "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+        "vagaNumero": "G-12",
+        "vagaLocalizacao": "Garagem, subsolo 1",
+        "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+        "apartamentoNumero": "101",
+        "status": "DENTRO",
+        "dataEntrada": "2026-10-20T08:12:00",
+        "dataSaida": null,
+        "criadoEm": "2026-10-02T14:00:00",
+        "atualizadoEm": "2026-10-02T14:00:00"
+      },
+      "vagaNumero": "V-03",
+      "mensagem": "Entrada de Carlos Pereira registrada."
+    },
+    "VisitanteResumoDTO": {
+      "id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+      "nome": "Carlos Pereira",
+      "documento": "12.345.678-9",
+      "telefone": "(41) 99700-2233",
+      "tipoVisita": "VISITA",
+      "status": "DENTRO",
+      "horarioEntrada": "2026-10-20T14:05:00",
+      "horarioSaida": null,
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "apartamentoNumero": "101",
+      "blocoNome": "Bloco A",
+      "empresa": null,
+      "destino": "Apartamento 101",
+      "condominioId": "cond-parque-verde",
+      "veiculoDentroPlaca": "QWE4R56",
+      "vagaDentroNumero": "V-03"
+    },
+    "CadastrarMeuVeiculoDTO": {
+      "placa": "BRA2E19",
+      "modelo": "Honda Fit",
+      "cor": "Prata",
+      "obs": "Adesivo do condomínio no para-brisa",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "pessoaIds": [
+        "4",
+        "5"
+      ]
+    },
+    "ProximoPlantao": {
+      "dia": "2026-10-22",
+      "inicio": "08:00",
+      "fim": "16:00",
+      "viraODia": false
+    },
+    "LiberacaoExcepcional": {
+      "id": "d4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f7a",
+      "authUserId": "3",
+      "funcionarioNome": "Porteiro Residencial Parque Verde",
+      "condominioId": "cond-parque-verde",
+      "data": "2026-10-22",
+      "horaInicio": "07:00",
+      "horaFim": "15:00",
+      "motivo": "Cobertura da folga do colega",
+      "observacoes": null,
+      "status": "AGUARDANDO",
+      "autorizadoPorId": "2",
+      "autorizadoPorNome": "Síndico Residencial Parque Verde",
+      "autorizadoEm": "2026-10-19T18:00:00",
+      "utilizadaEm": null
+    },
+    "RetirarChaveRequest": {
+      "responsavelId": "4",
+      "tipoResponsavel": "MORADOR",
+      "nomeResponsavel": "Ana Souza"
+    },
+    "ChaveResponseDTO": {
+      "id": "e8f9a0b1-c2d3-4e4f-a5b6-c7d8e9f0a1b2",
+      "nomeChave": "Salão de festas — porta principal",
+      "descricao": "Chave única, devolver até 23h",
+      "localId": "cf9f4897-b196-4186-83af-2d67678651c2",
+      "tipoLocal": "AREA_COMUM",
+      "localNome": "Salão de festas",
+      "condominioId": "cond-parque-verde",
+      "disponivel": false,
+      "possuidorNome": "Porteiro Residencial Parque Verde",
+      "possuidorPerfil": "PORTEIRO",
+      "retiradaEm": "2026-10-20T09:30:00"
+    },
+    "CadastrarChaveDTO": {
+      "localId": "cf9f4897-b196-4186-83af-2d67678651c2",
+      "tipoLocal": "AREA_COMUM",
+      "nomeChave": "Salão de festas — porta principal",
+      "descricao": "Chave única, devolver até 23h"
+    },
+    "AtendimentoRegistroDTO": {
+      "tipoVisita": "VISITA",
+      "pessoaId": null,
+      "nome": "Carlos Pereira",
+      "documento": "12.345.678-9",
+      "telefone": "(41) 99700-2233",
+      "obs": "Vai ao 101.",
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "moradorResponsavelId": "4",
+      "empresa": null,
+      "destino": null,
+      "veiculo": {
+        "veiculoId": null,
+        "placa": "QWE4R56",
+        "modelo": "Fiat Argo",
+        "cor": "Branco",
+        "vagaId": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f"
+      }
+    },
+    "AtendimentoVeiculoDTO": {
+      "veiculoId": null,
+      "placa": "QWE4R56",
+      "modelo": "Fiat Argo",
+      "cor": "Branco",
+      "vagaId": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f"
+    },
+    "RecusaAluguelRequestDTO": {
+      "justificativa": "Já existe evento marcado no salão nesse horário."
+    },
+    "AluguelVagaResponseDTO": {
+      "id": "0b1c2d3e-4f5a-4b6c-7d8e-9f0a1b2c3d4e",
+      "solicitanteId": "8d2f4a6c-0e1b-4c3d-9e5f-7a9b1c3d5e7f",
+      "proprietarioId": "2c4e6a8b-0d1f-4e3a-8b5c-7d9e1f3a5b7c",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "vagaNumero": "G-12",
+      "dataInicio": "2026-11-01",
+      "dataFim": "2026-11-30",
+      "modalidade": "MENSAL",
+      "valorTotal": 150.0,
+      "valorPenalidade": 0.0,
+      "status": "PENDENTE",
+      "motivoRecusa": null,
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00"
+    },
+    "AluguelVagaRequestDTO": {
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "dataInicio": "2026-11-01",
+      "dataFim": "2026-11-30",
+      "modalidade": "MENSAL"
+    },
+    "DisponibilidadeVagaRequestDTO": {
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "dataInicio": "2026-11-01",
+      "dataFim": "2026-11-30"
+    },
+    "DisponibilidadeVagaResponseDTO": {
+      "id": "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9",
+      "proprietarioId": "2c4e6a8b-0d1f-4e3a-8b5c-7d9e1f3a5b7c",
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "vagaNumero": "G-12",
+      "vagaLocalizacao": "Garagem, subsolo 1",
+      "dataInicio": "2026-11-01",
+      "dataFim": "2026-11-30",
+      "ativa": true,
+      "criadoEm": "2026-10-02T14:00:00"
+    },
+    "AlterarVagaDTO": {
+      "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e"
+    },
+    "RecusaReservaRequestDTO": {
+      "justificativa": "Já existe evento marcado no salão nesse horário."
+    },
+    "ReservaAuditoria": {
+      "id": "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+      "reservaId": "f0e1d2c3-b4a5-4968-8776-655443322110",
+      "condominioId": "cond-parque-verde",
+      "statusAnterior": "PENDENTE",
+      "statusNovo": "APROVADA",
+      "motivo": "Aprovada pelo síndico.",
+      "autorId": "2",
+      "autorNome": "Síndico Residencial Parque Verde",
+      "criadoEm": "2026-10-02T14:00:00"
+    },
+    "Pageable": {
+      "page": 0,
+      "size": 20,
+      "sort": [
+        "nome,asc"
+      ]
+    },
+    "PageMorador": {
+      "totalElements": 4,
+      "totalPages": 1,
+      "pageable": {
+        "paged": true,
+        "pageNumber": 0,
+        "pageSize": 20,
+        "offset": 0,
+        "sort": {
+          "sorted": true,
+          "empty": false,
+          "unsorted": false
+        },
+        "unpaged": false
+      },
+      "size": 20,
+      "content": [
+        {
+          "id": "4",
+          "nome": "Ana Souza",
+          "cpf": "100.000.010-90",
+          "email": "morador1.verde@mora.test",
+          "telefone": "(41) 99876-1001",
+          "ativo": true,
+          "condominioId": "cond-parque-verde",
+          "criadoEm": "2026-10-02T14:00:00",
+          "atualizadoEm": "2026-10-02T14:00:00",
+          "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+          "blocoNome": "Bloco A",
+          "apartamentoNumero": "101"
+        }
+      ],
+      "number": 0,
+      "sort": {
+        "sorted": true,
+        "empty": false,
+        "unsorted": false
+      },
+      "numberOfElements": 4,
+      "first": true,
+      "last": true,
+      "empty": false
+    },
+    "PageableObject": {
+      "paged": true,
+      "pageNumber": 0,
+      "pageSize": 20,
+      "offset": 0,
+      "sort": {
+        "sorted": true,
+        "empty": false,
+        "unsorted": false
+      },
+      "unpaged": false
+    },
+    "SortObject": {
+      "sorted": true,
+      "empty": false,
+      "unsorted": false
+    },
+    "MeusVeiculosResponseDTO": {
+      "veiculos": [
+        {
+          "id": "1f3e5a7c-9b2d-4e6f-a8c0-2d4f6b8a0c1e",
+          "placa": "BRA2E19",
+          "modelo": "Honda Fit",
+          "cor": "Prata",
+          "obs": "Adesivo do condomínio no para-brisa",
+          "vagaId": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+          "vagaNumero": "G-12",
+          "status": "DENTRO",
+          "pessoas": [
+            {
+              "pessoaId": "4",
+              "nome": "Ana Souza"
+            }
+          ]
+        }
+      ],
+      "vagas": [
+        {
+          "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+          "numero": "G-12",
+          "localizacao": "Garagem, subsolo 1",
+          "ocupada": true,
+          "ocupadaPorPlaca": "BRA2E19",
+          "ocupadaPorNome": "Ana Souza",
+          "origem": "PROPRIA"
+        }
+      ]
+    },
+    "VagaUnidadeDTO": {
+      "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "numero": "G-12",
+      "localizacao": "Garagem, subsolo 1",
+      "ocupada": true,
+      "ocupadaPorPlaca": "BRA2E19",
+      "ocupadaPorNome": "Ana Souza",
+      "origem": "PROPRIA"
+    },
+    "AvaliacaoEntradaDTO": {
+      "permitido": true,
+      "motivo": null,
+      "turnoPrevisto": "07:00–15:00",
+      "porLiberacaoExcepcional": false,
+      "liberacaoMotivo": null,
+      "liberacaoAutorizadaPor": null
+    },
+    "FuncionarioAuditoria": {
+      "id": "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+      "authUserId": "3",
+      "funcionarioNome": "Porteiro Residencial Parque Verde",
+      "condominioId": "cond-parque-verde",
+      "campo": "tipoJornada",
+      "valorAnterior": "SEMANAL_FIXA",
+      "valorNovo": "ESCALA",
+      "autorId": "2",
+      "autorNome": "Síndico Residencial Parque Verde",
+      "criadoEm": "2026-10-02T14:00:00"
+    },
+    "MovimentacaoChaveResponseDTO": {
+      "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+      "nomeResponsavel": "Ana Souza",
+      "perfilResponsavel": "MORADOR",
+      "dataRetirada": "2026-10-20T19:02:00",
+      "dataDevolucao": "2026-10-20T22:45:00",
+      "registradoPorNome": "Porteiro Residencial Parque Verde",
+      "status": "DEVOLVIDA"
+    },
+    "LocalChaveDTO": {
+      "id": "5c27d9b1-3cf7-4cef-8128-ec4011d93434",
+      "nome": "Bloco A",
+      "tipo": "BLOCO"
+    },
+    "VagaStatusDTO": {
+      "id": "7a1c3e5f-9b2d-4f6a-8c0e-1d3f5a7b9c2e",
+      "numero": "V-03",
+      "tipo": "VISITANTE",
+      "localizacao": "Térreo, ao lado da guarita",
+      "disponivel": true,
+      "ocupadaPorPlaca": null,
+      "ocupadaDesde": null
+    },
+    "DesvincularResultadoDTO": {
+      "efeito": "VINCULO_REMOVIDO",
+      "mensagem": "Você não está mais vinculado a este veículo."
+    }
+  },
+  "respostas": {
+    "POST /usuarios/criar 201": {
+      "id": "4",
+      "nome": "Ana Souza",
+      "cpf": "100.000.010-90",
+      "email": "morador1.verde@mora.test",
+      "telefone": "(41) 99876-1001",
+      "ativo": true,
+      "condominioId": "cond-parque-verde",
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00",
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "blocoNome": "Bloco A",
+      "apartamentoNumero": "101"
+    },
+    "POST /usuarios/criar 200": {
+      "id": "4",
+      "nome": "Ana Souza",
+      "cpf": "100.000.010-90",
+      "email": "morador1.verde@mora.test",
+      "telefone": "(41) 99876-1001",
+      "ativo": true,
+      "condominioId": "cond-parque-verde",
+      "criadoEm": "2026-10-02T14:00:00",
+      "atualizadoEm": "2026-10-02T14:00:00",
+      "apartamentoId": "e064d8a3-2835-4bdf-8e9f-06fa3a108e6d",
+      "blocoNome": "Bloco A",
+      "apartamentoNumero": "101"
+    }
+  },
+  "corpos": {
+    "POST /reservas/aprovar-lote": [
+      "51898a22-fb54-49d4-be61-55df90480a30",
+      "f0e1d2c3-b4a5-4968-8776-655443322110"
+    ],
+    "POST /entregas/{id}/retirar": "Ana Souza"
+  }
+}

@@ -22,20 +22,21 @@ public class Poll {
 
     private String titulo;
     private String descricao;
+    private java.time.LocalDateTime dataHoraFim;
 
     /** Cliente dono deste registro. Todo dado de domínio pertence a um condomínio. */
     @Column(name = "condominio_id")
     private String condominioId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meeting_id")
-    private Meeting meeting;
 
     private PollStatus status;
 
     @Builder.Default
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PollOption> opcoes = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PollVote> votos = new ArrayList<>();
 
     public void addOption(String descricao) {
         PollOption option = new PollOption();

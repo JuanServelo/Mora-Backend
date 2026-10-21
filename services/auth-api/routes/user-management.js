@@ -123,6 +123,7 @@ router.post('/invites', async (req, res) => {
       nomePrecadastro,
       cpfPrecadastro,
       condominioId: condominioEfetivo,
+      token: req.token,
     });
 
     if (!resultado.sucesso) {
@@ -278,7 +279,7 @@ router.patch('/users/:id/unit', adminMiddleware, async (req, res) => {
 
     if (!unidadeId) return res.status(400).json({ sucesso: false, mensagem: 'unidadeId é obrigatório.' });
 
-    const unidadeValida = await validarUnidadeExiste(unidadeId);
+    const unidadeValida = await validarUnidadeExiste(unidadeId, req.token);
     if (!unidadeValida) return res.status(404).json({ sucesso: false, mensagem: 'Unidade não encontrada.' });
 
     alvo.unidadeId = unidadeId;

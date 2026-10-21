@@ -28,18 +28,43 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const router = express.Router();
 
-const limiter = (max, windowMs, mensagem) => rateLimit({
+const limiter = (max, windowMs, mensagem, keyGenerator) => rateLimit({
   windowMs,
   max,
   message: { sucesso: false, mensagem },
   standardHeaders: true,
   legacyHeaders: false,
+  ...(keyGenerator ? { keyGenerator } : {}),
 });
+
+/**
+ * Conta por IP **e** e-mail, não só por IP.
+ *
+ * Só por IP, todo mundo atrás do mesmo endereço divide um balde: no Docker
+ * Desktop o auth-api vê o IP do gateway para qualquer cliente, e numa rede de
+ * condomínio ou escritório acontece o mesmo com o NAT. Dez senhas erradas de
+ * uma pessoa bloqueavam o login de todas as outras por 15 minutos.
+ *
+ * O e-mail sozinho também não serve: deixaria um atacante tentar senhas sem
+ * limite variando o IP. Os dois juntos limitam o ataque a uma conta, e o
+ * limitador por IP abaixo segura quem tenta muitas contas de uma vez.
+ */
+const porIpEEmail = (req) =>
+  `${req.ip}|${String(req.body?.email ?? '').toLowerCase().trim()}`;
 
 // Limitadores separados por finalidade: estourar o login não pode impedir
 // alguém de redefinir a senha ou concluir o OAuth do mesmo IP (NAT/escritório).
 const authLimiter = limiter(10, 15 * 60 * 1000, 'Muitas tentativas de login. Tente novamente em 15 minutos.');
-const forgotLimiter = limiter(5, 60 * 60 * 1000, 'Muitas solicitações de recuperação. Tente novamente em 1 hora.');
+const loginLimiter = limiter(
+  10, 15 * 60 * 1000, 'Muitas tentativas de login. Tente novamente em 15 minutos.', porIpEEmail,
+);
+// Folgado o bastante para um prédio inteiro atrás de um IP, apertado o bastante
+// para não deixar testar senha em massa contra muitos e-mails.
+const loginIpLimiter = limiter(100, 15 * 60 * 1000, 'Muitas tentativas de login desta rede. Tente novamente em 15 minutos.');
+const forgotLimiter = limiter(
+  5, 60 * 60 * 1000, 'Muitas solicitações de recuperação. Tente novamente em 1 hora.', porIpEEmail,
+);
+const forgotIpLimiter = limiter(30, 60 * 60 * 1000, 'Muitas solicitações de recuperação desta rede. Tente novamente em 1 hora.');
 // Rotas protegidas por um token imprevisível: o limite serve só contra força bruta.
 const tokenLimiter = limiter(20, 15 * 60 * 1000, 'Muitas tentativas. Tente novamente em 15 minutos.');
 
@@ -106,7 +131,7 @@ router.post('/register', authLimiter, (_req, res) => {
   });
 });
 
-router.post('/login', authLimiter, async (req, res) => {
+router.post('/login', loginIpLimiter, loginLimiter, async (req, res) => {
   try {
     const { email, senha } = req.body;
 
@@ -310,7 +335,7 @@ router.post('/me/foto', authMiddleware, upload.single('foto'), async (req, res) 
   }
 });
 
-router.post('/forgot-password', forgotLimiter, async (req, res) => {
+router.post('/forgot-password', forgotIpLimiter, forgotLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {

@@ -21,8 +21,10 @@ public class PollRequestDTO {
     @Size(max = 500, message = "A descrição não pode ultrapassar 500 caracteres")
     private String descricao;
 
-    @NotNull(message = "O ID da reunião vinculada é obrigatório")
-    private Long meetingId;
+    @NotBlank(message = "O ID do condomínio é obrigatório")
+    private String condominioId;
+
+    private java.time.LocalDateTime dataHoraFim;
 
     private List<String> opcoes;
 }

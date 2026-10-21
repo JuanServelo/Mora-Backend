@@ -286,7 +286,7 @@ Controla os horários de entrada e saída dos funcionários por turno.
 | `POSTGRES_HOST` | `localhost` | Host do banco de dados |
 | `POSTGRES_DB` | `mora` | Nome do banco de dados |
 | `POSTGRES_USER` | `admin` | Usuário do PostgreSQL |
-| `POSTGRES_PASSWORD` | `Vibers@2112` | Senha do PostgreSQL |
+| `POSTGRES_PASSWORD` | definida no `docker/.env` (sem valor padrão) | Senha do PostgreSQL |
 | `SPRING_CLOUD_CONSUL_HOST` | `consul` | Host do Consul (via Docker) |
 | `SPRING_CLOUD_CONSUL_PORT` | `8500` | Porta do Consul |
 

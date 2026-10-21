@@ -21,7 +21,7 @@ public class AvisoLeituraService {
     private final AvisoLeituraRepository leituraRepository;
     private final AvisoRepository avisoRepository;
 
-    public AvisoLeitura marcarLido(UUID avisoId, UUID usuarioId) {
+    public AvisoLeitura marcarLido(UUID avisoId, String usuarioId) {
         return leituraRepository.findByAvisoIdAndUsuarioId(avisoId, usuarioId)
                 .orElseGet(() -> {
                     if (!avisoRepository.existsById(avisoId)) {
@@ -36,7 +36,7 @@ public class AvisoLeituraService {
     }
 
     @Transactional(readOnly = true)
-    public boolean jaLeu(UUID avisoId, UUID usuarioId) {
+    public boolean jaLeu(UUID avisoId, String usuarioId) {
         return leituraRepository.findByAvisoIdAndUsuarioId(avisoId, usuarioId).isPresent();
     }
 
@@ -45,8 +45,29 @@ public class AvisoLeituraService {
         return leituraRepository.countByAvisoId(avisoId);
     }
 
+    /** Confirmações de cada aviso da lista, agrupadas no banco. */
     @Transactional(readOnly = true)
-    public List<UUID> avisosLidosPeloUsuario(UUID usuarioId) {
+    public Map<UUID, Long> confirmacoesPorAviso(List<UUID> avisos) {
+        Map<UUID, Long> porAviso = new HashMap<>();
+        if (avisos.isEmpty()) return porAviso;
+        for (Object[] linha : leituraRepository.contarPorAviso(avisos)) {
+            porAviso.put((UUID) linha[0], (Long) linha[1]);
+        }
+        return porAviso;
+    }
+
+    /** Quem leu este aviso, e quando. */
+    @Transactional(readOnly = true)
+    public Map<String, LocalDateTime> leiturasDoAviso(UUID avisoId) {
+        Map<String, LocalDateTime> porUsuario = new HashMap<>();
+        for (AvisoLeitura leitura : leituraRepository.findByAvisoId(avisoId)) {
+            porUsuario.put(leitura.getUsuarioId(), leitura.getLidoEm());
+        }
+        return porUsuario;
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> avisosLidosPeloUsuario(String usuarioId) {
         return leituraRepository.findAvisosLidosByUsuario(usuarioId);
     }
 
@@ -57,7 +78,7 @@ public class AvisoLeituraService {
      * todos os ativos de uma vez, e N avisos não podem virar N idas ao banco.
      */
     @Transactional(readOnly = true)
-    public Map<UUID, LocalDateTime> quandoLeu(UUID usuarioId) {
+    public Map<UUID, LocalDateTime> quandoLeu(String usuarioId) {
         Map<UUID, LocalDateTime> porAviso = new HashMap<>();
         for (AvisoLeitura leitura : leituraRepository.findByUsuarioId(usuarioId)) {
             porAviso.put(leitura.getAvisoId(), leitura.getLidoEm());

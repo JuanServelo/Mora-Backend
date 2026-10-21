@@ -52,8 +52,8 @@ separação mais do que qualquer critério técnico:
 | `meeting-service` | Assembleias, atas e votações | Java 21 · Spring Boot | 8091 | `mora_meeting` |
 | `gestao-geral` | Agrega indicadores dos demais para o painel do Admin Geral | Node 20 · Express | 3002 | — |
 
-> `vagas-service` foi **incorporado ao `portaria-service`** e está desativado no compose. O
-> diretório continua no repositório enquanto a migração dos dados não é confirmada.
+> `vagas-service` foi **incorporado ao `portaria-service`** (decisão D11) e o diretório foi
+> removido. O código continua no histórico do Git: `git show e6d607a:services/vagas-service`.
 
 **`portaria-service` e `comunicacao-service` compartilham o banco `mora`.** Não é acidente: os
 avisos e artigos nasceram no portaria e foram migrados para o comunicacao sem mover o esquema,
@@ -101,6 +101,10 @@ cp docker/.env.example docker/.env
 docker compose -f docker/docker-compose.yml up -d --build
 ```
 
+**Clonar não basta.** Alguns arquivos ficam fora do Git por conterem segredo, e o
+`meeting-service` nem sobe sem o dele. A lista completa, com o que cada ausência quebra, está em
+[`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md).
+
 O `init-databases.sql` cria os bancos, mas **só roda em volume novo**. Em máquina que já subiu a
 stack antes, o Postgres ignora o `docker-entrypoint-initdb.d`, e um banco acrescentado depois não
 aparece — para esses há os scripts avulsos em `docker/criar-banco-*.sql`.
@@ -115,16 +119,54 @@ curl http://localhost:3001/api/health
 Consul em `http://localhost:8500` mostra quem se registrou; o painel do Traefik, em
 `http://localhost:8080`, mostra quais rotas ele está publicando.
 
+### Dados de exemplo
+
+```bash
+npm run seed           # limpa e recria 3 condomínios completos
+npm run seed:manter    # só acrescenta, sem limpar
+```
+
+Precisa da stack no ar. O script instala as próprias dependências (`pg`, `bcryptjs`) em
+`scripts/`, que tem `package.json` próprio — a raiz não tem dependência nenhuma. As contas
+criadas, uma de cada perfil, estão no topo de `scripts/seed-dev.mjs`.
+
+### Documentação da API
+
+**`http://localhost:8087/docs`** reúne a documentação de todos os serviços numa página só, pelo gateway:
+
+- no topo, um sumário com o que cada serviço faz, quem responde por ele, o banco e quantas rotas tem
+  (lido ao vivo da especificação de cada um, então serviço fora do ar aparece como fora do ar);
+- abaixo, o Swagger UI com um seletor dos serviços. Toda rota tem sumário, descrição e exemplo do
+  corpo e da resposta.
+
+Os exemplos usam os dados do seed (condomínio Residencial Parque Verde, Bloco A, apartamento 101):
+com o seed aplicado, o **Try it out** funciona com os próprios exemplos. Para as rotas protegidas,
+faça `POST /api/auth/login` no auth-api com uma conta do seed e cole o `token` em **Authorize**.
+
+| Serviço | Especificação |
+|---|---|
+| auth-api | `/api/auth/docs/openapi.json` |
+| portaria-service | `/api/portaria/v3/api-docs` |
+| comunicacao-service | `/api/comunicacao/v3/api-docs` |
+| financeiro | `/api/financeiro/docs/openapi.json` |
+| gestao-geral | `/api/gestao/docs/openapi.json` |
+| plan-service | `/api/plans/v3/api-docs` |
+| meeting-service | `/api/meetings/v3/api-docs` |
+
+Nos serviços Node a especificação é escrita à mão (`docs/openapi.js`), e um teste compara com as rotas
+do Express: rota nova sem documentação quebra a suíte. Nos Java ela é gerada pelo springdoc a partir
+das anotações. O teste de API (`tests-api/`) confere as especificações servidas pelo gateway.
+
 ---
 
 ## Testes
 
 ```bash
-cd services/auth-api && npm test              # 422 testes de contrato
+cd services/auth-api && npm test              # 441 testes
 cd services/auth-api && npm run test:cobertura # com relatório de cobertura
 ```
 
-Os testes do `auth-api` usam **Vitest + Supertest** e exercitam **as 61 rotas**, uma a uma:
+Os testes do `auth-api` usam **Vitest + Supertest** e exercitam **as 62 rotas**, uma a uma:
 
 | O que afirmam | |
 |---|---|
@@ -152,6 +194,7 @@ unidade de quem pediu dependem do que está gravado, e só são verificáveis co
 | [`docs/ARQUITETURA-E-FLUXOS.md`](docs/ARQUITETURA-E-FLUXOS.md) | Decisões de arquitetura |
 | [`docs/servicos/`](docs/servicos/) | Um documento por serviço, com o porquê de cada decisão |
 | [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) | **O que não está pronto, e o que está errado** |
+| [`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md) | **Os arquivos que não estão no Git** e sem os quais a stack não sobe |
 
 `PENDENCIAS.md` é o documento a ler antes de mexer em qualquer coisa: ele lista as lacunas
 conhecidas, inclusive as de segurança, em vez de deixá-las serem descobertas em produção.
@@ -163,12 +206,11 @@ conhecidas, inclusive as de segurança, em vez de deixá-las serem descobertas e
 Estão detalhadas em `docs/PENDENCIAS.md`. As que mudam o que dá para fazer com o sistema hoje:
 
 - **`plan-service` não autentica.** Qualquer requisição alcança qualquer rota dele.
-- **`comunicacao-service` não checa perfil.** Um morador autenticado cria e apaga aviso, e as
-  rotas por id não comparam o condomínio de quem pede.
-- **A senha do Postgres está versionada** como default no compose e em outros nove arquivos.
-  Precisa ser rotacionada junto com a remoção.
-- **`node_modules/` está no índice do Git** — 5.881 arquivos. O `.gitignore` já o lista, mas
-  arquivo já rastreado não é ignorado.
+- **`comunicacao-service` aceita a entidade crua no corpo** (`@RequestBody Aviso`) ao criar e
+  editar aviso. A checagem de perfil e o recorte por condomínio já existem.
+- **A senha do Postgres saiu dos arquivos, mas segue no histórico do Git.** O compose agora exige
+  `POSTGRES_PASSWORD` e `JWT_SECRET` no `docker/.env`; quem for publicar o sistema precisa usar
+  uma senha diferente da que esteve versionada.
 
 ---
 

@@ -35,19 +35,28 @@ export async function criarOuObter(condominioId, unidadeId, competencia, dados) 
 }
 
 /** Insere os itens de uma fatura em lote. */
-export async function criarItens(faturaId, itens) {
-  if (!itens.length) return;
+//
+// `origemId` aponta para o que gerou o item — hoje, a multa nos itens MULTA e
+// ESTORNO. Devolve os itens criados com id, para quem chamou poder marcar a
+// origem como cobrada. `cliente` permite rodar dentro de uma transação: criar o
+// item e marcar a multa precisam acontecer juntos, senão uma falha no meio
+// deixaria a multa para ser cobrada de novo no mês seguinte.
+export async function criarItens(faturaId, itens, cliente = null) {
+  if (!itens.length) return [];
   const params = [];
   const values = itens.map((it, i) => {
-    const base = i * 4;
-    params.push(faturaId, it.tipo, it.descricao, it.valorCentavos);
-    // origemId é opcional — não entra como parâmetro para não depender de UUID extra
-    return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+    const base = i * 5;
+    params.push(faturaId, it.tipo, it.descricao, it.valorCentavos, it.origemId ?? null);
+    return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
   });
-  await consultar(
-    `INSERT INTO fatura_itens (fatura_id, tipo, descricao, valor_centavos) VALUES ${values.join(', ')}`,
+  const executar = cliente ? (t, p) => cliente.query(t, p) : consultar;
+  const { rows } = await executar(
+    `INSERT INTO fatura_itens (fatura_id, tipo, descricao, valor_centavos, origem_id)
+     VALUES ${values.join(', ')}
+     RETURNING id, tipo, origem_id AS "origemId"`,
     params,
   );
+  return rows;
 }
 
 /** Itens de uma fatura. */

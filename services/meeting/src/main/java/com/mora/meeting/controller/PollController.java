@@ -15,27 +15,24 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/polls")
 @RequiredArgsConstructor
-@Tag(name = "Votações", description = "Endpoints para criar e gerenciar votações vinculadas a reuniões")
+@Tag(name = "Votações", description = "Endpoints para criar e gerenciar votações independentes")
 public class PollController {
 
     private final PollService pollService;
 
     @PostMapping
-    @Operation(summary = "Criar uma nova votação", description = "Recebe os dados, vincula a uma reunião existente e salva a votação.")
+    @Operation(summary = "Criar uma nova votação", description = "Recebe os dados e salva a votação.")
     public ResponseEntity<PollResponseDTO> createPoll(@Valid @RequestBody PollRequestDTO dto) {
         PollResponseDTO novaVotacaoDTO = pollService.createPoll(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novaVotacaoDTO);
     }
 
     @GetMapping
-    @Operation(summary = "Listar votações", description = "Lista votações filtrando por reunião ou por data.")
+    @Operation(summary = "Listar votações", description = "Lista votações do condomínio informado.")
     public ResponseEntity<java.util.List<PollResponseDTO>> listPolls(
-            @RequestParam(required = false) Long meetingId,
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
-        if (meetingId != null) {
-            return ResponseEntity.ok(pollService.listPollsByMeeting(meetingId));
-        } else if (date != null) {
-            return ResponseEntity.ok(pollService.listPollsByDate(date));
+            @RequestParam String condominioId) {
+        if (condominioId != null && !condominioId.trim().isEmpty()) {
+            return ResponseEntity.ok(pollService.listPollsByCondominio(condominioId));
         }
         return ResponseEntity.badRequest().build();
     }
