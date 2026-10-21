@@ -130,6 +130,33 @@ Precisa da stack no ar. O script instala as próprias dependências (`pg`, `bcry
 `scripts/`, que tem `package.json` próprio — a raiz não tem dependência nenhuma. As contas
 criadas, uma de cada perfil, estão no topo de `scripts/seed-dev.mjs`.
 
+### Documentação da API
+
+**`http://localhost:8087/docs`** reúne a documentação de todos os serviços numa página só, pelo gateway:
+
+- no topo, um sumário com o que cada serviço faz, quem responde por ele, o banco e quantas rotas tem
+  (lido ao vivo da especificação de cada um, então serviço fora do ar aparece como fora do ar);
+- abaixo, o Swagger UI com um seletor dos serviços. Toda rota tem sumário, descrição e exemplo do
+  corpo e da resposta.
+
+Os exemplos usam os dados do seed (condomínio Residencial Parque Verde, Bloco A, apartamento 101):
+com o seed aplicado, o **Try it out** funciona com os próprios exemplos. Para as rotas protegidas,
+faça `POST /api/auth/login` no auth-api com uma conta do seed e cole o `token` em **Authorize**.
+
+| Serviço | Especificação |
+|---|---|
+| auth-api | `/api/auth/docs/openapi.json` |
+| portaria-service | `/api/portaria/v3/api-docs` |
+| comunicacao-service | `/api/comunicacao/v3/api-docs` |
+| financeiro | `/api/financeiro/docs/openapi.json` |
+| gestao-geral | `/api/gestao/docs/openapi.json` |
+| plan-service | `/api/plans/v3/api-docs` |
+| meeting-service | `/api/meetings/v3/api-docs` |
+
+Nos serviços Node a especificação é escrita à mão (`docs/openapi.js`), e um teste compara com as rotas
+do Express: rota nova sem documentação quebra a suíte. Nos Java ela é gerada pelo springdoc a partir
+das anotações. O teste de API (`tests-api/`) confere as especificações servidas pelo gateway.
+
 ---
 
 ## Testes

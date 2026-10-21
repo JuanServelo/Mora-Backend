@@ -79,6 +79,65 @@ const login = (nome, emailVar, prefixo) => req(nome, 'POST', '{{gw}}/api/auth/lo
   `),
 });
 
+// ── 00 Documentação ────────────────────────────────────────────────────────
+
+/**
+ * Confere uma especificação OpenAPI servida pelo gateway: toda operação com
+ * sumário e descrição, e exemplo em todo corpo e toda resposta de sucesso com
+ * conteúdo. O exemplo pode vir do conteúdo ou do esquema (com todos os campos
+ * exemplificados, seguindo $ref). Mesma regra dos testes dos serviços Node.
+ */
+const conferirEspecificacao = (titulo) => new Function(`
+    pm.test('responde 200', () => pm.response.to.have.status(200));
+    const spec = pm.response.json();
+    pm.test('título ${titulo}', () => pm.expect(spec.info.title).to.eql('${titulo}'));
+    pm.test('descrição do serviço preenchida', () => pm.expect(spec.info.description).to.be.a('string').and.not.empty);
+    const resolver = (s) => { let a = s; for (let i = 0; a && a.$ref && i < 10; i++) a = a.$ref.split('/').slice(1).reduce((o, k) => o && o[k], spec); return a; };
+    const temExemplo = (s, d = 0) => {
+      s = resolver(s);
+      if (!s || d > 6) return false;
+      if (s.example !== undefined || s.examples !== undefined || s.enum || s.type === 'boolean') return true;
+      if (s.type === 'array') return temExemplo(s.items, d + 1);
+      if (s.type === 'string' && s.format === 'binary') return true;
+      const props = Object.values(s.properties || {});
+      return props.length > 0 && props.every((p) => temExemplo(p, d + 1));
+    };
+    const conteudoOk = (c) => { const t = Object.values(c || {}); return t.length > 0 && t.every((m) => m.example !== undefined || (m.examples && Object.keys(m.examples).length) || temExemplo(m.schema)); };
+    const problemas = [];
+    let total = 0;
+    for (const [caminho, ops] of Object.entries(spec.paths || {})) {
+      for (const metodo of ['get', 'post', 'put', 'patch', 'delete']) {
+        const op = ops[metodo];
+        if (!op) continue;
+        total++;
+        const chave = metodo.toUpperCase() + ' ' + caminho;
+        if (!op.summary) problemas.push(chave + ': sem summary');
+        if (!op.description) problemas.push(chave + ': sem description');
+        if (op.requestBody && !conteudoOk(op.requestBody.content)) problemas.push(chave + ': corpo sem exemplo');
+        for (const [codigo, r] of Object.entries(op.responses || {})) {
+          if (/^[23]/.test(codigo) && r.content && !conteudoOk(r.content)) problemas.push(chave + ': resposta ' + codigo + ' sem exemplo');
+        }
+      }
+    }
+    pm.test('documenta ' + total + ' operações', () => pm.expect(total).to.be.above(0));
+    pm.test('toda operação com sumário, descrição e exemplos', () => pm.expect(problemas).to.eql([]));
+`);
+
+const documentacao = pasta('00 Documentação', [
+  req('Portal /docs abre pelo gateway', 'GET', '{{gw}}/docs', {
+    testes: () => {
+      pm.test('responde 200', () => pm.response.to.have.status(200));
+      pm.test('é a página do portal', () => pm.expect(pm.response.text()).to.include('Mora — documentação da API'));
+    },
+  }),
+  req('Especificação do auth-api', 'GET', '{{gw}}/api/auth/docs/openapi.json', { testes: conferirEspecificacao('auth-api') }),
+  req('Especificação do portaria', 'GET', '{{gw}}/api/portaria/v3/api-docs', { testes: conferirEspecificacao('portaria-service') }),
+  req('Especificação do comunicacao', 'GET', '{{gw}}/api/comunicacao/v3/api-docs', { testes: conferirEspecificacao('comunicacao-service') }),
+  req('Especificação do financeiro', 'GET', '{{gw}}/api/financeiro/docs/openapi.json', { testes: conferirEspecificacao('financeiro') }),
+  req('Especificação do gestao-geral', 'GET', '{{gw}}/api/gestao/docs/openapi.json', { testes: conferirEspecificacao('gestao-geral') }),
+  req('Especificação do plan', 'GET', '{{gw}}/api/plans/v3/api-docs', { testes: conferirEspecificacao('plan-service') }),
+], 'O portal e a especificação de cada serviço, pelo gateway. O meeting-service fica de fora até voltar a subir.');
+
 // ── 00 Infraestrutura ──────────────────────────────────────────────────────
 
 const infra = pasta('00 Infraestrutura', [
@@ -419,7 +478,7 @@ const colecao = {
     description: 'Fluxos ponta a ponta dos serviços. Rode com `npm test` dentro de `tests-api/`.',
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
-  item: [infra, autenticacao, authApi, comunicacao, financeiro, gestao, limpeza],
+  item: [documentacao, infra, autenticacao, authApi, comunicacao, financeiro, gestao, limpeza],
   variable: [],
 };
 

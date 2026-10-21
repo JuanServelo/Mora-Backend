@@ -14,6 +14,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Por onde outros serviços publicam notificação para um usuário.
@@ -27,6 +33,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/interno/notificacoes")
+@Tag(name = "Entre serviços", description = "Rota que outros serviços usam para publicar notificações. Autenticada por X-Servico-Token, não por JWT.")
 public class NotificacaoInternaController {
 
     private final NotificacaoService notificacaoService;
@@ -39,6 +46,29 @@ public class NotificacaoInternaController {
     }
 
     @PostMapping
+    @Operation(summary = "Publicar notificação (entre serviços)", description = """
+            Usada pelo financeiro ao aplicar multa ou fechar a competência: um job, sem usuário logado, por isso a \
+            credencial é o segredo compartilhado `SERVICO_TOKEN`, no cabeçalho `X-Servico-Token`. Sem token configurado no \
+            serviço, responde 503 (a rota fica fechada, não aberta). Reenvio com a mesma `chaveUnica` responde 200 com \
+            `repetida: true`, sem duplicar.""")
+    @io.swagger.v3.oas.annotations.security.SecurityRequirements
+    @Parameter(name = "X-Servico-Token", in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER, description = "Segredo compartilhado entre serviços (SERVICO_TOKEN).", example = "********")
+    @ApiResponse(responseCode = "201", description = "Notificação criada.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
+            { "sucesso": true, "repetida": false, "notificacao": { "id": "5b9e2f1c-7d4a-4c8e-a3b6-9f0d1e2c7a45", "destinatarioId": "4", "condominioId": "cond-parque-verde", "tipo": "MULTA_APLICADA",
+                  "titulo": "Multa aplicada à sua unidade", "mensagem": "Barulho após as 22h em dia de semana — R$ 150,00. Você pode recorrer até 28/10.",
+                  "referenciaId": "9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9", "lida": false, "criadoEm": "2026-10-13T14:20:05", "lidaEm": null,
+                  "origem": "financeiro", "chaveUnica": "financeiro:MULTA_APLICADA:9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9",
+                  "dados": { "multaId": "9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9" } } }""")))
+    @ApiResponse(responseCode = "200", description = "Já tinha sido publicada com esta chave: nada foi duplicado.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
+            { "sucesso": true, "repetida": true, "notificacao": { "id": "5b9e2f1c-7d4a-4c8e-a3b6-9f0d1e2c7a45", "destinatarioId": "4", "condominioId": "cond-parque-verde", "tipo": "MULTA_APLICADA",
+                  "titulo": "Multa aplicada à sua unidade", "mensagem": "Barulho após as 22h em dia de semana — R$ 150,00. Você pode recorrer até 28/10.",
+                  "referenciaId": "9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9", "lida": false, "criadoEm": "2026-10-13T14:20:05", "lidaEm": null,
+                  "origem": "financeiro", "chaveUnica": "financeiro:MULTA_APLICADA:9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9",
+                  "dados": { "multaId": "9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9" } } }""")))
+    @ApiResponse(responseCode = "401", description = "Token de serviço ausente ou errado.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
+            { "sucesso": false, "mensagem": "Token de serviço inválido." }""")))
+    @ApiResponse(responseCode = "503", description = "SERVICO_TOKEN não configurado no comunicacao.", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
+            { "sucesso": false, "mensagem": "Publicação entre serviços não configurada." }""")))
     public ResponseEntity<Map<String, Object>> publicar(
             @RequestHeader(value = "X-Servico-Token", required = false) String token,
             @RequestBody Publicacao publicacao) {

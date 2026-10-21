@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Service
 @RequiredArgsConstructor
@@ -42,13 +43,21 @@ public class NotificacaoService {
      * quando o comunicacao passou de Node para Java.
      */
     public record Publicacao(
+            @Schema(description = "Condomínio do destinatário.", example = "cond-parque-verde")
             String condominioId,
+            @Schema(description = "Id do destinatário (auth-api).", example = "4")
             String usuarioId,
+            @Schema(description = "Serviço que publica.", example = "financeiro")
             String origem,
+            @Schema(description = "Um dos tipos de TipoNotificacao.", example = "MULTA_APLICADA")
             String tipo,
+            @Schema(description = "Título mostrado no sino.", example = "Multa aplicada à sua unidade")
             String titulo,
+            @Schema(description = "Texto da notificação.", example = "Barulho após as 22h em dia de semana — R$ 150,00. Você pode recorrer até 28/10.")
             String mensagem,
+            @Schema(description = "O que anexar (id da fatura, da multa).", example = "{\"multaId\": \"9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9\"}")
             Map<String, Object> dados,
+            @Schema(description = "Identifica o evento; reenvio com a mesma chave não duplica.", example = "financeiro:MULTA_APLICADA:9c1f4e2a-6b7d-4f3a-a2c8-51e0d7b3f6a9")
             String chaveUnica
     ) {}
 

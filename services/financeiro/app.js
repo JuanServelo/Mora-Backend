@@ -12,6 +12,7 @@ import contratosRoutes from './routes/contratos.js';
 import prestacaoRoutes from './routes/prestacao.js';
 import { verificarConexao } from './config/database.js';
 import { gatewayConfigurado } from './config/asaas.js';
+import { openapi } from './docs/openapi.js';
 
 /**
  * A aplicação, sem `listen()`.
@@ -32,6 +33,9 @@ app.use('/api/financeiro/webhooks', express.json({
 }));
 
 app.use(express.json({ limit: '64kb' }));
+
+// Pública, como as dos outros serviços: o portal /docs do gateway a reúne.
+app.get('/api/financeiro/docs/openapi.json', (_req, res) => res.json(openapi));
 
 app.use('/api/financeiro', contextoRoutes);
 app.use('/api/financeiro', cadastrosRoutes);

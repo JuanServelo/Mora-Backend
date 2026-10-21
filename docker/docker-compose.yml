@@ -159,6 +159,9 @@ services:
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      # O application.properties do plan deixa o registro desligado por padrão;
+      # sem ele o Traefik não roteia /api/plans e o portal /docs não o alcança.
+      - SPRING_CLOUD_CONSUL_ENABLED=true
       - TZ=America/Sao_Paulo
 
   # 7. Auth API (Node.js)
