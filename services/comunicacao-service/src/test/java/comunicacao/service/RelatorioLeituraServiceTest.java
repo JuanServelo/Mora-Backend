@@ -42,7 +42,7 @@ class RelatorioLeituraServiceTest {
         when(avisoService.buscarPorId(avisoId)).thenReturn(aviso);
         when(leituraService.leiturasDoAviso(avisoId)).thenReturn(Map.of("1", LocalDateTime.now()));
 
-        AuthContext.set(new JwtClaims("99", "sindico@x", "ADMIN_SINDICO", "cond-a"));
+        AuthContext.set(new JwtClaims("99", "sindico@x", "ADMIN_SINDICO", "cond-a", "Síndico"));
     }
 
     @AfterEach
@@ -85,7 +85,7 @@ class RelatorioLeituraServiceTest {
 
     @Test
     void moradorNaoVeORelatorio() {
-        AuthContext.set(new JwtClaims("1", "m@x", "MORADOR", "cond-a"));
+        AuthContext.set(new JwtClaims("1", "m@x", "MORADOR", "cond-a", "Morador"));
         assertThrows(AcessoNegadoException.class, () -> servico.relatorio(avisoId, "Bearer t"));
         verifyNoInteractions(authClient);
     }
