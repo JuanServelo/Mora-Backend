@@ -351,4 +351,4 @@ Todos os endpoints retornam erros padronizados:
 - `portaria/dto/AreaComunResponseDTO.java`
 
 ### Database
-- Tabelas e índices criados em `docker/init-databases.sql`
+- Tabelas e índices criados pelas migrações do Flyway (`src/main/resources/db/migration`)

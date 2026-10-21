@@ -16,8 +16,9 @@ e como o condomínio presta contas disso.
 | 16 | Gerenciar Cobranças da Unidade | cadastros prontos; faturamento pendente |
 | 17 | Registrar Prestação de Contas | tabelas criadas, sem endpoints |
 
-É o único serviço com **banco próprio e migrações versionadas** (`node-pg-migrate`), o que
-atende o RNF-23 — nenhum outro serviço da malha cumpre isso hoje.
+Tem **banco próprio e migrações versionadas** (`node-pg-migrate`), aplicadas pelo próprio
+serviço ao subir, antes de atender (`config/migracoes.js`). Se uma falhar, ele não sobe. Os outros
+serviços seguem o mesmo princípio com Flyway e Umzug ([`../MIGRACOES.md`](../MIGRACOES.md)).
 
 ### O que já funciona
 
@@ -318,7 +319,7 @@ docker exec -i postgres psql -U admin -d postgres < docker/criar-banco-financeir
 
 cd services/financeiro
 npm install
-npm run migrate:up
+npm run migrate:up  # fora do Docker; no container o serviço aplica as migrações ao subir
 npm test            # dinheiro e rateio
 npm run verificar   # saúde e autorização, contra a stack no ar
 npm run smoke:asaas # exercita o gateway (precisa de chave válida)
