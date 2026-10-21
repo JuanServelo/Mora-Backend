@@ -16,9 +16,18 @@ public class AuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
+    /**
+     * Rotas sem JWT: health check, preflight de CORS e a documentação da API.
+     * O Swagger só descreve os endpoints; cada chamada feita por ele continua
+     * exigindo token.
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getServletPath().startsWith("/actuator") || "OPTIONS".equalsIgnoreCase(request.getMethod());
+        String caminho = request.getServletPath();
+        return caminho.startsWith("/actuator")
+                || caminho.startsWith("/api/plans/v3/api-docs")
+                || caminho.startsWith("/api/plans/swagger-ui")
+                || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 
     @Override

@@ -46,7 +46,7 @@ spring:
         hostname: plan-service
         tags:
           - "traefik.enable=true"
-          - "traefik.http.routers.plan.rule=PathPrefix(`/api/plans`)"
+          - "traefik.http.routers.plan.rule=PathPrefix(`/api/plans`) || PathPrefix(`/api/assinaturas`)"
           - "traefik.http.routers.plan.entrypoints=web"
         health-check-path: /actuator/health
         health-check-interval: 15s
@@ -59,9 +59,9 @@ jwt:
 # Swagger / OpenAPI
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /api/plans/v3/api-docs
   swagger-ui:
-    path: /swagger-ui.html
+    path: /api/plans/swagger-ui.html
 
 management:
   endpoints:
