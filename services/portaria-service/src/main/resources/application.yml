@@ -23,12 +23,22 @@ spring:
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  # Quem cria e evolui o banco é o Flyway, com os scripts de db/migration.
+  # O `mora` é dividido com o comunicacao-service, então cada serviço tem a sua
+  # tabela de histórico. `baseline-version: 0` faz o V1 rodar também em banco
+  # que já existe (ele é idempotente): sem isso, o segundo serviço a subir
+  # num banco novo acharia o esquema "não vazio" e pularia o próprio V1.
+  flyway:
+    enabled: true
+    table: flyway_historico_portaria
+    baseline-on-migrate: true
+    baseline-version: 0
+
   jpa:
     hibernate:
-      # 'update' cria tabelas novas automaticamente (útil em dev).
-      # Em produção, prefira 'validate' para falhar no startup se alguma tabela faltar,
-      # em vez de silenciosamente criar uma estrutura incompleta.
-      ddl-auto: update
+      # O Hibernate só confere: se a entidade pedir coluna que o banco não tem,
+      # o serviço não sobe, em vez de criar uma estrutura incompleta.
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
