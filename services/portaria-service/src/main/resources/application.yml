@@ -1,5 +1,8 @@
 server:
   port: 8090
+  # Respeita o X-Forwarded-Prefix do Traefik: o Swagger monta o endereço do
+  # servidor como /api/portaria, e o "Try it out" passa pelo gateway.
+  forward-headers-strategy: framework
   error:
     include-message: always
     include-binding-errors: always
