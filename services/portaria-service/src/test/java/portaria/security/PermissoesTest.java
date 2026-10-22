@@ -94,6 +94,56 @@ class PermissoesTest {
     }
 
     @Nested
+    @DisplayName("exigirOperacaoOuProprio")
+    class OperacaoOuProprio {
+
+        @Test
+        @DisplayName("a portaria dá baixa na encomenda de qualquer um")
+        void portaria() {
+            autenticar("PORTEIRO", "cond-a");
+            assertDoesNotThrow(() ->
+                    Permissoes.exigirOperacaoOuProprio("99", "dar baixa nesta encomenda"));
+        }
+
+        @Test
+        @DisplayName("o morador dá baixa na própria")
+        void propriaEncomenda() {
+            autenticar("MORADOR", "cond-a");
+            assertDoesNotThrow(() ->
+                    Permissoes.exigirOperacaoOuProprio("1", "dar baixa nesta encomenda"));
+        }
+
+        @Test
+        @DisplayName("mas não na encomenda de outro morador")
+        void encomendaAlheia() {
+            autenticar("MORADOR", "cond-a");
+            assertThrows(AcessoNegadoException.class, () ->
+                    Permissoes.exigirOperacaoOuProprio("99", "dar baixa nesta encomenda"));
+        }
+
+        @Test
+        @DisplayName("encomenda sem destinatário só a portaria resolve")
+        void semDono() {
+            autenticar("MORADOR", "cond-a");
+            assertThrows(AcessoNegadoException.class, () ->
+                    Permissoes.exigirOperacaoOuProprio(null, "dar baixa nesta encomenda"));
+
+            autenticar("PORTEIRO", "cond-a");
+            assertDoesNotThrow(() ->
+                    Permissoes.exigirOperacaoOuProprio(null, "dar baixa nesta encomenda"));
+        }
+
+        @Test
+        @DisplayName("a mensagem diz que é da portaria ou de quem recebe")
+        void mensagem() {
+            autenticar("MORADOR", "cond-a");
+            var e = assertThrows(AcessoNegadoException.class, () ->
+                    Permissoes.exigirOperacaoOuProprio("99", "dar baixa nesta encomenda"));
+            assertTrue(e.getMessage().contains("quem recebe"), e.getMessage());
+        }
+    }
+
+    @Nested
     @DisplayName("condominioParaGravar")
     class CondominioParaGravar {
 

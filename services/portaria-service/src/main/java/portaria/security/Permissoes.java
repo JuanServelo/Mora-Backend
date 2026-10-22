@@ -65,6 +65,22 @@ public final class Permissoes {
     }
 
     /**
+     * Ação que a portaria faz pelos outros, mas que a própria pessoa também
+     * pode fazer por si — retirar a encomenda endereçada a ela é o caso.
+     *
+     * Exigir só perfil de operação barraria o morador na própria encomenda;
+     * não exigir nada deixaria qualquer autenticado dar baixa na encomenda
+     * alheia, que é o estado em que isto estava.
+     */
+    public static void exigirOperacaoOuProprio(String donoId, String acao) {
+        JwtClaims c = claims();
+        if (PERFIS_OPERACAO.contains(c.perfil())) return;
+        if (donoId != null && donoId.equals(c.authUserId())) return;
+        throw new AcessoNegadoException(
+                "Seu perfil não pode " + acao + ". Esta ação é da portaria ou de quem recebe.");
+    }
+
+    /**
      * Condomínio em que a gravação deve cair.
      *
      * Para quem tem condomínio na claim, o corpo da requisição é ignorado — é o

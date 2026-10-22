@@ -99,6 +99,24 @@ class PortariaControllersTest {
         }
 
         @Test
+        @DisplayName("a data de retirada é opcional e chega ao serviço quando informada")
+        void dataOpcional() throws Exception {
+            when(service.retirar(anyString(), any(), any()))
+                    .thenReturn(new portaria.model.Entrega());
+
+            mock().perform(post("/entregas/abc/retirar")
+                            .contentType("application/json").content("Ana"))
+                    .andExpect(status().isOk());
+            verify(service).retirar("abc", "Ana", null);
+
+            mock().perform(post("/entregas/abc/retirar")
+                            .param("dataRetirada", "2026-10-20")
+                            .contentType("application/json").content("Ana"))
+                    .andExpect(status().isOk());
+            verify(service).retirar("abc", "Ana", java.time.LocalDate.of(2026, 10, 20));
+        }
+
+        @Test
         @DisplayName("listar pendentes é endpoint próprio, separado do listar tudo")
         void pendentes() throws Exception {
             when(service.listarPendentes(anyString())).thenReturn(List.of());
@@ -125,7 +143,7 @@ class PortariaControllersTest {
         @Test
         @DisplayName("encomenda já retirada não é retirada de novo")
         void retirarDuasVezes() throws Exception {
-            when(service.retirar(anyString(), any()))
+            when(service.retirar(anyString(), any(), any()))
                     .thenThrow(new OperacaoInvalidaException("Esta entrega já foi retirada."));
             mock().perform(post("/entregas/abc/retirar")
                             .contentType("application/json").content("Ana"))

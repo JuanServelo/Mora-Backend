@@ -89,7 +89,11 @@ public class EntregaController {
     @PostMapping("/{id}/retirar")
     @Operation(summary = "Registrar retirada", description = "Marca a encomenda como retirada. O corpo, opcional, é o nome de quem retirou, como texto.")
     @ApiResponse(responseCode = "200", description = "Retirada registrada.")
-    public EntregaResponseDTO retirar(@Parameter(description = "Id da entrega.", example = "3e5a7c9b-1d3f-4a6c-8e0b-2d4f6a8c0e1b") @PathVariable String id, @RequestBody(required = false) String recebedor) {
-        return EntregaResponseDTO.fromEntity(entregaService.retirar(id, recebedor));
+    public EntregaResponseDTO retirar(@Parameter(description = "Id da entrega.", example = "3e5a7c9b-1d3f-4a6c-8e0b-2d4f6a8c0e1b") @PathVariable String id, @RequestBody(required = false) String recebedor,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dataRetirada) {
+        return EntregaResponseDTO.fromEntity(entregaService.retirar(id, recebedor, dataRetirada));
     }
 }
