@@ -14,6 +14,7 @@ const sindico = [autenticar, exigirPerfis('ADMIN_SINDICO'), resolverEscopo, exig
 const unidade = [autenticar, exigirPerfis(...PERFIS_UNIDADE), resolverEscopo, resolverUnidade];
 
 router.get('/admin/multas', gestao, ctrl.listar);
+router.get('/admin/multas/por-mes', gestao, ctrl.porMes);
 router.post('/admin/multas', sindico, ctrl.aplicar);
 router.patch('/admin/multas/:id/julgar', sindico, ctrl.julgar);
 router.patch('/admin/multas/:id/cancelar', sindico, ctrl.cancelar);

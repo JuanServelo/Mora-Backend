@@ -121,6 +121,20 @@ const User = sequelize.define('User', {
     defaultValue: false,
   },
 
+  /**
+   * Convidado autorizado a entrar pela portaria.
+   *
+   * A coluna existe desde `migrate-portaria`, mas não estava declarada aqui —
+   * e o Sequelize só lê e grava o que o modelo declara. O efeito era duplo e
+   * silencioso: a troca do flag respondia sucesso sem persistir nada, e
+   * `routes/portaria.js` lia `undefined` ao checar a entrada, barrando todo
+   * convidado como se nunca tivesse sido autorizado.
+   */
+  entradaPermitida: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+
   dataNascimento: {
     type: DataTypes.DATEONLY,
     allowNull: true,

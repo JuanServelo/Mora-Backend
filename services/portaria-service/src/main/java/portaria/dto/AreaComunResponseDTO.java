@@ -20,6 +20,7 @@ public class AreaComunResponseDTO {
     private Double area;
     private boolean podeReservar;
     private boolean exigeAprovacao;
+    private int antecedenciaMinimaHoras;
     private String observacoes;
     private boolean ativo;
 
@@ -34,6 +35,7 @@ public class AreaComunResponseDTO {
                 .area(areaComum.getArea())
                 .podeReservar(areaComum.isPodeReservar())
                 .exigeAprovacao(areaComum.isExigeAprovacao())
+                .antecedenciaMinimaHoras(areaComum.getAntecedenciaMinimaHoras())
                 .observacoes(areaComum.getObservacoes())
                 .ativo(areaComum.isAtivo())
                 .build();

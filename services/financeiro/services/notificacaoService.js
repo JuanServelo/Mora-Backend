@@ -24,7 +24,11 @@ export async function criar(usuarioId, condominioId, tipo, titulo, mensagem, met
   }
 
   try {
-    const resposta = await fetch(`${SERVICOS.comunicacao}/api/comunicacao/interno/notificacoes`, {
+    // Sem o prefixo `/api/comunicacao`: a chamada vai direto ao container
+    // (`COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094`), e esse prefixo
+    // só existe passando pelo Traefik, que o remove. Com ele, a rota dava 404 e
+    // nenhuma notificação chegava.
+    const resposta = await fetch(`${SERVICOS.comunicacao}/interno/notificacoes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

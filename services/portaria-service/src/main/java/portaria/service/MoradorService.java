@@ -8,6 +8,7 @@ import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Morador;
 import portaria.repository.MoradorRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,9 +22,8 @@ public class MoradorService {
     private final MoradorRepository moradorRepository;
 
     public Morador cadastrar(Morador morador) {
-        var claims = AuthContext.get();
-        String condominioId = (claims != null && claims.condominioId() != null && !"default".equals(claims.condominioId()))
-                ? claims.condominioId() : morador.getCondominioId();
+        Permissoes.exigirAdmin("cadastrar moradores");
+        String condominioId = Permissoes.condominioParaGravar(morador.getCondominioId());
 
         if (condominioId != null) {
             final String cid = condominioId;
@@ -75,7 +75,9 @@ public class MoradorService {
     }
 
     public Morador atualizar(String id, Morador dados) {
+        Permissoes.exigirAdmin("alterar moradores");
         Morador morador = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(morador.getCondominioId());
         morador.setNome(dados.getNome());
         morador.setApartamento(dados.getApartamento());
         morador.setBloco(dados.getBloco());
@@ -84,7 +86,9 @@ public class MoradorService {
     }
 
     public void desativar(String id) {
+        Permissoes.exigirAdmin("desativar moradores");
         Morador morador = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(morador.getCondominioId());
         morador.setAtivo(false);
         moradorRepository.save(morador);
     }

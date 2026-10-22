@@ -11,50 +11,68 @@ import portaria.security.CondominioUtils;
 import portaria.service.AreaComunService;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/areas-comuns")
 @RequiredArgsConstructor
+@Tag(name = "Áreas comuns", description = "Espaços do condomínio que podem ser reservados (RF-10).")
 public class AreaComunController {
 
     private final AreaComunService areaComunService;
 
     @PostMapping("/cadastrar")
+    @Operation(summary = "Cadastrar área comum", description = "Cria um espaço, com capacidade, taxa de locação, política de cancelamento e se exige aprovação. O `condominioId` do corpo precisa ser o de quem chama.")
+    @ApiResponse(responseCode = "201", description = "Área criada.")
     public ResponseEntity<AreaComum> cadastrar(@Valid @RequestBody AreaComum areaComum) {
-        String condominioIdEfetivo = CondominioUtils.condominioIdEfetivo();
-        if (condominioIdEfetivo != null && !condominioIdEfetivo.equals(areaComum.getCondominioId())) {
-            throw new AcessoNegadoException("Acesso negado ao condomínio especificado.");
-        }
+        // O condomínio é resolvido no serviço, a partir da claim. Exigir que o
+        // corpo trouxesse o mesmo valor obrigava o cliente a informar um dado
+        // que ele não escolhe — e recusava com 403 quem simplesmente omitia.
         return ResponseEntity.status(HttpStatus.CREATED).body(areaComunService.cadastrar(areaComum));
     }
 
     @GetMapping
+    @Operation(summary = "Listar áreas ativas", description = "Espaços ativos do condomínio. O Admin Geral pode informar `condominioId`.")
+    @ApiResponse(responseCode = "200", description = "Áreas comuns.")
     public List<AreaComum> listarAtivas(@RequestParam(required = false) String condominioId) {
         return areaComunService.listarAtivas(CondominioUtils.resolverEscopo(condominioId));
     }
 
     @GetMapping("/todas")
+    @Operation(summary = "Listar todas as áreas", description = "Ativas e desativadas.")
+    @ApiResponse(responseCode = "200", description = "Áreas comuns.")
     public List<AreaComum> listarTodas(@RequestParam(required = false) String condominioId) {
         return areaComunService.listarTodas(CondominioUtils.resolverEscopo(condominioId));
     }
 
     @GetMapping("/{id}")
-    public AreaComum buscarPorId(@PathVariable String id) {
+    @Operation(summary = "Detalhe da área comum", description = "Um espaço do condomínio de quem chama.")
+    @ApiResponse(responseCode = "200", description = "Área comum.")
+    public AreaComum buscarPorId(@Parameter(description = "Id da área comum.", example = "cf9f4897-b196-4186-83af-2d67678651c2") @PathVariable String id) {
         return areaComunService.buscarPorId(id);
     }
 
     @GetMapping("/tipo/{tipo}")
-    public List<AreaComum> listarPorTipo(@PathVariable String tipo) {
+    @Operation(summary = "Áreas por tipo", description = "Espaços de um tipo (SALAO, PISCINA, CHURRASQUEIRA...).")
+    @ApiResponse(responseCode = "200", description = "Áreas comuns.")
+    public List<AreaComum> listarPorTipo(@Parameter(description = "Tipo da área.", example = "SALAO") @PathVariable String tipo) {
         return areaComunService.listarPorTipo(tipo);
     }
 
     @GetMapping("/tipo/{tipo}/ativas")
-    public List<AreaComum> listarPorTipoAtivas(@PathVariable String tipo) {
+    @Operation(summary = "Áreas ativas por tipo", description = "Só os espaços ativos do tipo.")
+    @ApiResponse(responseCode = "200", description = "Áreas comuns.")
+    public List<AreaComum> listarPorTipoAtivas(@Parameter(description = "Tipo da área.", example = "SALAO") @PathVariable String tipo) {
         return areaComunService.listarPorTipoAtivas(tipo);
     }
 
     @PutMapping("/{id}")
-    public AreaComum atualizar(@PathVariable String id, @Valid @RequestBody AreaComum dados) {
+    @Operation(summary = "Editar área comum", description = "Substitui os dados do espaço. Só no condomínio de quem chama.")
+    @ApiResponse(responseCode = "200", description = "Área atualizada.")
+    public AreaComum atualizar(@Parameter(description = "Id da área comum.", example = "cf9f4897-b196-4186-83af-2d67678651c2") @PathVariable String id, @Valid @RequestBody AreaComum dados) {
         String condominioIdEfetivo = CondominioUtils.condominioIdEfetivo();
         if (condominioIdEfetivo != null) {
             AreaComum existente = areaComunService.buscarPorId(id);
@@ -66,19 +84,25 @@ public class AreaComunController {
     }
 
     @PutMapping("/{id}/desativar")
-    public ResponseEntity<Void> desativar(@PathVariable String id) {
+    @Operation(summary = "Desativar área comum", description = "O espaço deixa de aceitar reservas, sem apagar.")
+    @ApiResponse(responseCode = "200", description = "Desativada.")
+    public ResponseEntity<Void> desativar(@Parameter(description = "Id da área comum.", example = "cf9f4897-b196-4186-83af-2d67678651c2") @PathVariable String id) {
         areaComunService.desativar(id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/ativar")
-    public ResponseEntity<Void> ativar(@PathVariable String id) {
+    @Operation(summary = "Reativar área comum", description = "O espaço volta a aceitar reservas.")
+    @ApiResponse(responseCode = "200", description = "Reativada.")
+    public ResponseEntity<Void> ativar(@Parameter(description = "Id da área comum.", example = "cf9f4897-b196-4186-83af-2d67678651c2") @PathVariable String id) {
         areaComunService.ativar(id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable String id) {
+    @Operation(summary = "Excluir área comum", description = "Apaga o espaço.")
+    @ApiResponse(responseCode = "200", description = "Excluída.")
+    public ResponseEntity<Void> deletar(@Parameter(description = "Id da área comum.", example = "cf9f4897-b196-4186-83af-2d67678651c2") @PathVariable String id) {
         areaComunService.deletar(id);
         return ResponseEntity.noContent().build();
     }

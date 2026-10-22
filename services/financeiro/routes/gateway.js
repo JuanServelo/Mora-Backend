@@ -7,6 +7,7 @@ import {
   buscarLinhaDigitavel, consultarCobranca, cancelarCobranca,
 } from '../gateway/asaasClient.js';
 import { paraCentavos, formatarBRL } from '../utils/dinheiro.js';
+import { protegerRotas } from '../utils/assincrono.js';
 
 const router = express.Router();
 
@@ -157,4 +158,6 @@ router.delete('/gateway/teste/:id', adm, async (req, res) => {
   res.json({ sucesso: true });
 });
 
-export default router;
+// Erro num handler async vira 500 com mensagem genérica, em vez de deixar a
+// requisição sem resposta e derrubar o processo (Express 4).
+export default protegerRotas(router);

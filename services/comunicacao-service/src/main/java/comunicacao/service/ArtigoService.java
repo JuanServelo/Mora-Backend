@@ -3,7 +3,9 @@ package comunicacao.service;
 import comunicacao.exception.RecursoNaoEncontradoException;
 import comunicacao.model.ArtigoConhecimento;
 import comunicacao.model.enums.CategoriaArtigo;
+import comunicacao.repository.ArtigoAvaliacaoRepository;
 import comunicacao.repository.ArtigoConhecimentoRepository;
+import comunicacao.repository.PerguntaFaqRepository;
 import comunicacao.security.AuthContext;
 import comunicacao.security.Autorizacao;
 import comunicacao.security.CondominioUtils;
@@ -28,6 +30,8 @@ import java.util.UUID;
 public class ArtigoService {
 
     private final ArtigoConhecimentoRepository artigoRepository;
+    private final ArtigoAvaliacaoRepository avaliacaoRepository;
+    private final PerguntaFaqRepository perguntaRepository;
 
     public ArtigoConhecimento criar(ArtigoConhecimento artigo) {
         Autorizacao.exigirGestaoDoCondominio("publicar artigos");
@@ -57,7 +61,12 @@ public class ArtigoService {
     }
 
     public void excluir(UUID id) {
+        // A checagem de perfil e condomínio vem antes de tocar em qualquer
+        // dado: sem ela, apagar as avaliações já seria um efeito de quem nem
+        // poderia excluir o artigo.
         ArtigoConhecimento artigo = buscarParaEscrita(id, "excluir artigos");
+        avaliacaoRepository.deleteByArtigoId(id);
+        perguntaRepository.desvincularArtigo(id);
         artigoRepository.delete(artigo);
     }
 

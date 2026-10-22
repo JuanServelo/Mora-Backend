@@ -371,28 +371,23 @@ aparecem lado a lado. Cada `@Column(name = "\`blocoId\`")` com crase é sintoma 
 
 ## 6. Gestão de schema
 
-O schema é criado por **dois mecanismos concorrentes**:
+Cada serviço cria e evolui o próprio esquema com uma **ferramenta de migração**, que roda quando
+ele sobe:
 
-1. **`docker/init-databases.sql`** — roda uma vez na criação do volume do Postgres. Cria os
-   4 bancos adicionais e um subconjunto das tabelas (`condominios`, `users`, `invites`,
-   `blocos`, `apartamentos`, `areas_comuns`) com índices explícitos. Insere o condomínio
-   `'default'`.
-2. **`ddl-auto: update`** — ativo nos **quatro** serviços Java. O Hibernate cria e estende as
-   demais tabelas no boot.
+| Serviço | Ferramenta |
+|---|---|
+| comunicacao, portaria, plan, meeting | Flyway (`db/migration/V<n>__*.sql`), com o Hibernate em `ddl-auto: validate` |
+| auth-api | Umzug, o executor de migrações do Sequelize (`migrations/index.js`) |
+| financeiro | node-pg-migrate (`migrations/*.sql`) |
 
-Além disso, o `auth-api` roda **scripts de migração ad-hoc na inicialização do processo**
-(`server.js`): `garantirColunasNovas`, `migrarUsuariosLegados`, `garantirColunasRf07`,
-`garantirTabelaCondominios`, `garantirTabelaPortaria`.
+O `docker/init-databases.sql` só cria os bancos vazios.
 
-**Não há Flyway, Liquibase nem migrations versionadas do `sequelize-cli`.**
-
-Consequências já observáveis:
-
-- `Bloco.java` tem a coluna `sigla`; o `init-databases.sql` não tem
-- `AreaComum` tem `taxaLocacao`, `informacoesLimpeza`, `politicaCancelamento`; o SQL não tem
-- `ddl-auto: update` **nunca remove coluna nem altera tipo** — o drift é cumulativo e silencioso
-- `services/vagas-service/src/main/resources/seed-estruturas-fisicas.sql` é byte a byte
-  idêntico ao do portaria, incluindo o `\c mora;` — **popula o banco errado**
+Até outubro de 2026 o esquema nascia de **dois mecanismos concorrentes**: o `init-databases.sql`
+criava parte das tabelas, e o `ddl-auto: update` dos serviços Java criava o resto, sem nunca
+remover coluna nem atualizar CHECK de enum. O drift era cumulativo e silencioso. Ao gerar a
+primeira migração de cada serviço, apareceram três tabelas do portaria que o Hibernate não
+conseguia criar num banco novo, e um CHECK desatualizado que fazia falhar o aviso para o
+síndico. Os achados e o desenho estão em [`MIGRACOES.md`](MIGRACOES.md).
 
 ---
 
@@ -440,7 +435,7 @@ O `docker-compose.yml` define valores default para segredos, repetidos em todos 
 e está commitado:
 
 ```yaml
-- POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Vibers@2112}
+- POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
 - JWT_SECRET=${JWT_SECRET:-uma-chave-secreta-muito-segura-de-32-caracteres}
 ```
 
@@ -503,11 +498,10 @@ executados) em `portaria-service` e `vagas-service`. O de `vagas-service` chama-
 
 ### Índices
 
-Existem apenas nas tabelas declaradas no `init-databases.sql` (`users`, `invites`,
-`condominios`, `blocos`, `apartamentos`, `areas_comuns`). Tudo que o Hibernate criou tem
-somente PK e constraints `unique`. Consultas centrais do domínio — "visitantes com status
-`DENTRO`", "entregas `PENDENTE` por apartamento", "aluguéis ativos no período" — fazem
-full scan.
+Os índices por condomínio, e por condomínio e status, de visitantes, entregas, veículos e das
+demais tabelas da portaria, agora fazem parte do V2 de cada serviço Java, e todo banco os
+recebe. Antes, só existiam em quem tinha rodado `migrate-condominio-id.sql` à mão. Continua sem
+índice a consulta de aluguéis de vaga por período (`alugueis_vagas`), que faz full scan.
 
 ### Pool de conexões
 
@@ -527,12 +521,12 @@ Ordenado por impacto:
 
 | # | Ponto | Impacto |
 |---|---|---|
-| 1 | Segredos com valor default commitados (`Vibers@2112`, `JWT_SECRET`) | Crítico — permite forjar token com qualquer perfil |
+| 1 | Segredos com valor default commitados (senha do Postgres, `JWT_SECRET`) — **resolvido**: o compose agora exige os dois no `docker/.env` e os serviços não têm valor padrão | Crítico — permitia forjar token com qualquer perfil |
 | 2 | 4 dos 5 serviços sem autorização efetiva, com portas expostas no host | Crítico — dados acessíveis sem token |
 | 3 | `condominioId` ausente na maioria das tabelas de domínio | Alto — vazamento entre condomínios |
 | 4 | Dados mestres (bloco/apartamento/morador) triplicados sem sincronização | Alto — divergência inevitável |
 | 5 | Identidade de pessoa em 4 tipos incompatíveis | Alto — impede consolidação e auditoria |
-| 6 | `ddl-auto: update` sem migrations versionadas, com drift já presente | Alto — schema irreproduzível |
+| 6 | `ddl-auto: update` sem migrations versionadas, com drift já presente — **resolvido**: Flyway, Umzug e node-pg-migrate criam todo banco na subida (`MIGRACOES.md`) | Alto — schema irreproduzível |
 | 7 | CPF e histórico de movimentação em texto plano, sem retenção | Alto — exposição LGPD |
 | 8 | Controle de acesso da portaria implementado duas vezes, desconectado | Médio — relatórios inconsistentes |
 | 9 | `Carro` e `Veiculo` duplicados no mesmo serviço, ambos com `placa` UNIQUE | Médio — estados contraditórios |
@@ -555,7 +549,7 @@ Ordenado por impacto:
 | Portaria no Node (implementação paralela) | `services/auth-api/routes/portaria.js` |
 | Filtro JWT do portaria-service | `services/portaria-service/src/main/java/portaria/security/AuthFilter.java` |
 | Único consumidor do AuthContext | `services/portaria-service/src/main/java/portaria/service/VeiculoService.java:54` |
-| Schema inicial | `docker/init-databases.sql` |
+| Migrações do banco | `services/*/src/main/resources/db/migration/`, `services/auth-api/migrations/index.js`, `services/financeiro/migrations/` |
 | Orquestração e variáveis de ambiente | `docker/docker-compose.yml` |
 | Roteamento Traefik via Consul | `services/portaria-service/src/main/resources/application.yml` |
 | Diagrama ER existente | `docs/er-portaria.mmd` |

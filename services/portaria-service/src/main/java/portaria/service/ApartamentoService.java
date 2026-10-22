@@ -9,6 +9,7 @@ import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Apartamento;
 import portaria.model.Bloco;
 import portaria.repository.ApartamentoRepository;
+import portaria.security.Permissoes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,7 +29,11 @@ public class ApartamentoService {
     private final BlocoService blocoService;
 
     public Apartamento cadastrar(ApartamentoRequestDTO request) {
+        Permissoes.exigirAdmin("cadastrar apartamentos");
         Bloco bloco = blocoService.buscarPorId(request.getBlocoId());
+        // O apartamento herda o condomínio do bloco, então travar o bloco já
+        // impede criar unidade no condomínio alheio.
+        Permissoes.exigirMesmoCondominio(bloco.getCondominioId());
 
         validarCamposApartamento(request);
 
@@ -96,8 +101,11 @@ public class ApartamentoService {
     }
 
     public Apartamento atualizar(UUID id, ApartamentoRequestDTO request) {
+        Permissoes.exigirAdmin("alterar apartamentos");
         Apartamento apartamento = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(apartamento.getCondominioId());
         Bloco bloco = blocoService.buscarPorId(request.getBlocoId());
+        Permissoes.exigirMesmoCondominio(bloco.getCondominioId());
 
         validarCamposApartamento(request);
 
@@ -129,24 +137,28 @@ public class ApartamentoService {
     }
 
     public void desativar(UUID id) {
+        Permissoes.exigirAdmin("desativar apartamentos");
         Apartamento apartamento = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(apartamento.getCondominioId());
         apartamento.setAtivo(false);
         apartamento.setAtualizadoEm(LocalDateTime.now());
         apartamentoRepository.save(apartamento);
     }
 
     public void ativar(UUID id) {
+        Permissoes.exigirAdmin("ativar apartamentos");
         Apartamento apartamento = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(apartamento.getCondominioId());
         apartamento.setAtivo(true);
         apartamento.setAtualizadoEm(LocalDateTime.now());
         apartamentoRepository.save(apartamento);
     }
 
     public void deletar(UUID id) {
-        if (!apartamentoRepository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("Apartamento não encontrado com id: " + id);
-        }
-        apartamentoRepository.deleteById(id);
+        Permissoes.exigirAdmin("excluir apartamentos");
+        Apartamento apartamento = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(apartamento.getCondominioId());
+        apartamentoRepository.deleteById(apartamento.getId());
     }
 
     private void validarCamposApartamento(ApartamentoRequestDTO request) {
