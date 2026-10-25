@@ -11,7 +11,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora_plan}
     username: ${SPRING_DATASOURCE_USERNAME:admin}
-    password: ${SPRING_DATASOURCE_PASSWORD:Vibers@2112}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -22,18 +22,24 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
 
+  # O banco é do Flyway (db/migration). O application.properties tem a mesma
+  # configuração e prevalece sobre este arquivo.
+  flyway:
+    enabled: true
+    table: flyway_historico_plan
+    baseline-on-migrate: true
+    baseline-version: 0
+
   sql:
     init:
-      mode: always
-
-  jpa.defer-datasource-initialization: true
+      mode: never
 
   cloud:
     consul:
@@ -46,7 +52,7 @@ spring:
         hostname: plan-service
         tags:
           - "traefik.enable=true"
-          - "traefik.http.routers.plan.rule=PathPrefix(`/api/plans`)"
+          - "traefik.http.routers.plan.rule=PathPrefix(`/api/plans`) || PathPrefix(`/api/assinaturas`)"
           - "traefik.http.routers.plan.entrypoints=web"
         health-check-path: /actuator/health
         health-check-interval: 15s
@@ -59,9 +65,9 @@ jwt:
 # Swagger / OpenAPI
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /api/plans/v3/api-docs
   swagger-ui:
-    path: /swagger-ui.html
+    path: /api/plans/swagger-ui.html
 
 management:
   endpoints:

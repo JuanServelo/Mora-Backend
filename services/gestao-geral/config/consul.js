@@ -33,6 +33,9 @@ export async function registrarNoConsul() {
       'traefik.enable=true',
       'traefik.http.routers.gestao.rule=PathPrefix(`/api/gestao`)',
       'traefik.http.routers.gestao.entrypoints=web',
+      // O portal de documentação de todos os serviços mora aqui, em /docs.
+      'traefik.http.routers.gestao-docs.rule=PathPrefix(`/docs`)',
+      'traefik.http.routers.gestao-docs.entrypoints=web',
     ],
     check: {
       http: `http://${endereco}:${PORT}/health`,

@@ -1,0 +1,7 @@
+# Junta as identidades de cada pessoa em `git shortlog` e `git log --use-mailmap`.
+# Formato: Nome canônico <e-mail canônico> [Nome no commit] <e-mail no commit>
+João Victor Monteiro Tancon <101944685+jtancon@users.noreply.github.com> <AutomacaoBasis@castgroup.com.br>
+João Victor Monteiro Tancon <101944685+jtancon@users.noreply.github.com> jtancon <101944685+jtancon@users.noreply.github.com>
+Luana Akemi Sakurada <111025797+luana-akemi-sakurada@users.noreply.github.com> akemi <akemiskrd@gmail.com>
+Juan Servelo <91964551+JuanServelo@users.noreply.github.com> <juanservelo2@gmail.com>
+Ray Govaski <rayygovaski@gmail.com> raygovaski-den <ray.govaski@denvercontabil.com.br>

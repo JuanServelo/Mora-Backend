@@ -22,6 +22,7 @@ const ID = '11111111-1111-1111-1111-111111111111';
 
 const ROTAS = [
   ['get', '/admin/multas'],
+  ['get', '/admin/multas/por-mes'],
   ['post', '/admin/multas'],
   ['patch', `/admin/multas/${ID}/julgar`],
   ['patch', `/admin/multas/${ID}/cancelar`],
@@ -63,6 +64,7 @@ describe('perfil errado → 403', () => {
   // [método, rota, perfil que não pode]
   const CASOS = [
     ['get', '/admin/multas', 'MORADOR'],
+    ['get', '/admin/multas/por-mes', 'MORADOR'],
     ['get', '/admin/multas', 'PORTEIRO'],
     ['post', '/admin/multas', 'MORADOR'],
     // O Admin Geral acompanha, mas não aplica nem julga multa.

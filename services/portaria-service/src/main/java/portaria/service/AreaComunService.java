@@ -7,6 +7,7 @@ import portaria.exception.OperacaoInvalidaException;
 import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.AreaComum;
 import portaria.repository.AreaComunRepository;
+import portaria.security.Permissoes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,8 @@ public class AreaComunService {
     private final AreaComunRepository areaComunRepository;
 
     public AreaComum cadastrar(AreaComum areaComum) {
+        Permissoes.exigirAdmin("cadastrar áreas comuns");
+        areaComum.setCondominioId(Permissoes.condominioParaGravar(areaComum.getCondominioId()));
         validarCamposAreaComum(areaComum);
 
         if (areaComum.getNome() != null) {
@@ -71,7 +74,9 @@ public class AreaComunService {
     }
 
     public AreaComum atualizar(String id, AreaComum dados) {
+        Permissoes.exigirAdmin("alterar áreas comuns");
         AreaComum areaComum = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(areaComum.getCondominioId());
 
         validarCamposAreaComum(dados);
 
@@ -101,6 +106,7 @@ public class AreaComunService {
         areaComum.setArea(dados.getArea());
         areaComum.setPodeReservar(dados.isPodeReservar());
         areaComum.setExigeAprovacao(dados.isExigeAprovacao());
+        areaComum.setAntecedenciaMinimaHoras(dados.getAntecedenciaMinimaHoras());
         areaComum.setObservacoes(dados.getObservacoes());
         areaComum.setAtualizadoEm(LocalDateTime.now());
 
@@ -108,6 +114,8 @@ public class AreaComunService {
     }
 
     public void desativar(String id) {
+        Permissoes.exigirAdmin("desativar áreas comuns");
+        Permissoes.exigirMesmoCondominio(buscarPorId(id).getCondominioId());
         AreaComum areaComum = buscarPorId(id);
         areaComum.setAtivo(false);
         areaComum.setAtualizadoEm(LocalDateTime.now());
@@ -115,6 +123,8 @@ public class AreaComunService {
     }
 
     public void ativar(String id) {
+        Permissoes.exigirAdmin("ativar áreas comuns");
+        Permissoes.exigirMesmoCondominio(buscarPorId(id).getCondominioId());
         AreaComum areaComum = buscarPorId(id);
         areaComum.setAtivo(true);
         areaComum.setAtualizadoEm(LocalDateTime.now());
@@ -122,6 +132,8 @@ public class AreaComunService {
     }
 
     public void deletar(String id) {
+        Permissoes.exigirAdmin("excluir áreas comuns");
+        Permissoes.exigirMesmoCondominio(buscarPorId(id).getCondominioId());
         if (!areaComunRepository.existsById(id)) {
             throw new RecursoNaoEncontradoException("Área comum não encontrada com id: " + id);
         }

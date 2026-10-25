@@ -32,6 +32,7 @@ export const PUBLICA = 'publica';
 export const TOKEN = 'token';
 
 export const INVENTARIO = {
+  'GET /api/auth/docs/openapi.json': { acesso: PUBLICA },
   'POST /api/auth/forgot-password': { acesso: PUBLICA },
   'GET /api/auth/google': { acesso: PUBLICA },
   'GET /api/auth/google/callback': { acesso: PUBLICA },
@@ -75,6 +76,7 @@ export const INVENTARIO = {
   'PATCH /api/reclamacoes/:id': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'GET /api/reclamacoes/minhas': { acesso: TOKEN, nega: [] },
   'GET /api/reclamacoes/todas': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
+  'GET /api/reclamacoes/estatisticas': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'POST /api/user-management/invites': { acesso: TOKEN, nega: [P.PORTEIRO, P.CONVIDADO] },
   'POST /api/user-management/invites/:id/resend': { acesso: TOKEN, nega: [P.PORTEIRO, P.CONVIDADO] },
   'GET /api/user-management/units/:unidadeId/occupants': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },

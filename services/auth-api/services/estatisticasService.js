@@ -1,4 +1,5 @@
-import { Op, fn, col, literal } from 'sequelize';
+import { Op, fn, col, literal, QueryTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 import User from '../models/User.js';
 import Invite from '../models/Invite.js';
 import Condominio from '../models/Condominio.js';
@@ -226,4 +227,123 @@ export async function estatisticasDoCondominio(condominioId) {
     convitesPendentes,
     ocorrencias,
   };
+}
+
+// ── Ocorrências de um condomínio ───────────────────────────────────────────
+
+const FUSO = 'America/Sao_Paulo';
+export const OCORRENCIAS_MESES_PADRAO = 6;
+const OCORRENCIAS_MESES_MAX = 24;
+
+/**
+ * Os últimos `n` meses, do mais antigo ao atual, como "YYYY-MM".
+ *
+ * O mês é o do fuso do condomínio: uma ocorrência aberta às 22h do dia 31 é
+ * daquele mês, embora em UTC já seja do seguinte. As consultas abaixo agrupam
+ * com o mesmo fuso, e as duas pontas precisam concordar.
+ */
+export function mesesDaJanela(meses, agora = new Date()) {
+  const pedido = Number(meses);
+  const n = Number.isFinite(pedido)
+    ? Math.min(OCORRENCIAS_MESES_MAX, Math.max(1, Math.trunc(pedido)))
+    : OCORRENCIAS_MESES_PADRAO;
+  const [ano, mes] = agora.toLocaleDateString('sv-SE', { timeZone: FUSO }).split('-').map(Number);
+  const lista = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const total = ano * 12 + (mes - 1) - i;
+    lista.push(`${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`);
+  }
+  return lista;
+}
+
+/**
+ * Monta a resposta a partir das linhas agregadas. Função pura: é ela que os
+ * testes exercitam, sem banco.
+ *
+ * Mês sem linha vira zero, para o gráfico não ficar com buracos.
+ */
+export function montarEstatisticasReclamacoes({
+  meses, atual, abertasPorMes, resolvidasPorMes, porCategoria, tempoMedioDias,
+}) {
+  const mapa = (linhas) => Object.fromEntries(linhas.map((l) => [l.mes, Number(l.total)]));
+  const abertas = mapa(abertasPorMes);
+  const resolvidas = mapa(resolvidasPorMes);
+  const pendentes = Number(atual?.pendentes ?? 0);
+  const emAnalise = Number(atual?.emAnalise ?? 0);
+  const media = tempoMedioDias === null || tempoMedioDias === undefined ? null : Number(tempoMedioDias);
+
+  return {
+    meses,
+    atual: {
+      abertas: pendentes + emAnalise,
+      pendentes,
+      emAnalise,
+      maisAntigaDesde: atual?.maisAntigaDesde ?? null,
+    },
+    porMes: meses.map((mes) => ({ mes, abertas: abertas[mes] ?? 0, resolvidas: resolvidas[mes] ?? 0 })),
+    porCategoria: porCategoria
+      .map((l) => ({ categoria: l.categoria, total: Number(l.total) }))
+      .sort((a, b) => b.total - a.total || a.categoria.localeCompare(b.categoria)),
+    tempoMedioResolucaoDias: media === null || Number.isNaN(media) ? null : Math.round(media * 10) / 10,
+  };
+}
+
+/**
+ * Números das ocorrências para o painel do síndico (RNF-20).
+ *
+ * Antes o gestao-geral baixava a lista inteira e contava em memória; agora o
+ * dono do dado conta, em SQL, e devolve só os totais.
+ *
+ * `condominioId` nulo significa "todos" — só o Admin Geral chega aqui assim;
+ * o escopo é decidido na rota.
+ *
+ * Tempo até resolver usa o `updatedAt` da resolvida como data de resolução: a
+ * ocorrência não guarda quando foi resolvida, e a última alteração de uma
+ * resolvida costuma ser a própria resolução.
+ */
+export async function estatisticasReclamacoes({ condominioId = null, meses } = {}) {
+  const janela = mesesDaJanela(meses);
+  const inicio = `${janela[0]}-01`;
+  const filtro = condominioId === null ? '' : 'AND "condominioId" = :condominioId';
+  const local = (campo) => `("${campo}" AT TIME ZONE :fuso)`;
+  const mesLocal = (campo) => `to_char(date_trunc('month', ${local(campo)}), 'YYYY-MM')`;
+  const consulta = (sql) => sequelize.query(sql, {
+    type: QueryTypes.SELECT,
+    replacements: { condominioId, fuso: FUSO, inicio },
+  });
+
+  const [[atual], abertasPorMes, resolvidasPorMes, porCategoria, [tempo]] = await Promise.all([
+    consulta(`
+      SELECT COUNT(*) FILTER (WHERE status = 'PENDENTE')    AS "pendentes",
+             COUNT(*) FILTER (WHERE status = 'EM_ANALISE')  AS "emAnalise",
+             MIN("createdAt") FILTER (WHERE status <> 'RESOLVIDO') AS "maisAntigaDesde"
+        FROM reclamacoes
+       WHERE TRUE ${filtro}`),
+    consulta(`
+      SELECT ${mesLocal('createdAt')} AS mes, COUNT(*) AS total
+        FROM reclamacoes
+       WHERE ${local('createdAt')} >= CAST(:inicio AS timestamp) ${filtro}
+       GROUP BY 1`),
+    consulta(`
+      SELECT ${mesLocal('updatedAt')} AS mes, COUNT(*) AS total
+        FROM reclamacoes
+       WHERE status = 'RESOLVIDO'
+         AND ${local('updatedAt')} >= CAST(:inicio AS timestamp) ${filtro}
+       GROUP BY 1`),
+    consulta(`
+      SELECT category AS categoria, COUNT(*) AS total
+        FROM reclamacoes
+       WHERE ${local('createdAt')} >= CAST(:inicio AS timestamp) ${filtro}
+       GROUP BY category`),
+    consulta(`
+      SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt")) / 86400) AS dias
+        FROM reclamacoes
+       WHERE status = 'RESOLVIDO'
+         AND "updatedAt" >= "createdAt"
+         AND ${local('updatedAt')} >= CAST(:inicio AS timestamp) ${filtro}`),
+  ]);
+
+  return montarEstatisticasReclamacoes({
+    meses: janela, atual, abertasPorMes, resolvidasPorMes, porCategoria, tempoMedioDias: tempo?.dias ?? null,
+  });
 }

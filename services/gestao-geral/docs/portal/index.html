@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mora — documentação da API</title>
+  <link rel="stylesheet" href="/docs/swagger-ui/swagger-ui.css">
+  <link rel="stylesheet" href="/docs/portal.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Mora — documentação da API</h1>
+    <p>
+      Os sete serviços do backend, num lugar só. Tudo passa pelo gateway (Traefik, porta 8087): o
+      <strong>Try it out</strong> de cada rota chama o serviço por ele. Para as rotas protegidas, faça login em
+      <code>POST /api/auth/login</code> (auth-api) e cole o <code>token</code> no botão <strong>Authorize</strong>.
+      Os exemplos usam os dados do seed de desenvolvimento: condomínio <em>Residencial Parque Verde</em>.
+    </p>
+  </header>
+
+  <section class="sumario" aria-labelledby="titulo-sumario">
+    <h2 id="titulo-sumario">Sumário</h2>
+    <div class="tabela">
+      <table>
+        <thead>
+          <tr>
+            <th>Serviço</th>
+            <th>O que faz</th>
+            <th>Responsável</th>
+            <th>Banco</th>
+            <th>Rotas</th>
+            <th>Situação</th>
+          </tr>
+        </thead>
+        <tbody id="linhas-sumario"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <main id="swagger-ui"></main>
+
+  <script src="/docs/swagger-ui/swagger-ui-bundle.js"></script>
+  <script src="/docs/swagger-ui/swagger-ui-standalone-preset.js"></script>
+  <script src="/docs/portal.js"></script>
+</body>
+</html>
