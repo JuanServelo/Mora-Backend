@@ -53,23 +53,25 @@ A aplicação inicia sem credenciais Google. Por padrão `GOOGLE_MEET_ENABLED=fa
 | `PLAN_SERVICE_URL` | Padrão local `http://localhost:8093` |
 | `JWT_SECRET` | Mesmo segredo do auth-api, com pelo menos 32 bytes |
 
-O cliente Google é inicializado no primeiro uso. Se habilitado e sem arquivo/token válido, a criação de link devolve 503; a aplicação continua iniciando. Conexão e leitura têm timeout. O helper local `GoogleMeetAuthHelper` recebe o caminho externo como primeiro argumento ou em `GOOGLE_MEET_CREDENTIALS_PATH`; não lê o classpath.
+O serviço inicia sem `credentials.json`, com integração desabilitada ou sem tokens. Listagem, atas e votações continuam disponíveis conforme JWT e plano. Criar uma reunião exige um link real: configuração ausente devolve 503; falta de autorização ou token revogado devolve 409, sem persistir reunião parcial.
 
-O Maven exclui `credentials.json` e tokens dos recursos. `.dockerignore` exclui esses arquivos do contexto de build. O arquivo local antigo não é apagado.
+No Compose principal, coloque o cliente OAuth em `secrets/google-meet/credentials.json`. A pasta é montada somente para leitura em `/run/secrets/google-meet`, fora da imagem, e ignorada pelo Git. Se não houver arquivo, o backend ainda sobe. O overlay `docker-compose.meet.yml` continua disponível para montar um arquivo externo como Docker secret.
 
-No Docker, a integração opcional usa `docker/docker-compose.meet.yml`. Defina `GOOGLE_MEET_CREDENTIALS_FILE` no `docker/.env` com o caminho do arquivo no host; gere os tokens antes com o helper. O secret é montado somente em execução, em `/run/secrets/google-meet-credentials.json`:
+Cadastre no cliente web do Google Cloud a URI exata `http://localhost:8091/api/meetings/google/callback`. Em outro ambiente, ajuste `GOOGLE_MEET_REDIRECT_URI` e registre a mesma URL no Google. `GOOGLE_MEET_FRONTEND_URL` define o retorno fixo à tela, por padrão `http://localhost:5173/adm/reunioes`. O [fluxo OAuth oficial do Google](https://developers.google.com/identity/protocols/oauth2/web-server) exige consentimento e URI de retorno cadastrada.
 
-```powershell
-docker compose --env-file docker/.env -f docker/docker-compose.yml -f docker/docker-compose.meet.yml up -d --build meeting-service
-```
+Na primeira entrada da administração na seção de reuniões, o frontend consulta `GET /api/meetings/google/status`. Se houver configuração e faltar autorização, inicia `POST /api/meetings/google/authorize` com JWT e abre o consentimento Google na mesma aba. Não executa comandos nem abre navegador dentro do container. Moradores usam as reuniões existentes, sem autorizar a conta de gestão.
 
-Sem a integração Google, basta o Compose principal. Credenciais e tokens não devem ser versionados.
+O retorno usa state aleatório de uso único, validade de dez minutos, cookie HttpOnly/SameSite=Lax vinculado ao navegador e PKCE S256. Somente o callback exato dispensa JWT; os endpoints de início/estado exigem administração e módulo contratado. O token nunca vai para o frontend. Cancelamento e erro não provocam redirecionamento contínuo, e o botão de reconexão permite tentar novamente.
+
+O refresh token fica no volume `tokens/<hash-SHA256-do-condomínio>/StoredCredential`; o armazenamento antigo `tokens/StoredCredential` não é compartilhado automaticamente entre condomínios. Solicita-se `access_type=offline` e `prompt=consent`. Renovação e nova autorização são serializadas nesta instância e persistidas no mesmo armazenamento, para sobreviver a reinícios. Execute uma instância por volume de tokens. Token revogado exige novo consentimento.
+
+O helper CLI antigo permanece como utilitário de diagnóstico independente. O fluxo da tela não depende dele. O Maven e `.dockerignore` excluem credenciais e tokens da imagem.
 
 ## Rotas e infraestrutura
 
 `/api/meetings`, `/api/meetings/{id}/ata`, `/api/polls`. Consul anuncia as duas bases de negócio no Traefik. `/actuator/health`, `/api-docs`, `/swagger-ui.html` e assets do Swagger são públicos; isso não libera operações de negócio.
 
-Atualize backend e frontend juntos, pois o estado do voto na resposta mudou. Faça build limpo para remover artefatos antigos (`mvn clean package`) e reconstrua a imagem. A aplicação mantém `ddl-auto=update`, que acrescenta `unidade_id` e a constraint sem apagar os votos antigos. Execute uma versão por vez na atualização para impedir gravações pelo código anterior.
+Atualize backend e frontend juntos, pois o estado do voto na resposta mudou. Faça build limpo para remover artefatos antigos (`mvn clean package`) e reconstrua a imagem. O Flyway aplica V3 para acrescentar `unidade_id` e seu índice único sem apagar votos antigos; Hibernate usa `ddl-auto=validate`. Execute uma versão por vez na atualização para impedir gravações pelo código anterior.
 
 ## Validação
 

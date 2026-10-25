@@ -139,7 +139,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - AUTH_API_URL=http://auth-api:3001
-      - GOOGLE_MEET_ENABLED=${GOOGLE_MEET_ENABLED:-false}
+      - GOOGLE_MEET_ENABLED=${GOOGLE_MEET_ENABLED:-true}
+      - GOOGLE_MEET_CREDENTIALS_PATH=/run/secrets/google-meet/credentials.json
+      - GOOGLE_MEET_REDIRECT_URI=${GOOGLE_MEET_REDIRECT_URI:-http://localhost:8091/api/meetings/google/callback}
+      - GOOGLE_MEET_FRONTEND_URL=${GOOGLE_MEET_FRONTEND_URL:-http://localhost:5173/adm/reunioes}
       - PLAN_SERVICE_URL=http://plan-service:8093
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
@@ -148,6 +151,7 @@ services:
       - TZ=America/Sao_Paulo
     volumes:
       - ../tokens:/app/tokens
+      - ../secrets/google-meet:/run/secrets/google-meet:ro
 
   # 7.5. Microservice 4: Planos SaaS (Java)
   plan-service:

@@ -78,6 +78,8 @@ class MeetingSecurityIntegrationTest {
     @Autowired PollVoteRepository votes;
     @Autowired AtaRepository atas;
     @Autowired LegacyVoteMigration migration;
+    @org.springframework.boot.test.mock.mockito.SpyBean
+    com.mora.meeting.service.GoogleMeetOAuthService google;
     Poll pollA, pollB;
     Meeting meetingA, meetingB;
 
@@ -178,6 +180,37 @@ class MeetingSecurityIntegrationTest {
         assertThat(votes.count()).isEqualTo(2);
     }
 
+    @Test void residentListsOnlyUpcomingOrOngoingScheduledMeetingsWhileManagementKeepsHistory() throws Exception {
+        Meeting past = meeting("tenant-a");
+        past.setDataHoraInicio(LocalDateTime.now().minusDays(2));
+        past.setDataHoraFim(LocalDateTime.now().minusDays(1));
+        meetings.saveAndFlush(past);
+        Meeting cancelled = meeting("tenant-a");
+        cancelled.setStatus(MeetingStatus.CANCELADA);
+        meetings.saveAndFlush(cancelled);
+        Meeting finished = meeting("tenant-a");
+        finished.setStatus(MeetingStatus.FINALIZADA);
+        meetings.saveAndFlush(finished);
+        Meeting ongoing = meeting("tenant-a");
+        ongoing.setDataHoraInicio(LocalDateTime.now().minusMinutes(5));
+        ongoing.setDataHoraFim(LocalDateTime.now().plusMinutes(30));
+        meetings.saveAndFlush(ongoing);
+        as(get("/api/meetings"), 2, "MORADOR").andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[0].id").value(ongoing.getId()))
+                .andExpect(jsonPath("$[1].id").value(meetingA.getId()));
+        as(get("/api/meetings"), 1, "ADMIN_SINDICO").andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5));
+    }
+
+    @Test void confirmingPresenceIsPersistedAndVisibleToManagementWithoutChangingAnotherGuest() throws Exception {
+        String path = "/api/meetings/" + meetingA.getId() + "/convidados/2/presenca?status=CONFIRMADO";
+        as(patch(path), 2, "MORADOR").andExpect(status().isNoContent());
+        as(get("/api/meetings/" + meetingA.getId()), 1, "ADMIN_SINDICO").andExpect(status().isOk())
+                .andExpect(jsonPath("$.convidados[?(@.usuarioId == 2)].status").value(org.hamcrest.Matchers.contains("CONFIRMADO")))
+                .andExpect(jsonPath("$.convidados[?(@.usuarioId == 3)].status").value(org.hamcrest.Matchers.contains("PENDENTE")));
+        as(patch(path), 3, "MORADOR").andExpect(status().isForbidden());
+    }
+
     @Test void concurrentResidentsOfSameUnitProduceExactlyOneVote() throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
@@ -223,7 +256,8 @@ class MeetingSecurityIntegrationTest {
                 .andExpect(status().isNoContent());
     }
 
-    @Test void createDerivesOrganizerTenantAndStartsWithoutCredentialsWhileRejectingForeignGuests() throws Exception {
+    @Test void createDerivesOrganizerAndTenantWhileRejectingForeignGuests() throws Exception {
+        org.mockito.Mockito.doReturn("https://meet.google.com/test-room").when(google).createLink("tenant-a");
         String body = "{\"titulo\":\"Assembleia\",\"dataHoraInicio\":\"" + LocalDateTime.now().plusDays(1)
                 + "\",\"dataHoraFim\":\"" + LocalDateTime.now().plusDays(1).plusHours(1)
                 + "\",\"idOrganizador\":999,\"condominioId\":\"tenant-b\",\"idConvidados\":[2]}";
@@ -231,7 +265,7 @@ class MeetingSecurityIntegrationTest {
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.idOrganizador").value(1)).andReturn();
         Long id = JSON.readTree(result.getResponse().getContentAsString()).path("id").asLong();
         assertThat(meetings.findById(id).orElseThrow().getCondominioId()).isEqualTo("tenant-a");
-        assertThat(meetings.findById(id).orElseThrow().getMeetLink()).isNull();
+        assertThat(meetings.findById(id).orElseThrow().getMeetLink()).isEqualTo("https://meet.google.com/test-room");
         as(post("/api/meetings").contentType("application/json").content(body.replace("[2]", "[9]")), 1, "ADMIN_SINDICO")
                 .andExpect(status().isBadRequest());
     }
@@ -240,6 +274,27 @@ class MeetingSecurityIntegrationTest {
         PLAN_STATUS.set(500);
         as(get("/api/meetings"), 2, "MORADOR").andExpect(status().isServiceUnavailable());
         mvc.perform(get("/api-docs")).andExpect(status().isOk());
+    }
+
+    @Test void googleAuthorizationRequiresManagerAndContractButCallbackUsesStateInsteadOfJwt() throws Exception {
+        mvc.perform(get("/api/meetings/google/status")).andExpect(status().isUnauthorized());
+        as(get("/api/meetings/google/status"), 2, "MORADOR").andExpect(status().isForbidden());
+        as(post("/api/meetings/google/authorize"), 2, "MORADOR").andExpect(status().isForbidden());
+        as(get("/api/meetings/google/status"), 1, "ADMIN_SINDICO")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.configured").value(false));
+        PLAN_STATUS.set(403);
+        as(post("/api/meetings/google/authorize"), 1, "ADMIN_SINDICO").andExpect(status().isForbidden());
+        mvc.perform(get("/api/meetings/google/callback").param("state", "forged").param("code", "forged"))
+                .andExpect(status().isSeeOther()).andExpect(header().string("Location", "http://localhost:5173/adm/reunioes?googleMeet=error"));
+    }
+
+    @Test void missingGoogleCredentialsDoNotPersistPartialMeetings() throws Exception {
+        long before = meetings.count();
+        String body = "{\"titulo\":\"Assembleia\",\"dataHoraInicio\":\"" + LocalDateTime.now().plusDays(1)
+                + "\",\"dataHoraFim\":\"" + LocalDateTime.now().plusDays(1).plusHours(1) + "\",\"idConvidados\":[2]}";
+        as(post("/api/meetings").contentType("application/json").content(body), 1, "ADMIN_SINDICO")
+                .andExpect(status().isServiceUnavailable());
+        assertThat(meetings.count()).isEqualTo(before);
     }
 
     @Test void managersCreatePollInTheirTenantAndCanPublishAndEditOnlyTheirMeetingsAta() throws Exception {

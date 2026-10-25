@@ -48,7 +48,13 @@ public class MeetingService {
                 ? meetingRepository.findByCondominioId(tenant)
                 : meetingRepository.findByOrganizadorOrConvidado(tenant,
                     AuthContext.isManager() ? usuarioId : AuthContext.get().usuarioId());
-        return meetings.stream().map(meetingMapper::toResponseDto).toList();
+        var agora = java.time.LocalDateTime.now();
+        boolean manager = AuthContext.isManager();
+        return meetings.stream()
+                .filter(meeting -> manager || (meeting.getStatus() == MeetingStatus.AGENDADA
+                        && meeting.getDataHoraFim() != null && meeting.getDataHoraFim().isAfter(agora)))
+                .sorted(Comparator.comparing(Meeting::getDataHoraInicio))
+                .map(meetingMapper::toResponseDto).toList();
     }
 
     @Transactional

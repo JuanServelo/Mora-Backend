@@ -5,7 +5,8 @@ services:
       - GOOGLE_MEET_ENABLED=true
       - GOOGLE_MEET_CREDENTIALS_PATH=/run/secrets/google-meet-credentials.json
     secrets:
-      - google-meet-credentials
+      - source: google-meet-credentials
+        target: google-meet-credentials.json
 
 secrets:
   google-meet-credentials:

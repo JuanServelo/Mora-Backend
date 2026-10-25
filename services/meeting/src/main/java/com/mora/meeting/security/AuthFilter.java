@@ -21,7 +21,8 @@ public class AuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         return "OPTIONS".equals(request.getMethod()) || path.equals("/actuator/health")
                 || path.startsWith("/actuator/health/") || path.equals("/swagger-ui.html")
-                || path.startsWith("/swagger-ui/") || path.equals("/api-docs") || path.startsWith("/api-docs/");
+                || path.startsWith("/swagger-ui/") || path.equals("/api-docs") || path.startsWith("/api-docs/")
+                || ("GET".equals(request.getMethod()) && path.equals("/api/meetings/google/callback"));
     }
 
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
