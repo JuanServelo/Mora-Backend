@@ -8,6 +8,7 @@ import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Bloco;
 import portaria.repository.ApartamentoRepository;
 import portaria.repository.BlocoRepository;
+import portaria.security.Permissoes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +28,10 @@ public class BlocoService {
     private final ApartamentoRepository apartamentoRepository;
 
     public Bloco cadastrar(Bloco bloco) {
+        Permissoes.exigirAdmin("cadastrar blocos");
+        // O condomínio vem da claim, não do corpo: sem isto bastava trocar um
+        // campo do JSON para criar bloco no condomínio de outro cliente.
+        bloco.setCondominioId(Permissoes.condominioParaGravar(bloco.getCondominioId()));
         validarLimitesBloco(bloco.getAndares(), bloco.getApartamentosPorAndar());
 
         if (bloco.getCondominioId() != null) {
@@ -61,7 +66,9 @@ public class BlocoService {
     }
 
     public Bloco atualizar(UUID id, Bloco dados) {
+        Permissoes.exigirAdmin("alterar blocos");
         Bloco bloco = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(bloco.getCondominioId());
         String condId = bloco.getCondominioId();
 
         validarLimitesBloco(dados.getAndares(), dados.getApartamentosPorAndar());
@@ -114,24 +121,28 @@ public class BlocoService {
     }
 
     public void desativar(UUID id) {
+        Permissoes.exigirAdmin("desativar blocos");
         Bloco bloco = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(bloco.getCondominioId());
         bloco.setAtivo(false);
         bloco.setAtualizadoEm(LocalDateTime.now());
         blocoRepository.save(bloco);
     }
 
     public void ativar(UUID id) {
+        Permissoes.exigirAdmin("ativar blocos");
         Bloco bloco = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(bloco.getCondominioId());
         bloco.setAtivo(true);
         bloco.setAtualizadoEm(LocalDateTime.now());
         blocoRepository.save(bloco);
     }
 
     public void deletar(UUID id) {
-        if (!blocoRepository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("Bloco não encontrado com id: " + id);
-        }
-        blocoRepository.deleteById(id);
+        Permissoes.exigirAdmin("excluir blocos");
+        Bloco bloco = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(bloco.getCondominioId());
+        blocoRepository.deleteById(bloco.getId());
     }
 
     private void validarLimitesBloco(Integer andares, Integer apartamentosPorAndar) {

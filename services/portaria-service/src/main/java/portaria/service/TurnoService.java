@@ -8,6 +8,7 @@ import portaria.exception.RecursoNaoEncontradoException;
 import portaria.model.Turno;
 import portaria.repository.TurnoRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,15 +21,14 @@ public class TurnoService {
     private final TurnoRepository turnoRepository;
 
     public Turno iniciar(Turno turno) {
-        var claims = AuthContext.get();
-        if (claims != null && claims.condominioId() != null && !"default".equals(claims.condominioId())) {
-            turno.setCondominioId(claims.condominioId());
-        }
+        Permissoes.exigirOperacao("iniciar turnos");
+        turno.setCondominioId(Permissoes.condominioParaGravar(turno.getCondominioId()));
         turno.getEntradas().add(LocalDateTime.now());
         return turnoRepository.save(turno);
     }
 
     public Turno retomar(String id) {
+        Permissoes.exigirOperacao("retomar turnos");
         Turno turno = buscarPorId(id);
         if (turno.getEntradas().size() > turno.getSaidas().size()) {
             throw new OperacaoInvalidaException("Turno já está em andamento.");
@@ -38,6 +38,7 @@ public class TurnoService {
     }
 
     public Turno finalizar(String id) {
+        Permissoes.exigirOperacao("finalizar turnos");
         Turno turno = buscarPorId(id);
         if (turno.getEntradas().size() <= turno.getSaidas().size()) {
             throw new OperacaoInvalidaException("Turno já está finalizado.");

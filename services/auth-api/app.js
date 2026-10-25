@@ -18,6 +18,7 @@ import reclamacoesRoutes from './routes/reclamacoes.js';
 import condominiosRoutes from './routes/condominios.js';
 import perfisRoutes from './routes/perfis.js';
 import portariaRoutes from './routes/portaria.js';
+import internoRoutes from './routes/interno.js';
 import estatisticasRoutes from './routes/estatisticas.js';
 import { openapi } from './docs/openapi.js';
 import { ehProducao } from './config/regras.js';
@@ -106,6 +107,8 @@ app.use('/api/reclamacoes', authMiddleware, exigirModulo('reclamacoes'), reclama
 app.use('/api/condominios', condominiosRoutes);
 app.use('/api/perfis', perfisRoutes);
 app.use('/api/portaria', authMiddleware, exigirModulo('portaria'), portariaRoutes);
+// Consultas entre serviços: autenticadas por X-Servico-Token, não por JWT.
+app.use('/api/interno', internoRoutes);
 app.use('/api/estatisticas', estatisticasRoutes);
 
 app.get('/api/health', (req, res) => {

@@ -27,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.driver-class-name=org.h2.Driver", "spring.datasource.username=sa",
         "spring.datasource.password=", "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop", "spring.sql.init.mode=never",
+        "spring.flyway.enabled=false",
         "spring.cloud.consul.enabled=false", "spring.cloud.service-registry.auto-registration.enabled=false",
         "jwt.secret=segredo-de-teste-com-pelo-menos-32-caracteres"})
 @AutoConfigureMockMvc

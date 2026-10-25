@@ -1,6 +1,8 @@
 package portaria.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -28,12 +30,18 @@ import java.util.List;
 @Component
 public class AuthApiClient {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthApiClient.class);
+
     private final String baseUrl;
     private final HttpClient http;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public AuthApiClient(@Value("${auth.api.url}") String baseUrl) {
+    private final String tokenServico;
+
+    public AuthApiClient(@Value("${auth.api.url}") String baseUrl,
+                         @Value("${servico.token:}") String tokenServico) {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
+        this.tokenServico = tokenServico == null ? "" : tokenServico.trim();
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3))
                 .build();
@@ -53,6 +61,55 @@ public class AuthApiClient {
     public List<PessoaUnidade> pessoasDaUnidade(String unidadeId) {
         return buscar("/api/portaria/pessoas-unidade?unidadeId="
                 + URLEncoder.encode(unidadeId, StandardCharsets.UTF_8), "pessoas");
+    }
+
+    /**
+     * Síndicos ativos do condomínio, pela rota interna do auth-api.
+     *
+     * Usa o segredo compartilhado, e não o JWT de quem está na requisição: o
+     * caso de uso é avisar o síndico de uma reserva pedida por um morador, e o
+     * token do morador não autoriza listar a equipe — daria 403.
+     *
+     * Devolve lista vazia em qualquer falha: o aviso é desejável, mas não pode
+     * impedir a reserva de ser gravada.
+     */
+    public List<PessoaUnidade> sindicos(String condominioId) {
+        if (tokenServico.isEmpty()) {
+            log.warn("[auth-api] SERVICO_TOKEN ausente — não dá para consultar síndicos");
+            return List.of();
+        }
+        if (condominioId == null || condominioId.isBlank()) return List.of();
+
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/interno/sindicos?condominioId="
+                            + URLEncoder.encode(condominioId, StandardCharsets.UTF_8)))
+                    .header("Accept", "application/json")
+                    .header("X-Servico-Token", tokenServico)
+                    .timeout(Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() >= 300) {
+                log.warn("[auth-api] consulta de síndicos respondeu HTTP {}", res.statusCode());
+                return List.of();
+            }
+            JsonNode raiz = mapper.readTree(res.body()).path("sindicos");
+            List<PessoaUnidade> saida = new java.util.ArrayList<>();
+            for (JsonNode n : raiz) {
+                saida.add(new PessoaUnidade(
+                        n.path("id").asText(), n.path("nome").asText(),
+                        n.path("email").asText(), n.path("perfil").asText()));
+            }
+            return saida;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return List.of();
+        } catch (Exception e) {
+            log.warn("[auth-api] não foi possível consultar síndicos: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     /** Funcionários elegíveis como responsáveis por evento do condomínio. */

@@ -28,10 +28,9 @@ public class AreaComunController {
     @Operation(summary = "Cadastrar área comum", description = "Cria um espaço, com capacidade, taxa de locação, política de cancelamento e se exige aprovação. O `condominioId` do corpo precisa ser o de quem chama.")
     @ApiResponse(responseCode = "201", description = "Área criada.")
     public ResponseEntity<AreaComum> cadastrar(@Valid @RequestBody AreaComum areaComum) {
-        String condominioIdEfetivo = CondominioUtils.condominioIdEfetivo();
-        if (condominioIdEfetivo != null && !condominioIdEfetivo.equals(areaComum.getCondominioId())) {
-            throw new AcessoNegadoException("Acesso negado ao condomínio especificado.");
-        }
+        // O condomínio é resolvido no serviço, a partir da claim. Exigir que o
+        // corpo trouxesse o mesmo valor obrigava o cliente a informar um dado
+        // que ele não escolhe — e recusava com 403 quem simplesmente omitia.
         return ResponseEntity.status(HttpStatus.CREATED).body(areaComunService.cadastrar(areaComum));
     }
 

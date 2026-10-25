@@ -46,11 +46,13 @@ um UUID inventado de entrar na tabela.
 
 ### Tabelas
 
-`migration/fase5-comunicacao-tabelas.sql` cria o que é novo, e `fase8-notificacoes-servico.sql`
-acrescenta o índice único parcial de `chave_unica` e amplia o `CHECK` do `tipo` com os tipos do
-financeiro — o Hibernate cria esse `CHECK` uma vez e não o atualiza; `avisos` e `artigos_conhecimento`
-já existiam. O `ddl-auto: update` do Hibernate acompanha as colunas, e o SQL versionado existe
-para o que o JPA não expressa.
+O esquema é do Flyway (`src/main/resources/db/migration`), e o Hibernate só confere
+(`ddl-auto: validate`). O `V1` cria as tabelas, o `V2` traz o que o JPA não expressa (o índice
+único parcial de `chave_unica`, que impede notificar duas vezes o mesmo evento, os índices das
+listagens e o `ON DELETE CASCADE` das conversas), e o `V3` corrige o `CHECK` de `publico_alvo`,
+que não aceitava `SINDICO`. O Hibernate cria o `CHECK` de um enum uma vez e não o atualiza, então
+valor novo em enum pede migração. Os scripts que eram aplicados à mão (fase5 a fase8) ficaram em
+`db/historico`. Detalhes em [`../MIGRACOES.md`](../MIGRACOES.md).
 
 | Tabela | Papel |
 |---|---|

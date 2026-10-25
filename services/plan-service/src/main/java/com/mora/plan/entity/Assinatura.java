@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
  * cliente so conseguia trocar de plano uma vez na vida.
  *
  * O correto e um indice unico parcial (WHERE status = 'ATIVA'), que o JPA nao
- * expressa. Ele e criado por docker/corrigir-constraint-assinaturas.sql.
+ * expressa. Ele e criado pela migracao db/migration/V2__assinatura_ativa_unica.sql.
  */
 @Table(name = "tb_assinaturas")
 @Getter

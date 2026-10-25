@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
     name = "funcionario_jornadas",
     uniqueConstraints = @UniqueConstraint(
         name = "uk_jornada_funcionario",
-        columnNames = {"auth_user_id", "condominioId"}
+        columnNames = {"auth_user_id", "`condominioId`"}
     )
 )
 public class FuncionarioJornada {

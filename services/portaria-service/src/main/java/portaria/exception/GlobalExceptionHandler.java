@@ -71,6 +71,13 @@ public class GlobalExceptionHandler {
             return buildResponse(HttpStatus.CONFLICT, "Já existe um apartamento com este número neste bloco.");
         if (msg != null && (msg.contains("areas_comuns_nome_key") || msg.contains("areas_comuns_nome_condominioId_key")))
             return buildResponse(HttpStatus.CONFLICT, "Já existe uma área comum com este nome neste condomínio.");
+        // A constraint EXCLUDE da V4 é a última linha de defesa contra reserva
+        // sobreposta. O serviço barra antes, com mensagem detalhada; se ainda
+        // assim chegou aqui, é corrida entre requisições — e "Registro
+        // duplicado" não diria a ninguém o que aconteceu.
+        if (msg != null && msg.contains("reservas_sem_sobreposicao"))
+            return buildResponse(HttpStatus.CONFLICT,
+                    "Este horário acabou de ser reservado por outra pessoa. Escolha outro.");
         return buildResponse(HttpStatus.CONFLICT, "Registro duplicado — verifique os dados informados.");
     }
 

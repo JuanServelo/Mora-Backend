@@ -10,6 +10,7 @@ import portaria.model.Apartamento;
 import portaria.repository.VagaRepository;
 import portaria.repository.ApartamentoRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -23,16 +24,16 @@ public class VagaService {
     private final ApartamentoRepository apartamentoRepository;
 
     public Vaga cadastrar(Vaga vaga, UUID apartamentoId) {
+        Permissoes.exigirAdmin("cadastrar vagas");
         validarVagaUnica(vaga.getNumero());
         if (apartamentoId != null) {
             Apartamento apt = apartamentoRepository.findById(apartamentoId)
                     .orElseThrow(() -> new RecursoNaoEncontradoException("Apartamento não encontrado: " + apartamentoId));
             vaga.setApartamento(apt);
         }
-        var claims = AuthContext.get();
-        if (claims != null && claims.condominioId() != null && !"default".equals(claims.condominioId())) {
-            vaga.setCondominioId(claims.condominioId());
-        }
+        // Antes só gravava o condomínio quando a claim trazia um; sem claim o
+        // registro nascia órfão e passava a aparecer em todo condomínio.
+        vaga.setCondominioId(Permissoes.condominioParaGravar(vaga.getCondominioId()));
         vaga.setAtiva(true);
         return vagaRepository.save(vaga);
     }
@@ -61,7 +62,9 @@ public class VagaService {
     }
 
     public Vaga atualizar(String id, Vaga dados, String apartamentoIdStr) {
+        Permissoes.exigirAdmin("alterar vagas");
         Vaga vaga = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(vaga.getCondominioId());
 
         if (!vaga.getNumero().equals(dados.getNumero())) {
             validarVagaUnica(dados.getNumero());
@@ -87,14 +90,18 @@ public class VagaService {
     }
 
     public void desativar(String id) {
+        Permissoes.exigirAdmin("desativar vagas");
         Vaga vaga = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(vaga.getCondominioId());
         vaga.setAtiva(false);
         vaga.setAtualizadoEm(LocalDateTime.now());
         vagaRepository.save(vaga);
     }
 
     public void ativar(String id) {
+        Permissoes.exigirAdmin("ativar vagas");
         Vaga vaga = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(vaga.getCondominioId());
         vaga.setAtiva(true);
         vaga.setAtualizadoEm(LocalDateTime.now());
         vagaRepository.save(vaga);

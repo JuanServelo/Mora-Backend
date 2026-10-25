@@ -105,9 +105,17 @@ docker compose -f docker/docker-compose.yml up -d --build
 `meeting-service` nem sobe sem o dele. A lista completa, com o que cada ausência quebra, está em
 [`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md).
 
-O `init-databases.sql` cria os bancos, mas **só roda em volume novo**. Em máquina que já subiu a
-stack antes, o Postgres ignora o `docker-entrypoint-initdb.d`, e um banco acrescentado depois não
-aparece — para esses há os scripts avulsos em `docker/criar-banco-*.sql`.
+### Banco de dados
+
+As tabelas são criadas e evoluídas pelas **migrações de cada serviço**, que rodam quando ele
+sobe: Flyway nos serviços Java, Umzug no auth-api e node-pg-migrate no financeiro. Não há SQL
+para aplicar à mão. Um volume vazio vira um banco completo com o `up`, e um banco antigo recebe
+só o que lhe falta. Como funciona e como criar uma migração nova:
+[`docs/MIGRACOES.md`](docs/MIGRACOES.md).
+
+O `init-databases.sql` só cria os bancos vazios, e **só roda em volume novo**. Em máquina que já
+subiu a stack antes, o Postgres ignora o `docker-entrypoint-initdb.d`, e um banco acrescentado
+depois não aparece. Para esses casos há os scripts avulsos em `docker/criar-banco-*.sql`.
 
 ### Conferir que subiu
 
@@ -193,6 +201,7 @@ unidade de quem pediu dependem do que está gravado, e só são verificáveis co
 | [`docs/ESPECIFICACAO-PROJETO.md`](docs/ESPECIFICACAO-PROJETO.md) | Requisitos e escopo |
 | [`docs/ARQUITETURA-E-FLUXOS.md`](docs/ARQUITETURA-E-FLUXOS.md) | Decisões de arquitetura |
 | [`docs/servicos/`](docs/servicos/) | Um documento por serviço, com o porquê de cada decisão |
+| [`docs/MIGRACOES.md`](docs/MIGRACOES.md) | Como cada banco é criado e evoluído, e como criar uma migração |
 | [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) | **O que não está pronto, e o que está errado** |
 | [`docs/ARQUIVOS-NECESSARIOS.md`](docs/ARQUIVOS-NECESSARIOS.md) | **Os arquivos que não estão no Git** e sem os quais a stack não sobe |
 
