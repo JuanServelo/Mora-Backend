@@ -9,6 +9,7 @@ import { PORT, SERVICOS, ehProducao } from './config/servicos.js';
 import { registrarNoConsul } from './config/consul.js';
 import { gatewayConfigurado } from './config/asaas.js';
 import { iniciarJobOverdue } from './jobs/overdueFaturasJob.js';
+import { aplicarMigracoes } from './config/migracoes.js';
 
 // O segredo é compartilhado com o auth-api para validar os tokens que ele emite.
 if (!process.env.JWT_SECRET) {
@@ -18,6 +19,18 @@ if (!process.env.JWT_SECRET) {
 
 if (!process.env.POSTGRES_PASSWORD) {
   console.error('ERRO: POSTGRES_PASSWORD não definido no .env');
+  process.exit(1);
+}
+
+// Antes de escutar: com o banco atrás do código, cada rota quebraria por
+// conta própria, na primeira requisição. Falhar aqui é falhar com o motivo.
+try {
+  const aplicadas = await aplicarMigracoes();
+  console.log(aplicadas.length
+    ? `Migrações aplicadas: ${aplicadas.join(', ')}`
+    : 'Banco em dia: nenhuma migração pendente');
+} catch (err) {
+  console.error('ERRO: as migrações do banco falharam:', err.message);
   process.exit(1);
 }
 
