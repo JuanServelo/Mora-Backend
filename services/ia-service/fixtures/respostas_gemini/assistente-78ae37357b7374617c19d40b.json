@@ -1,0 +1,25 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "assistente",
+  "pergunta": "O modelo é confiável? Tem diferença entre alugadas e próprias?",
+  "resposta": {
+    "resposta": "Os dados são sintéticos e o modelo apenas demonstra o método, sem validade preditiva no mundo real.\n\nMétricas do modelo (regressão logística):\n- **AUC-ROC:** 0.7517\n- **Precisão:** 56%\n- **Recall:** 67%\n\nDiferença de desempenho entre ocupações:\n- **AUC alugadas:** 0.7639\n- **AUC próprias:** 0.735",
+    "chamadas": [
+      {
+        "ferramenta": "desempenho_do_modelo",
+        "argumentos": {},
+        "resultado": {
+          "modelo": "regressao_logistica",
+          "auc_roc": 0.7517,
+          "precisao": "56%",
+          "recall": "67%",
+          "auc_alugadas": 0.7639,
+          "auc_proprias": 0.735,
+          "validacao": "temporal: treino nas competências antigas, teste nas recentes",
+          "dados": "sintéticos; o modelo demonstra o método, sem validade preditiva no mundo real"
+        }
+      }
+    ],
+    "modelo": "gemini-3.6-flash"
+  }
+}

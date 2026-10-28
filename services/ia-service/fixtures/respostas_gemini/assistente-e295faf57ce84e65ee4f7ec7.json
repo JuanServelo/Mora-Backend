@@ -1,0 +1,46 @@
+{
+  "modelo": "gemini-3.5-flash",
+  "rotulo": "assistente",
+  "pergunta": "Quais são as 3 unidades com maior risco de atraso no próximo mês?",
+  "resposta": {
+    "resposta": "As 3 unidades com maior risco de atraso na próxima competência são:\n\n1. **U-011**: 93% de risco (Risco Alto)\n2. **A-302**: 93% de risco (Risco Alto)\n3. **U-086**: 88% de risco (Risco Alto)",
+    "chamadas": [
+      {
+        "ferramenta": "unidades_em_risco",
+        "argumentos": {
+          "limite": 3
+        },
+        "resultado": {
+          "total_no_filtro": 116,
+          "unidades": [
+            {
+              "unidade": "U-011",
+              "risco": "93%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "própria",
+              "atrasos_12m": 12,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "A-302",
+              "risco": "93%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 12,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-086",
+              "risco": "88%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            }
+          ]
+        }
+      }
+    ],
+    "modelo": "gemini-3.5-flash"
+  }
+}

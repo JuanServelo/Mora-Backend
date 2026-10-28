@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": "EDUARDO MALHEIROS PRADO",
+      "confianca": 1.0,
+      "citacao": "EDUARDO MALHEIROS PRADO, brasileiro, empresário, inscrita no CPF sob o n.º 330.871.994-20, doravante denominada simplesmente LOCADORA"
+    },
+    "locatario": {
+      "valor": "LUCAS FERRAZ DE MORAES",
+      "confianca": 1.0,
+      "citacao": "LUCAS FERRAZ DE MORAES, brasileiro, designer, inscrito no CPF sob o n.º 947.112.308-66, doravante denominado LOCATÁRIO"
+    },
+    "endereco_unidade": {
+      "valor": "Rua das Acácias, n.º 1.408, apartamento 507, Bloco A, integrante do empreendimento Residencial Parque Verde",
+      "confianca": 1.0,
+      "citacao": "imóvel residencial situado na Rua das Acácias, n.º 1.408, apartamento 507, Bloco A, integrante do empreendimento Residencial Parque Verde"
+    },
+    "inicio": {
+      "valor": "2025-01-15",
+      "confianca": 1.0,
+      "citacao": "tendo seu termo inicial em 15 de janeiro de 2025"
+    },
+    "fim": {
+      "valor": "2027-01-14",
+      "confianca": 1.0,
+      "citacao": "termo final em 14 de janeiro de 2027"
+    },
+    "valor_aluguel_centavos": {
+      "valor": "340000",
+      "confianca": 1.0,
+      "citacao": "O aluguel mensal ora convencionado é de R$ 3.400,00 (três mil e quatrocentos reais)"
+    },
+    "responsavel_taxas": {
+      "valor": "PROPRIETARIO",
+      "confianca": 1.0,
+      "citacao": "As despesas ordinárias de condomínio, bem como as de caráter extraordinário, permanecerão sob a responsabilidade exclusiva do LOCADOR"
+    }
+  }
+}

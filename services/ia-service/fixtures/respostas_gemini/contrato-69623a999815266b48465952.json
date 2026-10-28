@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": "ANTÔNIO CARLOS REZENDE",
+      "confianca": 1.0,
+      "citacao": "ANTÔNIO CARLOS REZENDE, brasileiro, advogado, inscrita no CPF sob o n.º 255.908.471-39, doravante denominada simplesmente LOCADORA"
+    },
+    "locatario": {
+      "valor": "PATRÍCIA LINS DO AMARAL",
+      "confianca": 1.0,
+      "citacao": "PATRÍCIA LINS DO AMARAL, brasileira, analista de sistemas, inscrito no CPF sob o n.º 784.230.115-92, doravante denominado LOCATÁRIO"
+    },
+    "endereco_unidade": {
+      "valor": "Rua das Acácias, n.º 1.408, apartamento 211, Bloco C, integrante do empreendimento Residencial Parque Verde",
+      "confianca": 1.0,
+      "citacao": "imóvel residencial situado na Rua das Acácias, n.º 1.408, apartamento 211, Bloco C, integrante do empreendimento Residencial Parque Verde"
+    },
+    "inicio": {
+      "valor": "2025-06-01",
+      "confianca": 1.0,
+      "citacao": "tendo seu termo inicial em 1.º de junho de 2025"
+    },
+    "fim": {
+      "valor": "2026-11-30",
+      "confianca": 1.0,
+      "citacao": "termo final em 30 de novembro de 2026"
+    },
+    "valor_aluguel_centavos": {
+      "valor": "224000",
+      "confianca": 1.0,
+      "citacao": "O aluguel mensal ora convencionado é de R$ 2.240,00 (dois mil, duzentos e quarenta reais)"
+    },
+    "responsavel_taxas": {
+      "valor": "INQUILINO",
+      "confianca": 1.0,
+      "citacao": "incumbe ao inquilino o pagamento mensal da taxa de condomínio"
+    }
+  }
+}

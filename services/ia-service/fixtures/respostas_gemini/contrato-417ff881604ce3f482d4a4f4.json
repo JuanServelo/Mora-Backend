@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    },
+    "locatario": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    },
+    "endereco_unidade": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    },
+    "inicio": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    },
+    "fim": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    },
+    "valor_aluguel_centavos": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    },
+    "responsavel_taxas": {
+      "valor": null,
+      "confianca": 0,
+      "citacao": null
+    }
+  }
+}

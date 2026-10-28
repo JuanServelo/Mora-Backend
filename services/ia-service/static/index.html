@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mora Inteligente</title>
+<style>
+  :root{
+    --bg:#1a1a24; --card:#23232f; --card2:#2b2b3a; --linha:#35354a;
+    --primaria:#6c63ff; --texto:#e8e8f0; --suave:#c3c3d4; --mudo:#9a9aae;
+    --vermelho:#f44336; --ambar:#f5a524; --verde:#4caf50;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--texto);
+       font:15px/1.5 Calibri,-apple-system,Segoe UI,sans-serif;padding:24px 16px 60px}
+  .envelope{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 2px;font-weight:700}
+  h1 span{color:var(--primaria)}
+  .sub{color:var(--mudo);font-size:13px;margin-bottom:22px}
+  .faixa{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  .selo{background:var(--card);border:1px solid var(--linha);border-radius:9px;
+        padding:12px 16px;min-width:132px}
+  .selo b{display:block;font-size:21px;color:var(--primaria)}
+  .selo i{font-style:normal;color:var(--mudo);font-size:11.5px}
+  h2{font-size:15px;margin:26px 0 10px;color:var(--primaria);letter-spacing:.4px}
+  table{width:100%;border-collapse:collapse;background:var(--card);
+        border:1px solid var(--linha);border-radius:9px;overflow:hidden}
+  th,td{padding:9px 12px;text-align:left;font-size:13px;
+        border-bottom:1px solid var(--linha)}
+  th{color:var(--mudo);font-weight:700;font-size:11.5px;text-transform:uppercase}
+  tr:last-child td{border-bottom:none}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--card2)}
+  .barra{height:6px;border-radius:3px;background:#3a3a4e;width:110px;display:inline-block;
+         vertical-align:middle;margin-right:8px;overflow:hidden}
+  .barra i{display:block;height:100%;background:var(--primaria)}
+  .alto{color:var(--vermelho);font-weight:700}
+  .baixo{color:var(--verde)}
+  .painel{background:var(--card);border:1px solid var(--linha);border-radius:9px;
+          padding:18px;margin-top:12px}
+  .painel p{margin:0 0 12px;color:var(--suave)}
+  .fator{display:flex;justify-content:space-between;gap:12px;padding:6px 0;
+         border-bottom:1px solid var(--linha);font-size:13px}
+  .fator:last-child{border-bottom:none}
+  .fator b{font-weight:400;color:var(--suave)}
+  .mais{color:var(--vermelho)} .menos{color:var(--verde)}
+  .nota{color:var(--mudo);font-size:11.5px;margin-top:10px;font-style:italic}
+  .erro{color:var(--ambar)}
+  code{background:var(--card2);padding:1px 5px;border-radius:4px;font-size:12px}
+  button{background:var(--primaria);color:#fff;border:0;border-radius:7px;
+         padding:9px 15px;font-size:13px;cursor:pointer;font-weight:600}
+  button:disabled{opacity:.5;cursor:default}
+  .exemplos{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--card2);color:var(--suave);border:1px solid var(--linha);
+        border-radius:8px;padding:8px 12px;font-size:12px;text-align:left;font-weight:600}
+  .chip:hover{border-color:var(--primaria);color:var(--texto)}
+  .chip span{display:block;font-weight:400;color:var(--mudo);font-size:10.5px;margin-top:2px}
+  .trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:14px}
+  .bloco{background:var(--card2);border:1px solid var(--linha);border-radius:9px;padding:14px}
+  .rot{color:var(--primaria);font-size:10.5px;font-weight:700;letter-spacing:.6px;margin-bottom:8px}
+  .grande{font-size:38px;font-weight:700;line-height:1.1}
+  .semprev{font-size:20px;font-weight:700;color:var(--ambar)}
+  .destino{background:var(--card2);border:1px solid var(--primaria);border-radius:9px;
+           padding:14px;margin-top:12px}
+  .destino b{display:block;font-size:17px;color:var(--texto);margin:4px 0}
+  .alerta{background:var(--card2);border:1px solid var(--linha);border-left:none;
+          border-radius:8px;padding:10px 14px;margin-top:8px;font-size:12.5px;color:var(--ambar)}
+  .pergunta{display:flex;gap:10px;margin-top:12px}
+  .pergunta input{flex:1;min-width:0;background:var(--card2);color:var(--texto);border:1px solid var(--linha);
+                  border-radius:7px;padding:9px 12px;font-size:14px}
+  .resposta{background:var(--card2);border:1px solid var(--linha);border-radius:9px;padding:14px;
+            margin-top:12px;white-space:pre-wrap}
+  .chamada{font-size:12px;color:var(--mudo);margin-top:6px}
+  .chamada code{color:var(--suave)}
+  .lembrete{background:var(--card2);border:1px dashed var(--primaria);border-radius:9px;padding:14px;margin-top:12px}
+  .lembrete b{display:block;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="envelope">
+  <h1><span>Mora</span> Inteligente</h1>
+  <div class="sub">Previsão de inadimplência com explicação · dados sintéticos, sem validade preditiva real</div>
+
+  <div class="faixa" id="selos"></div>
+
+  <h2>PAINEL DE RISCO — próxima competência</h2>
+  <table>
+    <thead><tr><th>Unidade</th><th>Risco</th><th>Ocupação</th><th>Atrasos 12m</th><th>Fator principal</th></tr></thead>
+    <tbody id="linhas"><tr><td colspan="5" style="color:#9a9aae">carregando…</td></tr></tbody>
+  </table>
+  <div class="nota">Clique numa linha para ver a decomposição do score e a explicação em português.</div>
+
+  <div id="detalhe"></div>
+
+  <h2>ASSISTENTE DO SÍNDICO</h2>
+  <div class="painel">
+    <p>Pergunte em português. O Gemini decide quais funções do serviço chamar
+       (<i>tool calling</i>) e responde só com o que elas devolveram; todo percentual da
+       resposta é conferido contra esses dados.</p>
+    <div id="sugestoes" class="exemplos"></div>
+    <div class="pergunta">
+      <input id="pergunta" maxlength="500" placeholder="Ex.: quais unidades alugadas têm risco alto?">
+      <button id="perguntar">Perguntar</button>
+    </div>
+    <div id="saidaAssistente"></div>
+  </div>
+
+  <h2>CONTRATO EM PDF × HISTÓRICO DE PAGAMENTO</h2>
+  <div class="painel">
+    <p>O modelo de linguagem lê a cláusula de encargos — redigida em prosa jurídica, diferente
+       em cada contrato — e descobre <b>quem responde pela taxa</b>. O sistema casa com a unidade,
+       lê o histórico de pagamento e devolve o risco <b>e o destinatário da cobrança</b>.</p>
+    <div id="exemplos" class="exemplos"></div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="file" id="pdf" accept="application/pdf" style="color:var(--suave);font-size:13px">
+      <button id="enviar">Analisar PDF enviado</button>
+    </div>
+    <div id="saidaContrato"></div>
+  </div>
+</div>
+
+<script>
+const pct = v => (v*100).toFixed(0) + '%';
+// Texto do LLM entra na página escapado: o modelo não escreve HTML aqui.
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let exemploAtual = null;
+
+async function carregar() {
+  try {
+    const [m, p] = await Promise.all([
+      fetch('/api/ia/metricas').then(r => r.json()),
+      fetch('/api/ia/painel?limite=25').then(r => r.json()),
+    ]);
+    const pub = m.modelos[m.modelo_publicado];
+    document.getElementById('selos').innerHTML = `
+      <div class="selo"><b>${pub.auc_roc.toFixed(3)}</b><i>AUC-ROC (teste temporal)</i></div>
+      <div class="selo"><b>${pct(pub.recall)}</b><i>recall</i></div>
+      <div class="selo"><b>${pct(pub.precision)}</b><i>precisão</i></div>
+      <div class="selo"><b>${m.n_teste}</b><i>linhas de teste</i></div>
+      <div class="selo"><b>${m.features.length}</b><i>features</i></div>
+      <div class="selo"><b>${m.features_excluidas_por_etica.length}</b><i>excluídas por ética</i></div>`;
+
+    document.getElementById('linhas').innerHTML = p.unidades.map(u => `
+      <tr data-id="${u.unidade_id}">
+        <td><code>${esc(u.rotulo || u.unidade_id.slice(0,8))}</code></td>
+        <td><span class="barra"><i style="width:${u.score*100}%"></i></span>
+            <span class="${u.score>=0.5?'alto':'baixo'}">${pct(u.score)}</span></td>
+        <td>${u.alugada ? 'alugada' : 'própria'}</td>
+        <td>${u.atrasos_12m.toFixed(0)}</td>
+        <td style="color:#9a9aae">${u.principal_fator}</td>
+      </tr>`).join('');
+
+    document.querySelectorAll('tbody tr[data-id]').forEach(tr =>
+      tr.addEventListener('click', () => detalhar(tr.dataset.id)));
+  } catch (e) {
+    document.getElementById('linhas').innerHTML =
+      `<tr><td colspan="5" class="erro">${e}. Rode <code>python gerador.py && python treino.py</code>.</td></tr>`;
+  }
+}
+
+async function detalhar(id) {
+  const alvo = document.getElementById('detalhe');
+  alvo.innerHTML = '<div class="painel" style="color:#9a9aae">consultando…</div>';
+  const r = await fetch('/api/ia/predicao', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({unidade_id:id, explicar_com_llm:true}),
+  }).then(r => r.json());
+
+  if (r.sem_previsao) {
+    alvo.innerHTML = `<div class="painel"><p class="erro">Sem previsão: ${r.motivo}</p>
+      <div class="nota">Unidade nova, ou que acabou de trocar de inquilino, não recebe score —
+      o sistema diz que não sabe em vez de herdar o comportamento de quem se mudou.</div></div>`;
+    return;
+  }
+
+  const ex = r.explicacao || {};
+  const fonte = ex.fonte === 'gemini'
+    ? 'texto gerado pelo Gemini, com o score verificado contra o modelo'
+    : `texto determinístico${ex.motivo ? ' — ' + ex.motivo : ''}`;
+
+  alvo.innerHTML = `<div class="painel">
+    <p><b style="color:#e8e8f0">${pct(r.score)}</b> de risco para a competência ${r.competencia}
+       — <span class="${r.score>=0.5?'alto':'baixo'}">${r.classe}</span></p>
+    <p>${ex.explicacao || ''}</p>
+    <div class="nota">${fonte}</div>
+    <h2 style="margin-top:18px">Decomposição exata do score</h2>
+    ${r.contribuicoes.slice(0,7).map(c => `
+      <div class="fator"><b>${c.feature} <span style="color:#6c63ff">= ${c.valor}</span></b>
+      <span class="${c.contribuicao_log_odds>0?'mais':'menos'}">
+      ${c.contribuicao_log_odds>0?'+':''}${c.contribuicao_log_odds.toFixed(3)}</span></div>`).join('')}
+    <div class="nota">Contribuições em log-odds. Num modelo aditivo elas somam exatamente o
+    logit do score — a decomposição é exata, não aproximada.</div>
+  </div>`;
+}
+
+const saidaC = () => document.getElementById('saidaContrato');
+
+async function carregarExemplos() {
+  try {
+    const r = await fetch('/api/ia/contratos').then(r => r.json());
+    document.getElementById('exemplos').innerHTML = r.contratos.map(c => `
+      <button class="chip" data-nome="${c.arquivo}">
+        ${c.arquivo.replace(/^\d+-/, '').replace('.pdf','').replace(/-/g,' ')}
+        <span>Bloco ${c.bloco} · apto ${c.apartamento}</span>
+      </button>`).join('')
+      + (r.contratos.length ? '' : '<div class="nota">rode <code>python fixture_contratos.py</code></div>');
+    document.querySelectorAll('#exemplos .chip').forEach(b =>
+      b.addEventListener('click', () => analisarExemplo(b.dataset.nome)));
+  } catch (e) { /* o painel principal já reporta */ }
+}
+
+function render(r) {
+  if (r.extracao && r.extracao.extracao_falhou) {
+    saidaC().innerHTML = `<div class="nota erro">Extração não realizada: ${r.extracao.motivo}</div>
+      <div class="nota">O formulário fica em branco de propósito: uma cláusula extraída errado
+      inverte quem deve pagar a taxa.</div>`;
+    return;
+  }
+  const c = r.extracao.campos;
+  const campo = (k) => (c[k] || {}).valor ?? '—';
+  const d = r.destinatario, risco = r.risco, vig = r.vigencia;
+
+  const blocoRisco = !risco ? '' : risco.sem_previsao
+    ? `<div class="bloco"><div class="rot">RISCO</div>
+         <div class="semprev">sem previsão</div>
+         <div class="nota">${risco.motivo}</div></div>`
+    : `<div class="bloco"><div class="rot">RISCO PARA ${risco.competencia}</div>
+         <div class="grande ${risco.score>=0.5?'alto':'baixo'}">${pct(risco.score)}</div>
+         <div class="nota">${risco.classe}</div>
+         <p style="margin:10px 0 0">${(risco.explicacao||{}).explicacao||''}</p>
+         <div class="nota">${(risco.explicacao||{}).fonte==='gemini'
+            ? 'texto gerado pelo Gemini, score verificado contra o modelo'
+            : 'texto determinístico'}</div></div>`;
+
+  const hist = (risco && !risco.sem_previsao) ? `
+    <div class="bloco"><div class="rot">HISTÓRICO LIDO</div>
+      <div class="fator"><b>faturas analisadas</b><span>${risco.historico.faturas_analisadas.toFixed(0)}</span></div>
+      <div class="fator"><b>atrasos em 12 meses</b><span>${risco.historico.atrasos_12m.toFixed(0)}</span></div>
+      <div class="fator"><b>pagas em dia</b><span>${pct(risco.historico.taxa_em_dia_12m)}</span></div>
+      <div class="fator"><b>atraso médio</b><span>${risco.historico.media_dias_atraso.toFixed(0)} dias</span></div>
+      <div class="fator"><b>multas no período</b><span>${risco.historico.multas_12m.toFixed(0)}</span></div>
+    </div>` : '';
+
+  saidaC().innerHTML = `
+    <div class="trio">
+      <div class="bloco"><div class="rot">LIDO DO CONTRATO</div>
+        <div class="fator"><b>locador</b><span>${campo('locador')}</span></div>
+        <div class="fator"><b>locatário</b><span>${campo('locatario')}</span></div>
+        <div class="fator"><b>vigência</b><span>${campo('inicio')} a ${campo('fim')}</span></div>
+        <div class="fator"><b>aluguel</b><span>R$ ${(Number(campo('valor_aluguel_centavos'))/100||0).toFixed(2)}</span></div>
+        <div class="fator"><b>responsável pelas taxas</b>
+          <span style="color:#6c63ff;font-weight:700">${campo('responsavel_taxas')}</span></div>
+        <div class="nota">“${String((c.responsavel_taxas||{}).citacao||'').slice(0,190)}…”</div>
+        <div class="nota">${(c.responsavel_taxas||{}).citacao_confere ? 'trecho conferido no documento' : 'trecho não localizado'}</div>
+      </div>
+      ${hist}
+      ${blocoRisco}
+    </div>
+    ${d ? `<div class="destino"><span class="rot">A COBRANÇA VAI PARA</span>
+        <b>${d.papel}: ${d.nome}</b><span class="nota">${d.porque}</span></div>` : ''}
+    ${(r.alertas||[]).map(a => `<div class="alerta">${a}</div>`).join('')}
+    ${exemploAtual && d && risco && !risco.sem_previsao && risco.score >= 0.5 ? `
+      <div style="margin-top:12px"><button id="gerarLembrete">Gerar lembrete preventivo</button></div>
+      <div id="saidaLembrete"></div>` : ''}
+    <div class="nota">Nada é gravado sem revisão humana: a extração pré-preenche o formulário.</div>`;
+  const botao = document.getElementById('gerarLembrete');
+  if (botao) botao.addEventListener('click', () => lembrete(false));
+}
+
+async function lembrete(enviar) {
+  const alvo = document.getElementById('saidaLembrete');
+  alvo.innerHTML = `<div class="nota">${enviar ? 'enviando ao sino do Mora…' : 'o Gemini está escrevendo o lembrete…'}</div>`;
+  const r = await fetch('/api/ia/lembrete', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({contrato: exemploAtual, enviar}),
+  }).then(r => r.json());
+  if (!r.lembrete) { alvo.innerHTML = `<div class="nota erro">${esc(r.detail || 'falhou')}</div>`; return; }
+  const l = r.lembrete;
+  const fonte = l.fonte === 'gemini'
+    ? 'escrito pelo Gemini e aprovado: não menciona risco, histórico nem multa'
+    : `texto fixo${l.motivo ? ' — ' + esc(l.motivo) : ''}`;
+  const envio = !r.envio ? '' : r.envio.enviado
+    ? `<div class="nota">${r.envio.repetido ? 'já tinha sido enviado — não duplicou' : 'entregue no sino do Mora'}
+         (usuário ${esc(r.envio.destino.usuario_id)}; ${esc(r.envio.destino.observacao)})</div>`
+    : `<div class="nota erro">não enviado: ${esc(r.envio.motivo)}</div>`;
+  alvo.innerHTML = `<div class="lembrete"><span class="rot">PARA ${esc(r.destinatario.papel)}: ${esc(r.destinatario.nome)}
+      · VENCIMENTO ${esc(r.vencimento)}</span>
+    <b>${esc(l.titulo)}</b><div>${esc(l.mensagem)}</div>
+    <div class="nota">${fonte}</div>${envio}
+    ${r.envio ? '' : '<div style="margin-top:10px"><button id="enviarLembrete">Enviar ao sino do Mora</button></div>'}</div>`;
+  const b = document.getElementById('enviarLembrete');
+  if (b) b.addEventListener('click', () => lembrete(true));
+}
+
+const SUGESTOES = [
+  'Quais são as 5 unidades com maior risco no próximo mês?',
+  'Quantas unidades alugadas estão em risco alto?',
+  'A A-507 é alugada? Quem paga a taxa e qual o risco dela?',
+  'O modelo é confiável? Há diferença entre alugadas e próprias?',
+];
+
+function negrito(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+
+async function perguntar(texto) {
+  const alvo = document.getElementById('saidaAssistente');
+  const botao = document.getElementById('perguntar');
+  if (!texto.trim()) return;
+  botao.disabled = true;
+  alvo.innerHTML = '<div class="nota">o Gemini está escolhendo as funções…</div>';
+  try {
+    const r = await fetch('/api/ia/assistente', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pergunta: texto}),
+    }).then(r => r.json());
+    const fonte = r.fonte === 'gemini'
+      ? `resposta do ${esc(r.modelo)}, com os percentuais conferidos contra os dados`
+      : r.fonte === 'dados' ? `a resposta escrita foi descartada: ${esc(r.motivo)}` : esc(r.motivo || '');
+    alvo.innerHTML = `<div class="resposta">${negrito(r.resposta)}</div>
+      ${(r.chamadas||[]).map(c => `<div class="chamada">função chamada: <code>${esc(c.ferramenta)}(${esc(JSON.stringify(c.argumentos))})</code></div>`).join('')}
+      <div class="nota">${fonte}</div>`;
+  } finally { botao.disabled = false; }
+}
+
+document.getElementById('sugestoes').innerHTML = SUGESTOES.map(q =>
+  `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('');
+document.querySelectorAll('#sugestoes .chip').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('pergunta').value = b.dataset.q; perguntar(b.dataset.q);
+}));
+document.getElementById('perguntar').addEventListener('click', () => perguntar(document.getElementById('pergunta').value));
+document.getElementById('pergunta').addEventListener('keydown', e => { if (e.key === 'Enter') perguntar(e.target.value); });
+
+async function analisarExemplo(nome) {
+  exemploAtual = nome;
+  saidaC().innerHTML = '<div class="nota">lendo o contrato e cruzando com o histórico…</div>';
+  const r = await fetch('/api/ia/contrato/analisar-exemplo?nome=' + encodeURIComponent(nome),
+                        {method:'POST'}).then(r => r.json());
+  render(r);
+}
+
+document.getElementById('enviar').addEventListener('click', async () => {
+  const f = document.getElementById('pdf').files[0];
+  if (!f) { saidaC().innerHTML = '<div class="nota erro">Escolha um PDF.</div>'; return; }
+  exemploAtual = null;  // o lembrete de demonstração parte dos contratos de exemplo
+  saidaC().innerHTML = '<div class="nota">lendo o contrato e cruzando com o histórico…</div>';
+  const fd = new FormData(); fd.append('arquivo', f);
+  const r = await fetch('/api/ia/contrato/analisar', {method:'POST', body:fd}).then(r => r.json());
+  render(r);
+});
+
+carregar();
+carregarExemplos();
+</script>
+</body>
+</html>

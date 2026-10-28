@@ -1,0 +1,15 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "explicacao",
+  "resposta": {
+    "explicacao": "O sistema atribuiu à unidade um risco de atraso de 0.9175 com base no histórico de pagamentos dos últimos 12 meses. O principal fator para a elevação do risco foi a taxa de 0% das faturas pagas em dia no último ano, acompanhada por um atraso médio de 18 dias e 3 atrasos nos últimos 3 meses. Adicionalmente, a ocorrência de 10 multas no período e a falta de antecedência média do pagamento reforçam a avaliação de risco da unidade.",
+    "fatores_citados": [
+      "0% das faturas pagas em dia no último ano",
+      "10 multa(s) no período",
+      "atraso médio de 18 dias",
+      "3 atraso(s) nos últimos 3 meses",
+      "antecedência média do pagamento"
+    ],
+    "score_citado": 0.9175
+  }
+}
