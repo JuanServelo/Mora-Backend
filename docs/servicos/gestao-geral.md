@@ -69,6 +69,8 @@ regra aqui faria a autorização viver em dois lugares.
 |---|---|---|
 | `GET /api/gestao/dashboard` | Só `ADMIN_GERAL` | Indicadores e séries da plataforma |
 | `GET /api/gestao/dashboard/exportar` | Só `ADMIN_GERAL` | CSV dos indicadores, com BOM para o Excel |
+| `GET /api/gestao/receita` | Só `ADMIN_GERAL` | Receita das assinaturas, agregada no banco do `plan-service` |
+| `GET /api/gestao/painel/operacional` · `/painel/estrategico` | Só `ADMIN_SINDICO` | Painéis do síndico (RF-18) |
 | `GET /api/gestao/painel` | Perfis de gestão | Painel do condomínio do ator |
 | `GET /api/gestao/condominios/:id/resumo` | Admin Geral, ou quem pertence ao condomínio | Resumo com estrutura e assinatura |
 | `GET /health` | Público | `{ status, servico }` |
@@ -124,6 +126,23 @@ services/gestao-geral/
 O `portaria-service` ainda não expõe endpoints de contagem, então o
 `portariaClient` conta a partir das listagens. Funciona no porte atual; se o
 volume crescer, o caminho é adicionar contagem lá, sem que o contrato mude.
+
+### Quem agrega é o dono do dado
+
+O gestao-geral não tem banco e não conta listas. Cada número chega pronto, agregado em SQL
+pelo serviço que guarda o dado:
+
+| Painel | Agregação | Onde |
+|---|---|---|
+| Plataforma (`/dashboard`) | Condomínios por status e por mês, usuários por perfil, status e condomínio | `auth-api`, `GROUP BY` e `date_trunc` |
+| Receita (`/receita`) | MRR, receita por plano, evolução mensal, resumo por cliente | `plan-service`, função `receita_plataforma` |
+| Estratégico do síndico | Inadimplência mês a mês, numa chamada | `financeiro`, função `kpis_faturas_por_mes` |
+| Estratégico do síndico | Multas por mês; ocorrências por mês e categoria | `financeiro`; `auth-api` |
+| Operacional do síndico | Leitura dos avisos, numa consulta agrupada | `comunicacao-service` |
+
+Fica aqui só o cruzamento entre bancos diferentes, que não pode ser um JOIN: o nome de cada
+condomínio e quem não assina nenhum plano. A exceção é o `portaria-service`, que ainda não
+tem endpoint de contagem.
 
 ### Degradação
 

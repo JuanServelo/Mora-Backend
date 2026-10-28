@@ -250,7 +250,26 @@ UNIQUE (evento_id) -- webhook_eventos
 -- estorno; apagar o item original reescreveria uma fatura já emitida.
 CHECK ((tipo = 'ESTORNO' AND valor_centavos <= 0)
     OR (tipo <> 'ESTORNO' AND valor_centavos >= 0)) -- fatura_itens
+
+-- Contratos da mesma unidade não se sobrepõem no tempo, ativos ou encerrados.
+-- GiST com btree_gist; intervalo [) porque o dia do fim é o dia da troca.
+EXCLUDE USING gist (condominio_id WITH =, unidade_id WITH =,
+                    daterange(inicio, fim, '[)') WITH &&) -- contratos_locacao
 ```
+
+### Gatilhos e funções
+
+Migração `20261028120000_recursos-do-banco`:
+
+| Objeto | O que faz |
+|---|---|
+| `trg_fatura_encerrada` (PL/pgSQL) | Fatura paga não muda valor, competência nem baixa, e não é apagada. Cancelada não volta a valer. Recusa com SQLSTATE 23001, que a API devolve como 409 |
+| `trg_itens_fatura_paga` (PL/pgSQL) | Itens de fatura paga não são incluídos, alterados nem apagados |
+| `kpis_faturas_por_mes(condominio, meses)` | Situação das faturas mês a mês numa consulta agrupada, com `generate_series` garantindo uma linha por mês. Atende `GET /admin/faturas/kpis/por-mes`, usado pelo painel estratégico |
+
+Encerrar um contrato antes do prazo grava o fim como o dia do encerramento. Mantido o fim
+previsto, o período cruzaria o do próximo inquilino e a restrição de exclusão recusaria o
+novo contrato.
 
 Os dias de fechamento e vencimento vão até **28**, e não 31: fevereiro existe, e a regra precisa
 valer para os doze meses.
