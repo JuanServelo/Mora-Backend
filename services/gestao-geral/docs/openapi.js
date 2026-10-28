@@ -209,7 +209,7 @@ export const openapi = {
       get: {
         tags: ['Plataforma'],
         summary: 'Receita da plataforma',
-        description: 'MRR, ARR, ticket médio e evolução mensal, calculados sobre as assinaturas do plan-service. Separado do dashboard porque percorre todas as assinaturas.',
+        description: 'MRR, ARR, ticket médio, receita por plano, evolução mensal e resumo por cliente. A conta é feita no banco do plan-service, pela função `receita_plataforma` (GROUP BY, generate_series, daterange e jsonb); aqui entram só o nome de cada condomínio e quem não assina nada, que vêm do auth-api.',
         parameters: [meses, {
           name: 'plano', in: 'query', required: false, description: 'Restringe a um plano pelo nome.',
           schema: { type: 'string' }, example: 'Completo',
