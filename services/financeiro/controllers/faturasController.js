@@ -172,6 +172,16 @@ export async function kpis(req, res) {
   res.json({ sucesso: true, ...kpi });
 }
 
+/** KPIs mês a mês, para o painel estratégico. Janela de 3, 6 ou 12 meses. */
+export async function kpisPorMes(req, res) {
+  const meses = Number(req.query.meses ?? 6);
+  if (![3, 6, 12].includes(meses)) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Use meses=3, 6 ou 12.' });
+  }
+  const linhas = await faturasModel.kpisPorMes(req.escopo.condominioId, meses);
+  res.json({ sucesso: true, meses: linhas });
+}
+
 /** Preview do fechamento de competência (não grava nada). */
 export async function preview(req, res) {
   const { condominioId } = req.escopo;

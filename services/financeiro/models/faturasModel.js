@@ -183,3 +183,18 @@ export async function kpisPorCompetencia(condominioId, competencia) {
   );
   return rows[0];
 }
+
+/**
+ * Os mesmos KPIs, mês a mês, para os últimos `meses` — uma consulta agrupada
+ * na função `kpis_faturas_por_mes` (migração 20261028120000), que devolve uma
+ * linha por mês da janela, inclusive os sem fatura.
+ */
+export async function kpisPorMes(condominioId, meses) {
+  const { rows } = await consultar(
+    `SELECT mes, total, total_centavos AS "totalCentavos", pagas, pagas_centavos AS "pagasCentavos",
+            abertas, em_atraso AS "emAtraso"
+       FROM kpis_faturas_por_mes($1, $2)`,
+    [condominioId, meses],
+  );
+  return rows;
+}

@@ -370,6 +370,22 @@ export const openapi = {
         },
       }),
     },
+    '/api/financeiro/admin/faturas/kpis/por-mes': {
+      get: op('Faturas', 'Indicadores mês a mês', `Os mesmos indicadores para cada mês da janela, numa consulta agrupada (função \`kpis_faturas_por_mes\` no banco). Mês sem fatura vem com zeros. Usado pelo painel estratégico do síndico. ${GESTAO}`, {
+        parameters: [pQuery('meses', 'Janela: 3, 6 ou 12 (padrão 6).', 3, { type: 'integer', enum: [3, 6, 12] })],
+        responses: {
+          200: resposta('Série mensal.', {
+            sucesso: true,
+            meses: [
+              { mes: '2026-08', total: 0, totalCentavos: 0, pagas: 0, pagasCentavos: 0, abertas: 0, emAtraso: 0 },
+              { mes: '2026-09', total: 4, totalCentavos: 380000, pagas: 3, pagasCentavos: 285000, abertas: 1, emAtraso: 1 },
+              { mes: '2026-10', total: 4, totalCentavos: 380000, pagas: 1, pagasCentavos: 82840, abertas: 3, emAtraso: 0 },
+            ],
+          }),
+          400: E400('Use meses=3, 6 ou 12.'), 401: E401, 403: E403,
+        },
+      }),
+    },
     '/api/financeiro/admin/fechamento/preview': {
       get: op('Faturas', 'Prévia do fechamento', `O que o fechamento da competência faria, sem gravar nada: unidades, faturas novas, taxas, contas, multas e estornos. ${GESTAO}`, {
         parameters: [pQuery('competencia', 'Competência AAAA-MM (obrigatória).', '2026-10')],
@@ -500,7 +516,7 @@ export const openapi = {
       get: op('Contratos de locação', 'Contratos do condomínio', `Contratos ativos e encerrados. ${GESTAO}`, {
         responses: { 200: resposta('Contratos.', { sucesso: true, total: 1, contratos: [EX_CONTRATO] }), 401: E401, 403: E403 },
       }),
-      post: op('Contratos de locação', 'Registrar contrato', `O síndico registra o contrato de qualquer unidade. \`responsavelTaxas\` decide quem recebe a fatura. ${SINDICO}`, {
+      post: op('Contratos de locação', 'Registrar contrato', `O síndico registra o contrato de qualquer unidade. \`responsavelTaxas\` decide quem recebe a fatura. O banco recusa (409) um segundo contrato vigente na unidade e um período que cruze o de outro contrato dela, mesmo encerrado (restrição de exclusão \`ex_contrato_periodo_unico\`). ${SINDICO}`, {
         requestBody: corpo('Contrato.', { unidadeId: UNIDADE_101, proprietarioUsuarioId: 6, inquilinoUsuarioId: 4, inicio: '2026-03-01', fim: '2027-02-28', valorAluguel: '2200,00', responsavelTaxas: 'INQUILINO' }, {
           type: 'object', required: ['unidadeId', 'inicio'],
           properties: {
@@ -509,7 +525,10 @@ export const openapi = {
             responsavelTaxas: { type: 'string', enum: ['PROPRIETARIO', 'INQUILINO'] },
           },
         }),
-        responses: { 201: resposta('Contrato registrado.', { sucesso: true, contrato: EX_CONTRATO }), 400: E400('Informe a data de início (AAAA-MM-DD).'), 401: E401, 403: E403 },
+        responses: {
+          201: resposta('Contrato registrado.', { sucesso: true, contrato: EX_CONTRATO }), 400: E400('Informe a data de início (AAAA-MM-DD).'), 401: E401, 403: E403,
+          409: falha('Contrato vigente ou período sobreposto.', 'O período informado cruza o de outro contrato desta unidade. Ajuste o início ou o fim.'),
+        },
       }),
     },
     '/api/financeiro/admin/contratos/{id}/encerrar': {

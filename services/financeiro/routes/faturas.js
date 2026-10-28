@@ -63,6 +63,14 @@ router.get(
 );
 
 router.get(
+  '/admin/faturas/kpis/por-mes',
+  autenticar,
+  exigirPerfis(...PERFIS_GESTAO),
+  resolverEscopo,
+  ctrl.kpisPorMes,
+);
+
+router.get(
   '/admin/fechamento/preview',
   autenticar,
   exigirPerfis(...PERFIS_GESTAO),

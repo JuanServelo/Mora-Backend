@@ -58,6 +58,12 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
+  // 23001 é o que os gatilhos de fatura encerrada levantam: regra de negócio
+  // recusada pelo banco, não falha. A mensagem foi escrita para gente, na
+  // própria migração, e não leva SQL.
+  if (err.code === '23001') {
+    return res.status(409).json({ sucesso: false, mensagem: err.message });
+  }
   console.error('[financeiro] erro não tratado:', err);
   // Mensagem genérica de propósito: erro de banco costuma vazar nome de tabela
   // e trecho de SQL para quem chamou.
