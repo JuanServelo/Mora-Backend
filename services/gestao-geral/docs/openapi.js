@@ -389,7 +389,7 @@ export const openapi = {
         summary: 'Saúde do serviço',
         description: 'Usada pelo Consul. Fora do gateway: responde só na porta do serviço.',
         security: [],
-        servers: [{ url: 'http://localhost:3002', description: 'Porta do serviço' }],
+        servers: [{ url: 'http://gestao-geral:3002', description: 'Health check interno do Consul' }],
         responses: { 200: resposta('No ar.', { status: 'ok', servico: 'gestao-geral' }) },
       },
     },

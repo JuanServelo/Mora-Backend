@@ -8,7 +8,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
+    java.util.Optional<Meeting> findByIdAndCondominioId(Long id, String condominioId);
+    List<Meeting> findByCondominioId(String condominioId);
 
-    @Query("SELECT DISTINCT m FROM Meeting m LEFT JOIN m.convidados c WHERE m.idOrganizador = :usuarioId OR c.usuarioId = :usuarioId")
-    List<Meeting> findByOrganizadorOrConvidado(@Param("usuarioId") Long usuarioId);
+    @Query("SELECT DISTINCT m FROM Meeting m LEFT JOIN m.convidados c WHERE m.condominioId = :condominioId AND (m.idOrganizador = :usuarioId OR c.usuarioId = :usuarioId)")
+    List<Meeting> findByOrganizadorOrConvidado(@Param("condominioId") String condominioId, @Param("usuarioId") Long usuarioId);
 }

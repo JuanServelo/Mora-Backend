@@ -9,6 +9,11 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
 process.env.JWT_SECRET = 'segredo-de-teste';
+// These cases isolate local role/scope checks. Plan denial and outages are
+// exercised in plano.test.js; no live upstream is required by this suite.
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (url, options) => String(url).includes('/api/plans/access/')
+  ? Promise.resolve({ status: 204 }) : originalFetch(url, options);
 const { app } = await import('../app.js');
 
 const token = (perfil, extra = {}) => jwt.sign(

@@ -12,10 +12,10 @@ O que ainda falta em cada serviço do Mora, e quem responde por ele.
 
 | Serviço | Responsável | Apoio | Pendências | Prioridade |
 |---|---|---|---|---|
-| `meeting-service` | **Luana Akemi** | João Victor | 🔴 3 · 🟡 1 · ⚪ 1 | **1 — crítico** |
+| `meeting-service` | **Luana Akemi** | João Victor | ⚪ 1 (validar atualização) | 1 |
 | `portaria-service` | **Juan Servelo** | Ray Govaski | 🔴 2 · 🟡 2 · ⚪ 1 | **2** |
 | `comunicacao-service` | **João Victor** | Juan Servelo | ✅ todas | — |
-| `plan-service` | **Luana Akemi** | João Victor | 🔴 1 · 🟡 1 · ⚪ 2 | 4 |
+| `plan-service` | **Luana Akemi** | João Victor | ⚪ 1 | 1 |
 | `ocorrencias-service` | **RAY** | — | 🟡 1 (não existe) | 5 |
 | `financeiro` | **João Victor** | — | ⚪ 2 (configuração no Asaas) | 6 |
 | `auth-api` | **João Victor** | Juan Servelo | ✅ todas | — |
@@ -41,17 +41,18 @@ Thais Amaral, que desenvolveu o `vagas-service` (depois fundido ao portaria), sa
 
 ## meeting-service — Luana Akemi
 
-O mais crítico: mantém em risco o critério obrigatório 6 (perfis validados no front **e** no back).
+Autenticação, perfis e isolamento corrigidos no código e validados por testes automatizados. Falta validar a atualização na stack.
 
 | | Pendência | Detalhe |
 |---|---|---|
-| 🔴 | **Sem autenticação** | Não há filtro de JWT. Qualquer pessoa cria reunião, lança ata e vota |
-| 🔴 | **Voto falsificável** | `VoteRequestDTO` recebe `usuarioId` no corpo: dá para votar como outra pessoa trocando um número |
-| 🔴 | **Não filtra por condomínio** | Um condomínio enxerga reuniões de outro |
-| 🟡 | **RF-11: voto por unidade** | `tb_poll_vote` guarda o usuário, não a unidade |
-| ⚪ | `credentials.json` dentro da imagem | Lido do classpath: sem o arquivo o serviço não sobe, e quem tem a imagem tem a credencial |
+| ✅ | **Autenticação e perfis** | JWT local, perfis de leitura e administração validados no backend e nas rotas do frontend; presença e avaliação apenas em nome próprio |
+| ✅ | **Identidade do voto** | DTO recebe só a opção. Usuário vem do JWT e unidade é confirmada no auth-api |
+| ✅ | **Condomínio** | Todas as consultas por ID e listagens são restritas ao condomínio da sessão; gravações recebem condomínio e organizador da sessão |
+| ✅ | **Voto por unidade** | `unidade_id`, constraint por votação/unidade e bloqueio transacional; duplicidade e concorrência cobertas por teste |
+| ✅ | Credenciais externas | Excluídas do JAR e contexto Docker; Google opcional com secret em execução; serviço inicia sem o arquivo |
+| ⚪ | Validar atualização | Reconstruir imagens, conferir registros antigos sem condomínio, encerramento das votações com votos legados e integração Google opcional. Validar no PostgreSQL/Consul/Traefik |
 
-**Como resolver:** copiar o `AuthFilter` do `plan-service`, ler o usuário da claim em vez do corpo, e trocar o voto para `unidade_id` — os três mexem nos mesmos arquivos.
+**Atualização e testes:** [meeting-service](servicos/meeting-service.md). O arquivo local de credenciais permanece preservado. Votos legados sem unidade não são apagados; votações abertas que os contenham são encerradas.
 
 ---
 
@@ -87,11 +88,11 @@ O mais crítico: mantém em risco o critério obrigatório 6 (perfis validados n
 
 | | Pendência | Detalhe |
 |---|---|---|
-| 🔴 | **Duas tabelas de assinatura em paralelo** | `tb_subscriptions` e `tb_assinaturas`. O front lê só a segunda: nos condomínios `qa-*` todo item com módulo some do menu |
-| 🟡 | **RF-4: trava por plano só no front** | Nenhum serviço consulta o plano; quem chama a API direto usa módulo não contratado |
-| ✅ | No Consul | O `application.properties` deixava o registro desligado; o compose agora liga (`SPRING_CLOUD_CONSUL_ENABLED=true`), e o gateway roteia `/api/plans` e `/api/assinaturas` (branch `feat/docs-api`) |
-| ✅ | Swagger | springdoc 2.8.9 (o 2.3.0 dava 500 no Boot 3.5), liberado no filtro e documentado no portal `/docs` |
-| ⚪ | Sem testes | Nenhum teste automatizado |
+| ✅ | **Fonte única de assinatura** | As duas APIs usam `tb_assinaturas`. Migração automática importa o legado e preserva a origem em `tb_subscriptions_legacy`; histórico e conflitos cobertos por teste |
+| ✅ | **RF-4: contratação de módulos nas APIs** | Portaria, comunicação, reuniões/votações, financeiro e rotas de portaria/reclamações do auth-api consultam o plano. Sem contratação: 403; falha na consulta: 503 |
+| ✅ | Configuração do Consul | Configuração consolidada no YAML; Compose habilita registro e roteamento. Perfil local pode desabilitar |
+| ✅ | Swagger e testes | OpenAPI, redirecionamento e assets públicos validados; testes de integração de assinatura/migração e bloqueios nos serviços |
+| ⚪ | Validar atualização na stack | Reconstruir imagens, executar a migração no PostgreSQL e confirmar registro saudável no Consul e rotas pelo Traefik. Docker indisponível no ambiente desta correção. Passos em `docs/servicos/plan-service.md` |
 
 ---
 
@@ -147,9 +148,9 @@ O mais crítico: mantém em risco o critério obrigatório 6 (perfis validados n
 
 ## Ordem para a defesa
 
-1. **meeting-service** — autenticação, voto pela claim, filtro por condomínio *(Luana Akemi)*
+1. **meeting-service** — validar a atualização das correções de autenticação, voto e condomínio na stack *(Luana Akemi)*
 2. **portaria-service** — perfil e condomínio na escrita *(Juan Servelo)*
 3. **RF-7 e RF-10** no portaria — aviso de entrega e antecedência *(Juan Servelo)*. A rota interna de notificações do comunicacao, de que o RF-7 depende, já existe
-4. **meeting-service no ar** com o `credentials.json`, para aparecer no portal `/docs` *(Luana Akemi)*. Os outros seis serviços já estão documentados lá
+4. **meeting-service no ar**; Google Meet é opcional e o serviço sobe sem credencial Google *(Luana Akemi)*. Conferir o acesso à documentação na stack
 
 Os itens 1 e 2 tiram do risco o critério obrigatório 6. O 3 dá folga ao critério de 80% do escopo.

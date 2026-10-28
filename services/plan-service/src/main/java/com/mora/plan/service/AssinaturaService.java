@@ -7,6 +7,7 @@ import com.mora.plan.entity.Plan;
 import com.mora.plan.enums.StatusAssinatura;
 import com.mora.plan.repository.AssinaturaRepository;
 import com.mora.plan.repository.PlanRepository;
+import com.mora.plan.security.AuthContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +49,7 @@ public class AssinaturaService {
     public AssinaturaResponseDTO buscarVigentePorCondominio(String condominioId) {
         Assinatura a = assinaturaRepository
                 .findByCondominioIdAndStatus(condominioId, StatusAssinatura.ATIVA)
+                .filter(Assinatura::estaVigente)
                 // Ausencia nao e requisicao invalida: condominio sem assinatura ativa
                 // e um estado legitimo, e o chamador precisa distinguir isso de erro
                 // dele. NoSuchElementException vira 404 no GlobalExceptionHandler.
@@ -67,6 +69,14 @@ public class AssinaturaService {
         Plan plano = planRepository.findById(dto.getPlanId())
                 .orElseThrow(() -> new IllegalArgumentException("Plano não encontrado"));
 
+        if (!Boolean.TRUE.equals(plano.getIsActive())) {
+            throw new IllegalArgumentException("O plano selecionado não está ativo.");
+        }
+        LocalDate inicio = dto.getVigenciaInicio() != null ? dto.getVigenciaInicio() : LocalDate.now();
+        if (dto.getVigenciaFim() != null && dto.getVigenciaFim().isBefore(inicio)) {
+            throw new IllegalArgumentException("O fim da vigência deve ser posterior ao início.");
+        }
+
         // Um condomínio não pode ter duas assinaturas ativas ao mesmo tempo:
         // a anterior é encerrada antes de a nova entrar.
         //
@@ -78,6 +88,7 @@ public class AssinaturaService {
                 .findByCondominioIdAndStatus(dto.getCondominioId(), StatusAssinatura.ATIVA)
                 .ifPresent(atual -> {
                     atual.setStatus(StatusAssinatura.CANCELADA);
+                    atual.setUpdatedBy(autor());
                     atual.setVigenciaFim(dto.getVigenciaInicio() != null
                             ? dto.getVigenciaInicio()
                             : LocalDate.now());
@@ -91,6 +102,8 @@ public class AssinaturaService {
                 .vigenciaFim(dto.getVigenciaFim())
                 .status(dto.getStatus() != null ? dto.getStatus() : StatusAssinatura.ATIVA)
                 .observacao(dto.getObservacao())
+                .createdBy(autor())
+                .updatedBy(autor())
                 .build();
 
         return paraDTO(assinaturaRepository.save(nova));
@@ -101,6 +114,7 @@ public class AssinaturaService {
         Assinatura a = assinaturaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Assinatura não encontrada"));
         a.setStatus(status);
+        a.setUpdatedBy(autor());
         if (status != StatusAssinatura.ATIVA && a.getVigenciaFim() == null) {
             a.setVigenciaFim(LocalDate.now());
         }
@@ -121,8 +135,21 @@ public class AssinaturaService {
                 .mensalidade(p.getMonthlyPrice())
                 .maxCondominios(p.getMaxCondominiums())
                 .maxUsuariosPorCondominio(p.getMaxUsersPerCondominium())
-                .modulosAtivos(p.getActiveModules())
+                .modulosAtivos(a.estaVigente() && Boolean.TRUE.equals(p.getIsActive())
+                        ? p.getActiveModules() : List.of())
                 .observacao(a.getObservacao())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> modulosPermitidos(String condominioId) {
+        return assinaturaRepository.findByCondominioIdAndStatus(condominioId, StatusAssinatura.ATIVA)
+                .filter(Assinatura::estaVigente)
+                .filter(a -> Boolean.TRUE.equals(a.getPlan().getIsActive()))
+                .map(a -> a.getPlan().getActiveModules()).orElse(List.of());
+    }
+
+    private String autor() {
+        return AuthContext.get() != null ? AuthContext.get().email() : "sistema";
     }
 }

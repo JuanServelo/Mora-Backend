@@ -137,7 +137,8 @@ const documentacao = pasta('00 Documentação', [
   req('Especificação do financeiro', 'GET', '{{gw}}/api/financeiro/docs/openapi.json', { testes: conferirEspecificacao('financeiro') }),
   req('Especificação do gestao-geral', 'GET', '{{gw}}/api/gestao/docs/openapi.json', { testes: conferirEspecificacao('gestao-geral') }),
   req('Especificação do plan', 'GET', '{{gw}}/api/plans/v3/api-docs', { testes: conferirEspecificacao('plan-service') }),
-], 'O portal e a especificação de cada serviço, pelo gateway. O meeting-service fica de fora até voltar a subir.');
+  req('Especificação do meeting', 'GET', '{{gw}}/api/meetings/v3/api-docs', { testes: conferirEspecificacao('meeting-service') }),
+], 'O portal e a especificação dos sete serviços, pelo gateway.');
 
 // ── 00 Infraestrutura ──────────────────────────────────────────────────────
 
@@ -145,7 +146,7 @@ const infra = pasta('00 Infraestrutura', [
   req('Consul lista os serviços Node e Java', 'GET', '{{consul}}/v1/catalog/services', {
     testes: () => {
       const s = pm.response.json();
-      ['auth-api', 'comunicacao-service', 'financeiro', 'gestao-geral', 'ocorrencias-service', 'portaria-service']
+      ['auth-api', 'comunicacao-service', 'financeiro', 'gestao-geral', 'portaria-service', 'plan-service', 'meeting-service', 'ocorrencias-service']
         .forEach((nome) => pm.test(`${nome} registrado`, () => pm.expect(s).to.have.property(nome)));
       pm.test('auth-api não anuncia /api/portaria (é do portaria-service)', () => {
         pm.expect(s['auth-api'].join(' ')).to.not.include('/api/portaria');

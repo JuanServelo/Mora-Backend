@@ -1,131 +1,49 @@
 # plan-service
 
-**Stack:** Java 21 · Spring Boot 3.2.4 · JPA · MapStruct — **Porta:** 8093 — **Banco:** `mora_plan`
-**Status:** em operação, parcial
+Java 21, Spring Boot 3.5.6, PostgreSQL (`mora_plan`), porta 8093. Responsável pelo catálogo comercial e pelas assinaturas (RF-4).
 
----
+## Assinaturas
 
-## Responsabilidade
+`tb_assinaturas` é a única fonte operacional. `/api/assinaturas` retorna os nomes em português; `/api/plans/subscriptions` mantém o contrato em inglês, mas usa os mesmos registros, IDs e transações. Catálogo em `tb_plans` e módulos em `tb_plan_modules`.
 
-Guarda os **parâmetros comerciais do produto**: quais planos existem, o que cada um custa, que
-limites impõe e quais módulos libera. Deve também registrar qual plano cada condomínio
-contratou.
+Na primeira inicialização da nova versão, `SubscriptionMigration` importa `tb_subscriptions` em uma transação e renomeia a origem para `tb_subscriptions_legacy`. Preserva datas, autores, status e o ID original em `legacy_subscription_id`. Os endpoints passam a devolver o ID canônico de `tb_assinaturas`; IDs antigos não devem ser reutilizados para alterações sem consultar a assinatura novamente.
 
-| RF | Requisito |
-|---|---|
-| 4 | Gerenciar Planos e Assinaturas |
+Se já existe assinatura ATIVA no modelo canônico, ela tem prioridade; a assinatura ACTIVE importada fica CANCELADA no histórico. Entre várias ACTIVE legadas do mesmo condomínio, ganha a mais recente. O arquivo legado não volta a ser consultado pelas APIs. A inicialização seguinte não importa novamente. Falhas interrompem a inicialização e revertem a importação; nenhum registro de origem é apagado.
 
----
+Em PostgreSQL, a migração também remove a antiga constraint `(condominio_id, status)` e garante o índice parcial de uma assinatura ATIVA por condomínio. Isso permite várias canceladas no histórico e sucessivas trocas de plano. Execute uma versão por vez durante a atualização; processos antigos não devem continuar escrevendo na tabela legada.
 
-## Fluxos de usuário
+## Autorização
 
-### Manutenção do catálogo — implementado
+Alterações comerciais e listagens globais exigem `ADMIN_GERAL`. Os demais perfis podem ler a assinatura e o histórico do próprio condomínio. O condomínio vem do JWT verificado.
 
-```mermaid
-graph LR
-    AG["Admin Geral"] --> C["Cadastra plano:<br/>nome, preço, limites, módulos"]
-    C --> D["Plano disponível para contratação"]
-    AG --> E["Edita preço ou limites"]
-    AG --> A["Ativa ou desativa"]
+`GET /api/plans/access/{module}` retorna 204 para módulo contratado, 403 quando não contratado e 401 para token inválido ou ausente. Exige assinatura ATIVA dentro da vigência e plano ativo. O Admin Geral mantém acesso de plataforma; as permissões específicas de cada serviço continuam sendo verificadas localmente.
+
+Filtros em portaria, comunicação e reuniões/votações, e middlewares no auth-api (portaria e reclamações) e financeiro, consultam esse endpoint inclusive em chamadas diretas às portas dos serviços. Usam `PLAN_SERVICE_URL` (local: `http://localhost:8093`; Compose: `http://plan-service:8093`). Uma falha ou timeout devolve 503 e não libera a operação. Não há cache de permissão que prolongue acesso após cancelamento.
+
+Blocos, apartamentos, moradores e usuários são infraestrutura e não exigem módulo. Notificações internas e callbacks do gateway financeiro mantêm suas próprias credenciais. Os limites numéricos de usuários e condomínios continuam sendo parâmetros comerciais; esta correção aplica a contratação de módulos, não implementa cotas numéricas.
+
+## Consul e documentação
+
+As configurações foram consolidadas em `application.yml`; não há um `application.properties` sobrescrevendo o YAML. Consul habilitado por padrão, controlado por `SPRING_CLOUD_CONSUL_ENABLED`; o perfil `local` o desabilita. O Compose habilita explicitamente e configura o host `consul`. Health check em `/actuator/health`; rotas Traefik `/api/plans` e `/api/assinaturas`.
+
+OpenAPI público em `/api/plans/v3/api-docs`; Swagger em `/api/plans/swagger-ui.html`. Assets e configuração do Swagger também são públicos; as operações de negócio exigem JWT. `JWT_SECRET` deve ser o mesmo usado pelo auth-api.
+
+Após atualizar, faça build limpo (`mvn clean package`) ou reconstrua as imagens para remover classes e propriedades antigas. Para a stack Docker:
+
+```powershell
+docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build plan-service portaria-service comunicacao-service meeting-service auth-api financeiro
 ```
 
-### Contratação e aplicação de limites — **planejado**
+Valide o registro saudável de `plan-service` em `http://localhost:8500/v1/health/service/plan-service?passing=true`, a especificação pelo gateway em `http://localhost:8087/api/plans/v3/api-docs` e o acesso dos condomínios `qa-*` após importar as assinaturas.
 
-```mermaid
-graph TD
-    AG["Admin Geral cadastra o cliente"] -.->|previsto| AS["Cria a assinatura<br/>condomínio ↔ plano"]
-    AS -.-> L1["Cadastro de condomínio<br/>verifica maxCondominiums"]
-    AS -.-> L2["Emissão de convite<br/>verifica maxUsersPerCondominium"]
-    AS -.-> L3["Gateway libera rotas<br/>conforme activeModules"]
-```
+## Testes
 
-> As setas tracejadas não existem no código. **Não há entidade de assinatura**, então os
-> limites `maxCondominiums`, `maxUsersPerCondominium` e `activeModules` estão cadastrados mas
-> **não são aplicados em lugar nenhum** — não há como saber qual plano cada condomínio tem.
+`mvn clean test` em plan-service: compatibilidade das duas APIs, histórico e trocas sucessivas, migração repetível, vigência/status/plano inativo, tenant do token, restrição comercial e Swagger público.
 
----
+`mvn -Dtest=PlanModuleFilterTest test` em portaria, comunicação e meeting: recusa direta em todos os métodos, módulo autorizado, ausência de token e indisponibilidade do serviço de planos.
 
-## Banco de dados — `mora_plan`
+`npm test` em financeiro e auth-api: middleware de plano e regressões de autenticação/perfis. `npm run build` no frontend.
 
-2 tabelas.
+## Receita da plataforma
 
-### `tb_plans`
-
-| Coluna | Papel |
-|---|---|
-| `id` | Identificador |
-| `name` | Nome do plano, único |
-| `maxCondominiums` | Limite de condomínios |
-| `maxUsersPerCondominium` | Limite de usuários por condomínio |
-| `monthlyPrice` | Mensalidade, `decimal(10,2)` |
-| `isActive` | Se está disponível para contratação |
-| `createdAt`, `updatedAt` | Preenchidas por callback de ciclo de vida |
-
-### `tb_plan_modules`
-
-Coleção dos módulos ativos de cada plano.
-
-### Entidade prevista — não existe
-
-**`assinaturas`** — ligaria `condominioId` a `planId`, com vigência e status. Sem ela, o
-catálogo é decorativo: nenhum limite é aplicável.
-
-O banco também **não tem seed**: a plataforma sobe sem nenhum plano cadastrado.
-
----
-
-## Endpoints
-
-| Controller | Base | Endpoints |
-|---|---|---|
-| `PlanController` | `/api/plans` | 6 |
-
-CRUD do catálogo. Não há endpoints de assinatura.
-
-### Receita da plataforma — `GET /api/assinaturas/receita`
-
-Só `ADMIN_GERAL`. Devolve o painel de receita pronto, calculado no PostgreSQL pela função
-`receita_plataforma(meses, plano)` (migração `V3__receita_plataforma.sql`):
-
-- `GROUP BY` por plano e por mês;
-- `generate_series` para a janela de meses, com uma linha por mês mesmo sem cliente;
-- `daterange` e `&&` para saber se a vigência cobre o mês;
-- `DISTINCT ON` para escolher uma assinatura por condomínio;
-- `jsonb_build_object` e `jsonb_agg` para montar a resposta.
-
-É o que o `gestao-geral` consome em `/api/gestao/receita`. Antes ele baixava todas as
-assinaturas e somava em JavaScript.
-
----
-
-## Integrações
-
-| Com | Situação |
-|---|---|
-| Consul | Registro e health check |
-| Traefik | `PathPrefix(/api/plans)`, sem remoção de prefixo — o controller já carrega o caminho completo |
-| `gestao-geral` | Previsto: consumir assinaturas para o painel |
-| `auth-api` | Previsto: verificar limite antes de criar condomínio ou emitir convite |
-| Gateway | Previsto: bloquear rotas de módulos não contratados |
-
----
-
-## Notas técnicas
-
-`Plan.java` é a entidade mais rigorosa do projeto: `nullable` e `precision` explícitos em cada
-coluna, `@PrePersist`/`@PreUpdate` para timestamps, `BigDecimal(10,2)` para valor monetário e
-`unique` no nome.
-
----
-
-## Pendências
-
-| Item | Detalhe |
-|---|---|
-| **Entidade de assinatura** | Sem ela os limites do plano não são aplicáveis. É a lacuna principal |
-| **Sem autenticação** | Não há filtro de JWT. Este serviço define preço e limites do produto, e está aberto a quem alcançar a porta |
-| **Sem trilha de auditoria** | Não se registra quem alterou preço ou limite |
-| **Sem seed** | Nenhum plano nasce com a plataforma |
-| **Sem testes** | Único serviço sem nem o teste de contexto |
-| `show-sql` ativo | Verbosidade indevida para produção |
-| Spring Boot 3.2.4 | Os demais serviços Java estão em 3.5.6 |
+`GET /api/assinaturas/receita` exige `ADMIN_GERAL` e retorna o painel calculado no PostgreSQL pela função `receita_plataforma(meses, plano)`, criada na migração `V3__receita_plataforma.sql`. A função agrega receita por plano e por mês, vigências e histórico usando `GROUP BY`, `generate_series`, `daterange`, `DISTINCT ON` e JSON. O `gestao-geral` consome esse endpoint em `/api/gestao/receita`.

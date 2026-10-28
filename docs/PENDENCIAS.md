@@ -28,7 +28,7 @@ os critérios de avaliação.
 |---|---|---|
 | 1 | Pelo menos 80% do escopo | Faltam 4 requisitos parciais (seção 3) |
 | 2 | Processo ágil documentado | As sprints estão em `atividades/`, fora do repositório (seção 9) |
-| 6 | 2 perfis validados no front **e** no back | `meeting-service` sem autenticação e escrita do portaria sem perfil (seção 2) |
+| 6 | 2 perfis validados no front **e** no back | Meeting corrigido e testado; validar na stack. Escrita do portaria ainda requer revisão de perfil (seção 2) |
 
 Os critérios 3, 4, 5, 7 e 8 estão atendidos.
 
@@ -36,16 +36,13 @@ Os critérios 3, 4, 5, 7 e 8 estão atendidos.
 
 ## 2. Defeitos — prioridade alta
 
-### 2.1 `meeting-service` sem autenticação
+### 2.1 `meeting-service` — corrigido no código; validar atualização
 
-O serviço não tem filtro nem leitura de JWT. Qualquer pessoa que alcance a porta
-cria reunião, lança ata e vota.
-
-O voto recebe **`usuarioId` no corpo** (`VoteRequestDTO`), então dá para votar
-como qualquer pessoa trocando um número.
-
-**Correção:** copiar o `AuthFilter` do `plan-service`, tirar `usuarioId` do DTO
-e ler o usuário da claim.
+JWT, perfis, escopo de condomínio, identidade pela claim e voto por unidade foram
+implementados com testes de integração e concorrência. Credenciais Google não entram
+no JAR ou na imagem; a integração é opcional. Antes da publicação, conferir os registros
+antigos sem condomínio e as votações com votos legados. Procedimento em
+[meeting-service](servicos/meeting-service.md).
 
 ### 2.2 Portaria: escrita sem perfil e com o condomínio vindo do corpo
 
@@ -154,12 +151,12 @@ de erro `async` nas rotas antigas do financeiro; `auth-api` registrado no Consul
 
 ### Defeitos
 
-1. Autenticação no `meeting-service` (2.1)
+1. Validar atualização do `meeting-service` na stack (2.1)
 2. Perfil e condomínio na escrita do portaria (2.2)
 
 ### Escopo, por custo-benefício
 
-3. Voto por unidade (RF-11) — mesmos arquivos do item 1
+3. Voto por unidade — implementado; validar atualização e histórico legado com o item 1
 4. Notificar entrega (RF-7) — a rota interna do comunicacao já existe
 5. Antecedência mínima na reserva (RF-10)
 6. Ordem de serviço no `ocorrencias-service` (RF-14)

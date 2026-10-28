@@ -1,139 +1,124 @@
 package com.mora.meeting.service;
 
-import com.mora.meeting.dto.poll.VoteRequestDTO;
-import com.mora.meeting.dto.poll.PollRequestDTO;
-import com.mora.meeting.dto.poll.PollResponseDTO;
-import com.mora.meeting.mapper.PollMapper;
-import com.mora.meeting.entity.Poll;
-import com.mora.meeting.entity.PollOption;
-import com.mora.meeting.entity.PollVote;
+import com.mora.meeting.dto.poll.*;
+import com.mora.meeting.entity.*;
 import com.mora.meeting.enums.PollStatus;
-import com.mora.meeting.repository.PollRepository;
-import com.mora.meeting.repository.PollVoteRepository;
-import jakarta.validation.constraints.NotNull;
+import com.mora.meeting.mapper.PollMapper;
+import com.mora.meeting.repository.*;
+import com.mora.meeting.security.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PollService {
-
     private final PollRepository pollRepository;
     private final PollMapper pollMapper;
     private final PollVoteRepository pollVoteRepository;
+    private final AuthApiClient authApi;
 
     @Transactional
-    public PollResponseDTO createPoll(@NotNull PollRequestDTO dto) {
-
-        Poll poll = pollMapper.toEntity(dto);
-        poll.setStatus(PollStatus.ABERTA);
-
-        if (dto.getOpcoes() != null && !dto.getOpcoes().isEmpty()) {
-            for (String descricaoOpcao : dto.getOpcoes()) {
-                poll.addOption(descricaoOpcao);
-            }
+    public PollResponseDTO createPoll(PollRequestDTO dto) {
+        AuthContext.requireManager();
+        if (dto.getOpcoes() == null || dto.getOpcoes().size() < 2
+                || dto.getOpcoes().stream().anyMatch(o -> o == null || o.isBlank() || o.length() > 100)) {
+            throw new IllegalArgumentException("Informe pelo menos duas opções válidas.");
         }
-
-        Poll pollSalva = pollRepository.save(poll);
-
-        return pollMapper.toResponseDto(pollSalva);
+        validateDeadline(dto);
+        Poll poll = pollMapper.toEntity(dto);
+        poll.setCondominioId(AuthContext.tenant());
+        poll.setStatus(PollStatus.ABERTA);
+        dto.getOpcoes().forEach(poll::addOption);
+        return response(pollRepository.save(poll), authApi.currentUnit());
     }
 
     @Transactional(readOnly = true)
-    public PollResponseDTO readPoll(@NotNull Long id) {
-        Poll poll = pollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Votação não encontrada com o ID: " + id));
-
-        return pollMapper.toResponseDto(poll);
+    public PollResponseDTO readPoll(Long id) {
+        return response(find(id), authApi.currentUnit());
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<PollResponseDTO> listPollsByCondominio(String condominioId) {
-        return pollRepository.findByCondominioId(condominioId).stream()
-                .map(pollMapper::toResponseDto)
-                .collect(java.util.stream.Collectors.toList());
+    public List<PollResponseDTO> listPollsByCondominio(String ignoredTenant) {
+        String unit = authApi.currentUnit();
+        return pollRepository.findByCondominioId(AuthContext.tenant()).stream().map(p -> response(p, unit)).toList();
     }
 
     @Transactional
-    public PollResponseDTO updatePoll(@NotNull Long id, @NotNull PollRequestDTO dto) {
-        Poll pollExistente = pollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Votação não encontrada com o ID: " + id));
-
-        pollExistente.setTitulo(dto.getTitulo());
-        pollExistente.setDescricao(dto.getDescricao());
-
-        // Se a regra permitir mudar a votação de reunião, você validaria o novo meetingId aqui.
-
-        Poll pollAtualizada = pollRepository.save(pollExistente);
-
-        return pollMapper.toResponseDto(pollAtualizada);
+    public PollResponseDTO updatePoll(Long id, PollRequestDTO dto) {
+        AuthContext.requireManager();
+        Poll poll = locked(id);
+        if (poll.getStatus() != PollStatus.ABERTA || !poll.getVotos().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Votação encerrada ou com votos não pode ser alterada.");
+        }
+        validateDeadline(dto);
+        poll.setTitulo(dto.getTitulo());
+        poll.setDescricao(dto.getDescricao());
+        poll.setDataHoraFim(dto.getDataHoraFim());
+        return response(pollRepository.save(poll), authApi.currentUnit());
     }
 
     @Transactional
-    public void closePoll(@NotNull Long id) {
-        Poll poll = pollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Votação não encontrada com o ID: " + id));
-
+    public void closePoll(Long id) {
+        AuthContext.requireManager();
+        Poll poll = locked(id);
         poll.setStatus(PollStatus.ENCERRADA);
-
-        // Todo: Adicionar lógica para notificar resultados (se aplicável)
-
         pollRepository.save(poll);
     }
 
     @Transactional
-    public void registerVote(Long pollId, VoteRequestDTO dto) { // TODO: no futuro, passar o usuarioId extraído do token como parâmetro separadamente
-
-        Long usuarioLogadoId = dto.getUsuarioId();
-
-        /* * TODO (Futuro - Integração Auth):
-         * Ao invés de pegar do DTO, você vai pegar do contexto de segurança do Spring (JWT).
-         * Exemplo usando Spring Security:
-         * * Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-         * Long usuarioLogadoId = jwt.getClaim("id_usuario"); // Depende de como seu colega gerar o payload do token
-         */
-
-        // 1. Verifica se a votação existe e está aberta
-        Poll poll = pollRepository.findById(pollId)
-                .orElseThrow(() -> new RuntimeException("Votação não encontrada."));
-
-        if (!poll.getStatus().equals(PollStatus.ABERTA)) {
-            throw new RuntimeException("Esta votação já foi encerrada.");
+    public void registerVote(Long id, VoteRequestDTO dto) {
+        String unit = authApi.currentUnit();
+        if (unit == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "É necessário vínculo com uma unidade para votar.");
+        Poll poll = locked(id);
+        if (poll.getStatus() != PollStatus.ABERTA
+                || (poll.getDataHoraFim() != null && !poll.getDataHoraFim().isAfter(LocalDateTime.now()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta votação já foi encerrada.");
         }
-
-        // 2. Verifica se o usuário já votou
-        if (pollVoteRepository.existsByPollIdAndUsuarioId(pollId, usuarioLogadoId)) {
-            throw new RuntimeException("Usuário já registrou um voto nesta votação.");
+        if (pollVoteRepository.existsByPollIdAndUnidadeIdIsNull(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta votação possui votos legados e está disponível apenas para consulta.");
         }
-
-        // 3. Verifica se a opção escolhida existe e pertence a esta votação
-        PollOption option = poll.getOpcoes().stream()
-                .filter(opt -> opt.getId().equals(dto.getPollOptionId()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Opção inválida para esta votação."));
-
-        // 4. Salva o voto
-        PollVote vote = new PollVote();
-        vote.setPoll(poll);
-        vote.setPollOption(option);
-        vote.setUsuarioId(usuarioLogadoId);
-
-        pollVoteRepository.save(vote);
+        if (pollVoteRepository.existsByPollIdAndUnidadeId(id, unit)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Sua unidade já votou nesta votação.");
+        }
+        PollOption option = poll.getOpcoes().stream().filter(o -> o.getId().equals(dto.getPollOptionId()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Opção inválida para esta votação."));
+        pollVoteRepository.saveAndFlush(PollVote.builder().poll(poll).pollOption(option)
+                .usuarioId(AuthContext.get().usuarioId()).unidadeId(unit).build());
     }
 
-    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000) // Executa a cada 1 minuto
+    private Poll find(Long id) {
+        return pollRepository.findByIdAndCondominioId(id, AuthContext.tenant())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Votação não encontrada."));
+    }
+    private Poll locked(Long id) {
+        return pollRepository.lockByIdAndTenant(id, AuthContext.tenant())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Votação não encontrada."));
+    }
+    private PollResponseDTO response(Poll poll, String unit) {
+        var dto = pollMapper.toResponseDto(poll);
+        boolean voted = unit != null && poll.getVotos().stream().anyMatch(v -> unit.equals(v.getUnidadeId()));
+        dto.setMinhaUnidadeVotou(voted);
+        dto.setPodeVotar(unit != null && !voted && poll.getStatus() == PollStatus.ABERTA
+                && (poll.getDataHoraFim() == null || poll.getDataHoraFim().isAfter(LocalDateTime.now()))
+                && poll.getVotos().stream().noneMatch(v -> v.getUnidadeId() == null));
+        return dto;
+    }
+    private void validateDeadline(PollRequestDTO dto) {
+        if (dto.getDataHoraFim() != null && !dto.getDataHoraFim().isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("O prazo da votação deve estar no futuro.");
+        }
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
     @Transactional
     public void encerrarVotacoesExpiradasAutomaticamente() {
-        java.util.List<Poll> votacoesExpiradas = pollRepository.findByStatusAndDataHoraFimBefore(
-                PollStatus.ABERTA, java.time.LocalDateTime.now());
-        
-        if (!votacoesExpiradas.isEmpty()) {
-            for (Poll poll : votacoesExpiradas) {
-                poll.setStatus(PollStatus.ENCERRADA);
-            }
-            pollRepository.saveAll(votacoesExpiradas);
-            System.out.println("Votações encerradas automaticamente: " + votacoesExpiradas.size());
-        }
+        var expired = pollRepository.findByStatusAndDataHoraFimBefore(PollStatus.ABERTA, LocalDateTime.now());
+        expired.forEach(p -> p.setStatus(PollStatus.ENCERRADA));
+        pollRepository.saveAll(expired);
     }
 }

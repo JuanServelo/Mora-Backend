@@ -20,3 +20,4 @@ coverage/
 # Material de aula e anotacoes locais — nao fazem parte do produto.
 atividades/
 .claude/
+secrets/

@@ -20,6 +20,8 @@ separação mais do que qualquer critério técnico:
 
 ## Arquitetura
 
+As sete APIs são acessadas pelo gateway em `http://localhost:8087`; as portas dos microserviços não são publicadas no host. O frontend e as chamadas entre aplicações usam as rotas descobertas pelo Consul. Consulte a [validação do gateway](docs/VALIDACAO-GATEWAY.md) para rotas, testes e callbacks OAuth.
+
 ```
                         Frontend (React + Vite — 5173)
                                      │
@@ -125,7 +127,7 @@ depois não aparece. Para esses casos há os scripts avulsos em `docker/criar-ba
 
 ```bash
 docker compose -f docker/docker-compose.yml ps
-curl http://localhost:3001/api/health
+curl http://localhost:8087/api/health
 ```
 
 Consul em `http://localhost:8500` mostra quem se registrou; o painel do Traefik, em

@@ -14,6 +14,8 @@ import plataformaRoutes from './routes/plataforma.js';
 import { verificarConexao } from './config/database.js';
 import { gatewayConfigurado } from './config/asaas.js';
 import { openapi } from './docs/openapi.js';
+import { exigirPlano } from './middleware/plano.js';
+import { autenticar } from './middleware/auth.js';
 
 /**
  * A aplicação, sem `listen()`.
@@ -37,6 +39,13 @@ app.use(express.json({ limit: '64kb' }));
 
 // Pública, como as dos outros serviços: o portal /docs do gateway a reúne.
 app.get('/api/financeiro/docs/openapi.json', (_req, res) => res.json(openapi));
+
+app.use('/api/financeiro', (req, res, next) => {
+  // Provider callbacks authenticate with their own signature, without a user JWT.
+  if (req.path === '/webhooks' || req.path.startsWith('/webhooks/')) return next();
+  if (req.method === 'OPTIONS') return next();
+  return autenticar(req, res, () => exigirPlano(req, res, next));
+});
 
 app.use('/api/financeiro', contextoRoutes);
 app.use('/api/financeiro', cadastrosRoutes);

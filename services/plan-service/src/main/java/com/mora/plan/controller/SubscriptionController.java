@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @RestController
 @RequestMapping("/api/plans/subscriptions")
 @RequiredArgsConstructor
-@Tag(name = "Assinaturas (subscriptions)", description = "Modelo original de assinatura, em inglês. O front e o gestao-geral usam /api/assinaturas. Exige token; o serviço ainda não restringe por perfil.")
+@Tag(name = "Assinaturas (subscriptions)", description = "API de compatibilidade em inglês para tb_assinaturas. Escritas exigem ADMIN_GERAL; leitura restrita ao próprio condomínio.")
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;

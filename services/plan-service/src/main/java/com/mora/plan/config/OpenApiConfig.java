@@ -29,11 +29,11 @@ public class OpenApiConfig {
                                 - **Banco:** `mora_plan`
                                 - **Pelo gateway:** `/api/plans` e `/api/assinaturas` (sem remover prefixo)
                                 - **Autenticação:** JWT do auth-api (`POST /api/auth/login`), no botão **Authorize**. \
-                                Todas as rotas exigem token; o serviço ainda não restringe por perfil.
+                                Operações comerciais exigem ADMIN_GERAL. Leituras de assinatura ficam restritas ao próprio condomínio.
 
-                                Há dois modelos de assinatura: `/api/plans/subscriptions` (o original) e \
-                                `/api/assinaturas` (o que o front e o gestao-geral leem, com vigência e status em \
-                                português). Os exemplos usam o condomínio Residencial Parque Verde do seed."""))
+                                `/api/plans/subscriptions` é a API de compatibilidade em inglês de `/api/assinaturas`.
+                                Ambas usam a mesma assinatura e o mesmo histórico em `tb_assinaturas`.
+                                `/api/plans/access/{module}` verifica o módulo do condomínio identificado pelo JWT."""))
                 .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")

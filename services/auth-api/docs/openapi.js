@@ -83,8 +83,7 @@ export const openapi = {
       '- **Responsável:** João Victor',
       '- **Banco:** `auth_db`',
       '- **Pelo gateway:** `/api/auth`, `/api/users`, `/api/user-management`, `/api/invites`, `/api/condominios`,',
-      '  `/api/perfis`, `/api/estatisticas`. As rotas `/api/portaria` deste serviço respondem',
-      '  só na porta dele (3001): no gateway, esse prefixo é do portaria-service.',
+      '  `/api/perfis`, `/api/estatisticas` e `/api/acessos`. O prefixo `/api/portaria` pertence ao serviço Java; todos os acessos externos passam pelo gateway.',
       '- **Autenticação:** é este serviço que emite o JWT. Faça `POST /api/auth/login` com uma conta do seed e',
       '  cole o `token` no botão **Authorize**. O token vale para todos os serviços.',
       '- **Cadastro:** só por convite. Não existe auto-cadastro.',
@@ -101,9 +100,9 @@ export const openapi = {
     { name: 'Ocupantes da unidade', description: 'Inquilino, moradores e convidados de uma unidade (RF-07), e a transferência da responsabilidade financeira.' },
     { name: 'Condomínios', description: 'Cadastro dos condomínios clientes da plataforma.' },
     { name: 'Perfis', description: 'O que cada perfil pode fazer e quem ele pode cadastrar.' },
-    { name: 'Portaria', description: 'Entrada e saída de pessoas cadastradas. Fora do gateway (o prefixo /api/portaria lá é do portaria-service).' },
+    { name: 'Portaria', description: 'Entrada e saída de pessoas cadastradas pelo prefixo /api/acessos do gateway.' },
     { name: 'Estatísticas', description: 'Números da plataforma e de um condomínio, agregados em SQL.' },
-    { name: 'Entre serviços', description: 'Consultas de outro serviço, sem usuário logado. Fora do gateway: só na rede interna.' },
+    { name: 'Entre serviços', description: 'Consultas de outro serviço, sem usuário logado. Autenticadas por token de serviço no gateway.' },
     { name: 'Documentação', description: 'Esta especificação.' },
     { name: 'Saúde', description: 'Verificação usada pelo Consul.' },
   ],
@@ -490,41 +489,41 @@ export const openapi = {
     },
     // ── Portaria ────────────────────────────────────────────────────────────
     ...Object.fromEntries([
-      ['/api/portaria/guests', 'Convidados do condomínio', 'Convidados cadastrados, com a situação de acesso (DENTRO/FORA) e o último registro.', { sucesso: true, guests: [{ ...OCUPANTE, statusAcesso: 'FORA', ultimoRegistroEm: null }] }],
-      ['/api/portaria/residentes', 'Moradores do condomínio', 'Moradores com a situação de acesso (DENTRO/FORA) e o último registro.', { sucesso: true, residentes: [{ ...USUARIO(), statusAcesso: 'DENTRO', ultimoRegistroEm: '2026-10-07T22:33:26.471Z' }] }],
-      ['/api/portaria/dentro', 'Quem está dentro', 'Entradas sem saída registrada.', { sucesso: true, dentro: [{ entradaId: 19, usuarioId: 4, entradaEm: '2026-10-07T22:33:26.471Z', nome: 'Ana Souza', perfil: 'Morador', unidadeId: UNIDADE_101, turnoPrevisto: null, liberacaoExcepcional: false, registradoPorNome: 'Porteiro Residencial Parque Verde' }] }],
-      ['/api/portaria/funcionarios', 'Funcionários do condomínio', 'Porteiros e síndicos ativos, com id em texto (o portaria-service compara com o `sub` do JWT).', { sucesso: true, funcionarios: [{ id: '3', nome: 'Porteiro Residencial Parque Verde', email: 'porteiro.verde@mora.test', perfil: 'PORTEIRO' }] }],
-      ['/api/portaria/usuarios-condominio', 'Usuários do condomínio', 'Todos os usuários ativos do condomínio, para a busca da portaria.', { sucesso: true, usuarios: [USUARIO()] }],
-      ['/api/portaria/historico-acesso', 'Histórico de acesso', 'Entradas e saídas do condomínio, mais recentes primeiro.', { sucesso: true, registros: [REGISTRO] }],
+      ['/api/acessos/guests', 'Convidados do condomínio', 'Convidados cadastrados, com a situação de acesso (DENTRO/FORA) e o último registro.', { sucesso: true, guests: [{ ...OCUPANTE, statusAcesso: 'FORA', ultimoRegistroEm: null }] }],
+      ['/api/acessos/residentes', 'Moradores do condomínio', 'Moradores com a situação de acesso (DENTRO/FORA) e o último registro.', { sucesso: true, residentes: [{ ...USUARIO(), statusAcesso: 'DENTRO', ultimoRegistroEm: '2026-10-07T22:33:26.471Z' }] }],
+      ['/api/acessos/dentro', 'Quem está dentro', 'Entradas sem saída registrada.', { sucesso: true, dentro: [{ entradaId: 19, usuarioId: 4, entradaEm: '2026-10-07T22:33:26.471Z', nome: 'Ana Souza', perfil: 'Morador', unidadeId: UNIDADE_101, turnoPrevisto: null, liberacaoExcepcional: false, registradoPorNome: 'Porteiro Residencial Parque Verde' }] }],
+      ['/api/acessos/funcionarios', 'Funcionários do condomínio', 'Porteiros e síndicos ativos, com id em texto (o portaria-service compara com o `sub` do JWT).', { sucesso: true, funcionarios: [{ id: '3', nome: 'Porteiro Residencial Parque Verde', email: 'porteiro.verde@mora.test', perfil: 'PORTEIRO' }] }],
+      ['/api/acessos/usuarios-condominio', 'Usuários do condomínio', 'Todos os usuários ativos do condomínio, para a busca da portaria.', { sucesso: true, usuarios: [USUARIO()] }],
+      ['/api/acessos/historico-acesso', 'Histórico de acesso', 'Entradas e saídas do condomínio, mais recentes primeiro.', { sucesso: true, registros: [REGISTRO] }],
     ].map(([caminho, summary, description, exemplo]) => [caminho, {
       get: op('Portaria', summary, `${description} Perfis: ADMIN_GERAL, ADMIN_SINDICO e PORTEIRO (MORADOR e CONVIDADO recebem 403).`, {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         responses: { 200: resposta('Lista.', exemplo), 401: E401, 403: E403 },
       }),
     }])),
-    '/api/portaria/meus-guests': {
+    '/api/acessos/meus-guests': {
       get: op('Portaria', 'Meus convidados', 'Convidados da unidade de quem chama. Perfis: ADMIN_SINDICO, MORADOR e DONO_ALUGUEL.', {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         responses: { 200: resposta('Convidados.', { sucesso: true, guests: [{ ...OCUPANTE, statusAcesso: 'FORA', ultimoRegistroEm: null }] }), 401: E401, 403: E403 },
       }),
     },
-    '/api/portaria/pessoas-unidade': {
+    '/api/acessos/pessoas-unidade': {
       get: op('Portaria', 'Pessoas de uma unidade', 'Quem mora na unidade, para a portaria avisar de uma entrega ou visita. Morador vê a própria; portaria e gestão escolhem em `unidadeId`. Todos os perfis menos CONVIDADO.', {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         parameters: [pQuery('unidadeId', 'Só para portaria e gestão.', UNIDADE_101)],
         responses: { 200: resposta('Pessoas.', { sucesso: true, pessoas: [{ id: '4', nome: 'Ana Souza', email: 'morador1.verde@mora.test', perfil: 'MORADOR' }] }), 401: E401, 403: E403 },
       }),
     },
-    '/api/portaria/historico/{userId}': {
+    '/api/acessos/historico/{userId}': {
       get: op('Portaria', 'Histórico de uma pessoa', 'Entradas e saídas de um usuário. Perfis: ADMIN_GERAL, ADMIN_SINDICO e PORTEIRO.', {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         parameters: [pId('userId', 'Id do usuário.', 4, { type: 'integer' })],
         responses: { 200: resposta('Registros.', { sucesso: true, registros: [REGISTRO] }), 401: E401, 403: E403, 404: E404('Usuário') },
       }),
     },
-    '/api/portaria/entrada/{userId}': {
+    '/api/acessos/entrada/{userId}': {
       post: op('Portaria', 'Registrar entrada', 'Registra a entrada de uma pessoa cadastrada. Para funcionário, consulta o turno no portaria-service; fora do turno, só com liberação excepcional, que vem sinalizada em `alerta`. Perfis: ADMIN_GERAL, ADMIN_SINDICO e PORTEIRO.', {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         parameters: [pId('userId', 'Id de quem entra.', 4, { type: 'integer' })],
         'x-sem-corpo': true,
         responses: {
@@ -536,9 +535,9 @@ export const openapi = {
         },
       }),
     },
-    '/api/portaria/saida/{userId}': {
+    '/api/acessos/saida/{userId}': {
       post: op('Portaria', 'Registrar saída', 'Fecha a entrada em aberto da pessoa. Perfis: ADMIN_GERAL, ADMIN_SINDICO e PORTEIRO.', {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         parameters: [pId('userId', 'Id de quem sai.', 4, { type: 'integer' })],
         'x-sem-corpo': true,
         responses: {
@@ -549,9 +548,9 @@ export const openapi = {
         },
       }),
     },
-    '/api/portaria/guests/{guestId}/permissao': {
+    '/api/acessos/guests/{guestId}/permissao': {
       patch: op('Portaria', 'Autorizar ou bloquear convidado', 'Liga ou desliga a entrada do convidado; sem `permitir`, inverte o estado atual. Perfis: responsável da unidade e gestão.', {
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         parameters: [pId('guestId', 'Id do convidado.', 9, { type: 'integer' })],
         requestBody: corpo('Autorização.', { permitir: true }, { type: 'object', properties: { permitir: { type: 'boolean' } } }),
         responses: { 200: resposta('Atualizado.', { sucesso: true, mensagem: 'Entrada de Rita Convidada autorizada.', entradaPermitida: true }), 401: E401, 403: E403, 404: E404('Convidado') },
@@ -594,7 +593,7 @@ export const openapi = {
         'Credencial: `X-Servico-Token`. O JWT de usuário não abre a rota. Sem `SERVICO_TOKEN` configurado, a rota fica fechada (503).',
       ].join('\n'), {
         security: [{ servicoToken: [] }],
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api (fora do gateway)' }],
+        servers: [{ url: '/', description: 'API Gateway' }],
         parameters: [{ ...pQuery('condominioId', 'Id do condomínio.', COND), required: true }],
         responses: {
           200: resposta('Síndicos ativos, por nome.', {
@@ -617,7 +616,7 @@ export const openapi = {
     '/api/health': {
       get: op('Saúde', 'Saúde do serviço', 'Usada pelo Consul. Pública.', {
         ...publica,
-        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api' }],
+        servers: [{ url: '/', description: 'Gateway (Traefik)' }],
         responses: { 200: resposta('No ar.', { status: 'ok', message: 'Auth API funcionando' }) },
       }),
     },

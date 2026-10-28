@@ -23,7 +23,7 @@ public class AuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String caminho = request.getServletPath();
-        return caminho.startsWith("/actuator")
+        return "OPTIONS".equalsIgnoreCase(request.getMethod()) || caminho.startsWith("/actuator")
                 || caminho.startsWith("/swagger-ui")
                 || caminho.startsWith("/v3/api-docs");
     }

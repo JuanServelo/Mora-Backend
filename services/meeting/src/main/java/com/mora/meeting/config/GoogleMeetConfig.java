@@ -1,67 +1,49 @@
 package com.mora.meeting.config;
 
+import com.google.api.client.googleapis.auth.oauth2.*;
+import com.google.api.client.auth.oauth2.BearerToken;
+import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.auth.oauth2.StoredCredential;
+import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.meet.v2.Meet;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collections;
-import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.*;
+import java.io.*;
+import com.mora.meeting.service.GoogleMeetOAuthService;
+import java.time.Clock;
 
 @Configuration
 public class GoogleMeetConfig {
-
-    private static final String APPLICATION_NAME = "Mora Meeting API";
-    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    // O Docker mapeou o volume ./tokens para /app/tokens
-    private static final String TOKENS_DIRECTORY_PATH = "/app/tokens";
-
-    private static final List<String> SCOPES = Collections.singletonList("https://www.googleapis.com/auth/meetings.space.created");
-
     @Bean
-    public Meet meetService() throws Exception {
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+    public GoogleMeetOAuthService googleMeetOAuthService(
+            @Value("${google.meet.enabled:true}") boolean enabled,
+            @Value("${google.meet.credentials-path:}") String credentialsPath,
+            @Value("${google.meet.tokens-path:tokens}") String tokensPath,
+            @Value("${google.meet.redirect-uri:http://localhost:8087/api/meetings/google/callback}") String redirectUri,
+            @Value("${google.meet.frontend-url:http://localhost:5173/adm/reunioes}") String frontendUrl) throws Exception {
+        return new GoogleMeetOAuthService(enabled, credentialsPath, tokensPath,
+                redirectUri, frontendUrl, GoogleNetHttpTransport.newTrustedTransport(), Clock.systemUTC());
+    }
 
-        InputStream in = GoogleMeetConfig.class.getResourceAsStream("/credentials.json");
-        if (in == null) {
-            System.err.println("AVISO: Arquivo credentials.json não encontrado no classpath. Funcionalidades do Google Meet estarão indisponíveis.");
-            return new Meet.Builder(HTTP_TRANSPORT, JSON_FACTORY, request -> {})
-                    .setApplicationName(APPLICATION_NAME)
-                    .build();
+    /** Only the OAuth helper writes the shared store. Refreshes stay in memory so an
+     * old application instance cannot overwrite a newly authorized refresh token. */
+    static Credential loadCredential(HttpTransport transport, JsonFactory json,
+                                     GoogleClientSecrets secrets, String tokensPath) throws IOException {
+        var store = new FileDataStoreFactory(new File(tokensPath))
+                .<StoredCredential>getDataStore(StoredCredential.DEFAULT_DATA_STORE_ID);
+        var stored = store.get("user");
+        if (stored == null || stored.getRefreshToken() == null) {
+            throw new IOException("Token Google Meet ausente no diretório externo.");
         }
-
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-                .setAccessType("offline")
-                .build();
-
-        // Tenta carregar as credenciais já salvas. NÃO usa o LocalServerReceiver para não travar o Docker.
-        Credential credential = flow.loadCredential("user");
-        if (credential == null) {
-            System.err.println("#################################################################");
-            System.err.println("ERRO CRÍTICO: Token do Google Meet não encontrado em " + TOKENS_DIRECTORY_PATH);
-            System.err.println("Você precisa rodar a classe GoogleMeetAuthHelper LOCALMENTE primeiro.");
-            System.err.println("#################################################################");
-            // Retorna nulo ou pode lançar exceção. Aqui apenas imprimimos o erro, 
-            // e os métodos que usarem a API falharão (ou podemos retornar um mock).
-        }
-
-        return new Meet.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
-                .setApplicationName(APPLICATION_NAME)
-                .build();
+        var details = secrets.getDetails();
+        return new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
+                .setTransport(transport).setJsonFactory(json)
+                .setTokenServerEncodedUrl(details.getTokenUri())
+                .setClientAuthentication(new ClientParametersAuthentication(details.getClientId(), details.getClientSecret()))
+                .build().setAccessToken(stored.getAccessToken()).setRefreshToken(stored.getRefreshToken())
+                .setExpirationTimeMilliseconds(stored.getExpirationTimeMilliseconds());
     }
 }

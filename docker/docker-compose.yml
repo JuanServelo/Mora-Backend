@@ -84,9 +84,10 @@ services:
       - postgres
     networks:
       - microservices-net
-    ports:
-      - "8090:8090"
+    expose:
+      - "8090"
     environment:
+      - SPRING_CLOUD_CONSUL_DISCOVERY_INSTANCE_ID=portaria-service
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
@@ -94,11 +95,9 @@ services:
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
-      # Quem mora em qual unidade é dado do auth-api (RN-06).
-      - AUTH_API_URL=http://auth-api:3001
-      # RF-7: aviso de encomenda. Sem SERVICO_TOKEN a entrega é registrada do
-      # mesmo jeito e só o aviso é pulado, com registro no log.
-      - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - PLAN_SERVICE_URL=http://traefik:8087
+      - AUTH_API_URL=http://traefik:8087
+      - COMUNICACAO_SERVICE_URL=http://traefik:8087/api/comunicacao
       - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       - TZ=America/Sao_Paulo
 
@@ -116,9 +115,10 @@ services:
       - rabbitmq
     networks:
       - microservices-net
-    ports:
-      - "8094:8094"
+    expose:
+      - "8094"
     environment:
+      - SPRING_CLOUD_CONSUL_DISCOVERY_INSTANCE_ID=comunicacao-service
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=${POSTGRES_DB:-mora}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
@@ -126,9 +126,10 @@ services:
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
+      - PLAN_SERVICE_URL=http://traefik:8087
       # Resolve nome e foto da contraparte de uma conversa, sempre em nome de
       # quem pediu. Sem isto a conversa aparece sem o nome — falha macia.
-      - AUTH_API_URL=http://auth-api:3001
+      - AUTH_API_URL=http://traefik:8087
       # Credencial que outro servico apresenta para publicar notificacao sem
       # usuario logado — o caso e o fechamento de competencia do financeiro,
       # que roda por job. Sem ela, /interno responde 503 em vez de ficar aberta.
@@ -157,18 +158,19 @@ services:
       - rabbitmq
     networks:
       - microservices-net
-    ports:
-      - "8095:8095"
+    expose:
+      - "8095"
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=mora_ocorrencias
+      - SPRING_CLOUD_CONSUL_DISCOVERY_INSTANCE_ID=ocorrencias-service
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
       # Nome de quem abriu a ocorrencia, na lista da gestao. Falha macia.
-      - AUTH_API_URL=http://auth-api:3001
+      - AUTH_API_URL=http://traefik:8087
       # Publica as notificacoes na fila; o comunicacao entrega.
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_USER=${RABBITMQ_USER:-mora}
@@ -186,10 +188,18 @@ services:
       - postgres
     networks:
       - microservices-net
-    ports:
-      - "8091:8091"
+    expose:
+      - "8091"
     environment:
+      - SPRING_CLOUD_CONSUL_DISCOVERY_INSTANCE_ID=meeting-service
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_meeting
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
+      - AUTH_API_URL=http://traefik:8087
+      - GOOGLE_MEET_ENABLED=${GOOGLE_MEET_ENABLED:-true}
+      - GOOGLE_MEET_CREDENTIALS_PATH=/run/secrets/google-meet/credentials.json
+      - GOOGLE_MEET_REDIRECT_URI=${GOOGLE_MEET_REDIRECT_URI:-http://localhost:8087/api/meetings/google/callback}
+      - GOOGLE_MEET_FRONTEND_URL=${GOOGLE_MEET_FRONTEND_URL:-http://localhost:5173/adm/reunioes}
+      - PLAN_SERVICE_URL=http://traefik:8087
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
@@ -197,6 +207,7 @@ services:
       - TZ=America/Sao_Paulo
     volumes:
       - ../tokens:/app/tokens
+      - ../secrets/google-meet:/run/secrets/google-meet:ro
 
   # 7.5. Microservice 4: Planos SaaS (Java)
   plan-service:
@@ -209,17 +220,17 @@ services:
       - postgres
     networks:
       - microservices-net
-    ports:
-      - "8093:8093"
+    expose:
+      - "8093"
     environment:
+      - SPRING_CLOUD_CONSUL_DISCOVERY_INSTANCE_ID=plan-service
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mora_plan
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - SPRING_CLOUD_CONSUL_HOST=consul
       - SPRING_CLOUD_CONSUL_PORT=8500
-      # O application.properties do plan deixa o registro desligado por padrão;
-      # sem ele o Traefik não roteia /api/plans e o portal /docs não o alcança.
+      # O registro permite ao Traefik rotear os planos e sua documentação.
       - SPRING_CLOUD_CONSUL_ENABLED=true
       - TZ=America/Sao_Paulo
 
@@ -234,8 +245,8 @@ services:
       - postgres
     networks:
       - microservices-net
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -244,9 +255,10 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - PLAN_SERVICE_URL=http://traefik:8087
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:8087/api/auth/google/callback}
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - MAIL_FROM=${MAIL_FROM}
@@ -259,10 +271,10 @@ services:
       - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:-}
       - ADMIN_SEED_NOME=${ADMIN_SEED_NOME:-Admin}
       # So com proxy na frente. Ver app.js do auth-api.
-      - TRUST_PROXY=${TRUST_PROXY:-}
+      - TRUST_PROXY=1
       # A regra de turno do funcionário vive no portaria-service; o auth-api
       # a consulta antes de registrar a entrada (RF-09).
-      - PORTARIA_SERVICE_URL=http://portaria-service:8090
+      - PORTARIA_SERVICE_URL=http://traefik:8087/api/portaria
       # Registro no Consul, para o Traefik rotear /api/auth e companhia.
       - CONSUL_HOST=consul
       - CONSUL_PORT=8500
@@ -293,8 +305,8 @@ services:
       - postgres
     networks:
       - microservices-net
-    ports:
-      - "3002:3002"
+    expose:
+      - "3002"
     environment:
       - NODE_ENV=production
       - PORT=3002
@@ -304,14 +316,14 @@ services:
       # Mesmo segredo do auth-api: valida os tokens que ele emite.
       - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
-      - AUTH_API_URL=http://auth-api:3001
-      - PORTARIA_SERVICE_URL=http://portaria-service:8090
-      - PLAN_SERVICE_URL=http://plan-service:8093
-      - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - AUTH_API_URL=http://traefik:8087
+      - PORTARIA_SERVICE_URL=http://traefik:8087/api/portaria
+      - PLAN_SERVICE_URL=http://traefik:8087
+      - COMUNICACAO_SERVICE_URL=http://traefik:8087/api/comunicacao
       # Ocorrencias e ordens de servico dos paineis.
-      - OCORRENCIAS_SERVICE_URL=http://ocorrencias-service:8095
+      - OCORRENCIAS_SERVICE_URL=http://traefik:8087/api/ocorrencias
       # Inadimplência e multas dos painéis do síndico.
-      - FINANCEIRO_SERVICE_URL=http://financeiro:3004
+      - FINANCEIRO_SERVICE_URL=http://traefik:8087
       # Banco proprio: as preferencias dos paineis (como cada usuario monta os
       # seus). As migracoes rodam na subida; sem banco, os paineis continuam no
       # ar e so a personalizacao fica indisponivel.
@@ -334,8 +346,8 @@ services:
       - consul
     networks:
       - microservices-net
-    ports:
-      - "3004:3004"
+    expose:
+      - "3004"
     environment:
       - NODE_ENV=production
       - PORT=3004
@@ -350,13 +362,13 @@ services:
       - POSTGRES_DB=mora_financeiro
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
-      - AUTH_API_URL=http://auth-api:3001
-      - PORTARIA_SERVICE_URL=http://portaria-service:8090
-      - PLAN_SERVICE_URL=http://plan-service:8093
+      - AUTH_API_URL=http://traefik:8087
+      - PORTARIA_SERVICE_URL=http://traefik:8087/api/portaria
+      - PLAN_SERVICE_URL=http://traefik:8087
       # Caixa de entrada do usuario: o financeiro publica notificacao la, nao
       # guarda a propria. Sem SERVICO_TOKEN o fechamento roda e so a
       # notificacao deixa de sair.
-      - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - COMUNICACAO_SERVICE_URL=http://traefik:8087/api/comunicacao
       - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       # Envio de aviso de fatura. Sem estas, o servico sobe e so o e-mail falha.
       - MAIL_USER=${MAIL_USER}

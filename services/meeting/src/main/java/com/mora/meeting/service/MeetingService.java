@@ -1,243 +1,141 @@
 package com.mora.meeting.service;
 
-import com.google.api.services.meet.v2.model.Space;
-import com.mora.meeting.dto.meeting.MeetingEvaluationRequestDTO;
-import com.mora.meeting.dto.meeting.MeetingRequestDTO;
-import com.mora.meeting.dto.meeting.MeetingResponseDTO;
-import com.mora.meeting.entity.Meeting;
-import com.mora.meeting.entity.MeetingGuests;
-import com.mora.meeting.enums.AttendanceStatus;
-import com.mora.meeting.enums.MeetingStatus;
+import com.mora.meeting.dto.meeting.*;
+import com.mora.meeting.entity.*;
+import com.mora.meeting.enums.*;
 import com.mora.meeting.mapper.MeetingMapper;
 import com.mora.meeting.repository.MeetingRepository;
+import com.mora.meeting.security.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.google.api.services.meet.v2.Meet;
-
-
-import java.util.List;
-import java.util.Map;
+import org.springframework.web.server.ResponseStatusException;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class MeetingService {
-
     private final MeetingRepository meetingRepository;
     private final MeetingMapper meetingMapper;
-    private final Meet googleMeetClient;
+    private final MeetLinkService meetLinks;
+    private final AuthApiClient authApi;
 
     @Transactional
     public MeetingResponseDTO createMeeting(@NotNull MeetingRequestDTO dto) {
-
-        if (dto.getDataHoraFim().isBefore(dto.getDataHoraInicio())) {
-            throw new IllegalArgumentException("A data de término deve ser posterior à data de início.");
-        }
-
-        if (dto.getIdConvidados() == null || dto.getIdConvidados().isEmpty()) {
-            throw new IllegalArgumentException("Uma reunião deve ter pelo menos um convidado.");
-        }
-
+        AuthContext.requireManager();
+        validate(dto);
         Meeting meeting = meetingMapper.toEntity(dto);
-
-        //todo: alterar para microsserviço de usuários
-        List<String> emailsParaOMeet = buscarEmailsDosUsuariosMock(dto.getIdConvidados());
-        System.out.println("E-mails recuperados para o convite: " + emailsParaOMeet);
-
-
-        /* * acesso a microserviço de usuários
-         * List<String> emails = usuarioClient.buscarEmails(dto.getIdConvidados());
-         */
-
-
-        try {
-            Space spaceRequest = new Space();
-            Space createdSpace = googleMeetClient.spaces().create(spaceRequest).execute();
-            String meetLink = createdSpace.getMeetingUri();
-            meeting.setMeetLink(meetLink);
-
-            System.out.println("Link do Meet gerado com sucesso: " + meetLink);
-
-        } catch (Exception e) {
-            System.err.println("Erro ao comunicar com a API do Google Meet: " + e.getMessage());
-            // Se falhar, usa um link genérico ou lança erro. Para evitar travar a reunião:
-            meeting.setMeetLink("https://meet.google.com/link-indisponivel-erro");
-        }
-
-        List<MeetingGuests> convidados = dto.getIdConvidados().stream()
-                .map(id -> new MeetingGuests(id, AttendanceStatus.PENDENTE))
-                .toList();
-        meeting.setConvidados(convidados);
-
+        meeting.setCondominioId(AuthContext.tenant());
+        meeting.setIdOrganizador(AuthContext.get().usuarioId());
+        meeting.setMeetLink(meetLinks.createLink());
+        meeting.setConvidados(new ArrayList<>(dto.getIdConvidados().stream().distinct()
+                .map(id -> new MeetingGuests(id, AttendanceStatus.PENDENTE)).toList()));
         meeting.setStatus(MeetingStatus.AGENDADA);
-        Meeting meetingSalvo = meetingRepository.save(meeting);
-
-        return meetingMapper.toResponseDto(meetingSalvo);
+        return meetingMapper.toResponseDto(meetingRepository.save(meeting));
     }
 
     @Transactional(readOnly = true)
-    public MeetingResponseDTO readMeeting(@NotNull Long id) {
-
-        Meeting meeting = meetingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
-
-        MeetingResponseDTO responseDTO = meetingMapper.toResponseDto(meeting);
-
-        /* * acesso a microserviço de usuários
-         * * List<String> emails = buscarEmailsDosUsuariosMock(meeting.getIdConvidados());
-         * responseDTO.setConvidados(emails);
-         */
-
-        return responseDTO;
+    public MeetingResponseDTO readMeeting(Long id) {
+        return meetingMapper.toResponseDto(requireMeeting(id));
     }
 
     @Transactional(readOnly = true)
     public List<MeetingResponseDTO> listMeetings(Long usuarioId) {
-        List<Meeting> meetings;
-        if (usuarioId != null) {
-            meetings = meetingRepository.findByOrganizadorOrConvidado(usuarioId);
-        } else {
-            meetings = meetingRepository.findAll();
-        }
+        String tenant = AuthContext.tenant();
+        List<Meeting> meetings = AuthContext.isManager() && usuarioId == null
+                ? meetingRepository.findByCondominioId(tenant)
+                : meetingRepository.findByOrganizadorOrConvidado(tenant,
+                    AuthContext.isManager() ? usuarioId : AuthContext.get().usuarioId());
+        var agora = java.time.LocalDateTime.now();
+        boolean manager = AuthContext.isManager();
         return meetings.stream()
-                .map(meetingMapper::toResponseDto)
-                .toList();
+                .filter(meeting -> manager || (meeting.getStatus() == MeetingStatus.AGENDADA
+                        && meeting.getDataHoraFim() != null && meeting.getDataHoraFim().isAfter(agora)))
+                .sorted(Comparator.comparing(Meeting::getDataHoraInicio))
+                .map(meetingMapper::toResponseDto).toList();
     }
 
     @Transactional
-    public MeetingResponseDTO updateMeeting(@NotNull Long id, @NotNull MeetingRequestDTO dto) {
-        if (dto.getDataHoraFim().isBefore(dto.getDataHoraInicio())) {
-            throw new IllegalArgumentException("A data de término deve ser posterior à data de início.");
-        }
-
-        if (dto.getIdConvidados() == null || dto.getIdConvidados().isEmpty()) {
-            throw new IllegalArgumentException("Uma reunião deve ter pelo menos um convidado.");
-        }
-        Meeting meetingExistente = meetingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
-
-        meetingExistente.setTitulo(dto.getTitulo());
-        meetingExistente.setDescricao(dto.getDescricao());
-        meetingExistente.setDataHoraInicio(dto.getDataHoraInicio());
-        meetingExistente.setDataHoraFim(dto.getDataHoraFim());
-
-        // Atualiza a lista de convidados mantendo o status dos que já estavam presentes
-        List<com.mora.meeting.entity.MeetingGuests> novosConvidados = dto.getIdConvidados().stream()
-                .map(convidadoId -> {
-                    com.mora.meeting.entity.MeetingGuests anterior = meetingExistente.getConvidados().stream()
-                            .filter(c -> c.getUsuarioId().equals(convidadoId))
-                            .findFirst()
-                            .orElse(null);
-                    return new com.mora.meeting.entity.MeetingGuests(convidadoId, anterior != null ? anterior.getStatus() : com.mora.meeting.enums.AttendanceStatus.PENDENTE);
-                })
-                .toList();
-        
-        meetingExistente.getConvidados().clear();
-        meetingExistente.getConvidados().addAll(novosConvidados);
-
-        Meeting meetingAtualizado = meetingRepository.save(meetingExistente);
-
-        return meetingMapper.toResponseDto(meetingAtualizado);
+    public MeetingResponseDTO updateMeeting(Long id, MeetingRequestDTO dto) {
+        AuthContext.requireManager();
+        Meeting meeting = requireMeeting(id);
+        validate(dto);
+        meeting.setTitulo(dto.getTitulo());
+        meeting.setDescricao(dto.getDescricao());
+        meeting.setDataHoraInicio(dto.getDataHoraInicio());
+        meeting.setDataHoraFim(dto.getDataHoraFim());
+        List<MeetingGuests> guests = dto.getIdConvidados().stream().distinct()
+                .map(guestId -> meeting.getConvidados().stream().filter(g -> g.getUsuarioId().equals(guestId))
+                        .findFirst().orElseGet(() -> new MeetingGuests(guestId, AttendanceStatus.PENDENTE))).toList();
+        meeting.getConvidados().clear();
+        meeting.getConvidados().addAll(guests);
+        return meetingMapper.toResponseDto(meetingRepository.save(meeting));
     }
 
     @Transactional
-    public void cancelMeeting(@NotNull Long id) {
-        Meeting meeting = meetingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + id));
-
+    public void cancelMeeting(Long id) {
+        AuthContext.requireManager();
+        Meeting meeting = requireMeeting(id);
         meeting.setStatus(MeetingStatus.CANCELADA);
-
-        // Todo : Adicionar lógica para cancelar a reunião no Google Meet
-        // Todo : Disparar notificação/e-mail de cancelamento para os convidados
-
-        meetingRepository.save(meeting);
-    }
-
-    @Transactional
-    public void atualizarStatusPresenca(Long meetingId, Long usuarioId, AttendanceStatus novoStatus) {
-        Meeting meeting = meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + meetingId));
-
-        boolean convidadoAtualizado = false;
-
-        for (MeetingGuests convidado : meeting.getConvidados()) {
-            if (convidado.getUsuarioId().equals(usuarioId)) {
-                convidado.setStatus(novoStatus);
-                convidadoAtualizado = true;
-                break;
-            }
-        }
-
-        if (!convidadoAtualizado) {
-            throw new IllegalArgumentException("O usuário informado não é um convidado desta reunião.");
-        }
-
-        meetingRepository.save(meeting);
-    }
-
-    @Transactional
-    public void avaliarReuniao(Long meetingId, Long usuarioId, MeetingEvaluationRequestDTO dto) {
-        Meeting meeting = meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada com o ID: " + meetingId));
-
-        if (meeting.getStatus() != MeetingStatus.FINALIZADA) {
-            throw new IllegalStateException("Apenas reuniões finalizadas podem ser avaliadas.");
-        }
-        boolean achouConvidado = false;
-        for (MeetingGuests convidado : meeting.getConvidados()) {
-            if (convidado.getUsuarioId().equals(usuarioId)) {
-                achouConvidado = true;
-
-                if (convidado.getStatus() != AttendanceStatus.CONFIRMADO) {
-                    throw new IllegalStateException("Apenas participantes com presença confirmada podem avaliar a reunião.");
-                }
-                if (convidado.getNota() != null) {
-                    throw new IllegalStateException("Você já enviou uma avaliação para esta reunião.");
-                }
-
-                convidado.setNota(dto.nota());
-                convidado.setComentario(dto.comentario());
-                break;
-            }
-        }
-        if (!achouConvidado) {
-            throw new IllegalArgumentException("O usuário informado não é um convidado desta reunião.");
-        }
         meetingRepository.save(meeting);
     }
 
     @Transactional
     public void finalizarReuniao(Long id) {
-        Meeting meeting = meetingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reunião não encontrada."));
-
-        // Opcional: Validar se já não está finalizada para evitar processamento à toa
-        if (MeetingStatus.FINALIZADA.equals(meeting.getStatus())) {
-            throw new IllegalStateException("Esta reunião já foi finalizada.");
-        }
-
+        AuthContext.requireManager();
+        Meeting meeting = requireMeeting(id);
+        if (meeting.getStatus() == MeetingStatus.FINALIZADA) throw new IllegalStateException("Esta reunião já foi finalizada.");
+        if (meeting.getStatus() == MeetingStatus.CANCELADA) throw new IllegalStateException("Reunião cancelada não pode ser finalizada.");
         meeting.setStatus(MeetingStatus.FINALIZADA);
-
-        // Futuramente, aqui você poderia disparar um evento:
-        // eventPublisher.publishEvent(new MeetingFinishedEvent(meeting));
-
         meetingRepository.save(meeting);
     }
 
-    //MOCK DE USUÁRIOS
-    private List<String> buscarEmailsDosUsuariosMock(List<Long> ids) {
-        Map<Long, String> bancoDeUsuariosFalso = Map.of(
-                1L, "akemiskrd@gmail.com",
-                2L, "juan@empresa.com",
-                3L, "joao.victor@empresa.com",
-                4L, "thais@empresa.com",
-                5L, "ray@empresa.com"
-        );
+    @Transactional
+    public void atualizarStatusPresenca(Long id, Long usuarioId, AttendanceStatus status) {
+        AuthContext.requireSelf(usuarioId);
+        Meeting meeting = requireMeeting(id);
+        if (meeting.getStatus() != MeetingStatus.AGENDADA) throw new IllegalStateException("A reunião não está agendada.");
+        guest(meeting, AuthContext.get().usuarioId()).setStatus(status);
+        meetingRepository.save(meeting);
+    }
 
-        // Percorre a lista de IDs que chegou no DTO e busca o e-mail correspondente
-        return ids.stream()
-                .map(id -> bancoDeUsuariosFalso.getOrDefault(id, "convidado_padrao@empresa.com"))
-                .toList();
+    @Transactional
+    public void avaliarReuniao(Long id, Long usuarioId, MeetingEvaluationRequestDTO dto) {
+        AuthContext.requireSelf(usuarioId);
+        Meeting meeting = requireMeeting(id);
+        if (meeting.getStatus() != MeetingStatus.FINALIZADA) throw new IllegalStateException("Apenas reuniões finalizadas podem ser avaliadas.");
+        MeetingGuests guest = guest(meeting, AuthContext.get().usuarioId());
+        if (guest.getStatus() != AttendanceStatus.CONFIRMADO) throw new IllegalStateException("Apenas participantes confirmados podem avaliar.");
+        if (guest.getNota() != null) throw new IllegalStateException("Você já enviou uma avaliação.");
+        guest.setNota(dto.nota());
+        guest.setComentario(dto.comentario());
+        meetingRepository.save(meeting);
+    }
+
+    @Transactional(readOnly = true)
+    public Meeting requireMeeting(Long id) {
+        Meeting meeting = meetingRepository.findByIdAndCondominioId(id, AuthContext.tenant())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reunião não encontrada."));
+        if (!AuthContext.isManager() && !AuthContext.get().usuarioId().equals(meeting.getIdOrganizador())
+                && meeting.getConvidados().stream().noneMatch(g -> g.getUsuarioId().equals(AuthContext.get().usuarioId()))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reunião não encontrada.");
+        }
+        return meeting;
+    }
+
+    private MeetingGuests guest(Meeting meeting, Long id) {
+        return meeting.getConvidados().stream().filter(g -> id.equals(g.getUsuarioId())).findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário não é convidado desta reunião."));
+    }
+    private void validate(MeetingRequestDTO dto) {
+        if (!dto.getDataHoraFim().isAfter(dto.getDataHoraInicio())) {
+            throw new IllegalArgumentException("O término deve ser posterior ao início.");
+        }
+        if (dto.getIdConvidados() == null || dto.getIdConvidados().isEmpty()) {
+            throw new IllegalArgumentException("Uma reunião deve ter pelo menos um convidado.");
+        }
+        authApi.validateGuests(dto.getIdConvidados());
     }
 }

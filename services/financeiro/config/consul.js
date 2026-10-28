@@ -9,8 +9,7 @@ const NOME = 'financeiro';
  * Mesmo desenho do `gestao-geral`: em Node o registro é manual, porque não há
  * o equivalente ao spring-cloud-starter-consul-discovery dos serviços Java.
  *
- * Falha de registro não derruba o serviço: sem Consul ele continua acessível
- * pela porta publicada, que é como o frontend o alcança hoje.
+ * Sem registro no Consul, o gateway não consegue alcançar esta instância.
  */
 export async function registrarNoConsul() {
   const host = process.env.CONSUL_HOST;
@@ -20,7 +19,7 @@ export async function registrarNoConsul() {
   }
 
   const consul = new Consul({ host, port: process.env.CONSUL_PORT || 8500 });
-  const id = `${NOME}-${process.env.HOSTNAME || PORT}`;
+  const id = process.env.SERVICE_ID || NOME;
   const endereco = process.env.SERVICE_HOST || NOME;
 
   const registro = {

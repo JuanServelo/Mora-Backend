@@ -28,13 +28,10 @@ public class PollController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar votações", description = "Lista votações do condomínio informado.")
+    @Operation(summary = "Listar votações", description = "Lista votações do condomínio do JWT. O parâmetro condominioId não altera o escopo.")
     public ResponseEntity<java.util.List<PollResponseDTO>> listPolls(
-            @RequestParam String condominioId) {
-        if (condominioId != null && !condominioId.trim().isEmpty()) {
-            return ResponseEntity.ok(pollService.listPollsByCondominio(condominioId));
-        }
-        return ResponseEntity.badRequest().build();
+            @RequestParam(required = false) String condominioId) {
+        return ResponseEntity.ok(pollService.listPollsByCondominio(condominioId));
     }
 
     @GetMapping("/{id}")
@@ -61,21 +58,10 @@ public class PollController {
     }
 
     @PostMapping("/{id}/votes")
-    @Operation(summary = "Registrar um voto", description = "Computa o voto de um usuário em uma opção específica da votação.")
+    @Operation(summary = "Registrar voto da unidade", description = "Obtém o usuário do JWT e a unidade no auth-api. Permite um voto por unidade, sem aceitar identidade no corpo.")
     public ResponseEntity<Void> registerVote(
             @PathVariable Long id,
             @Valid @RequestBody VoteRequestDTO dto) {
-
-        /* * TODO (Futuro - Integração Auth):
-         * Se vocês usarem o @AuthenticationPrincipal do Spring Security, a assinatura do método ficaria assim:
-         * * public ResponseEntity<Void> registerVote(
-         * @PathVariable Long id,
-         * @Valid @RequestBody VoteRequestDTO dto,
-         * @AuthenticationPrincipal Jwt jwt) { // Pega o token automaticamente
-         * * Long usuarioId = jwt.getClaim("id_usuario");
-         * pollService.registerVote(id, dto.getPollOptionId(), usuarioId); // Mudaria a assinatura do service
-         * }
-         */
 
         pollService.registerVote(id, dto);
 
