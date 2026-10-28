@@ -31,6 +31,12 @@ export const PUBLICA = 'publica';
 /** Exige `Authorization: Bearer`. Sem ele, 401 antes de qualquer consulta. */
 export const TOKEN = 'token';
 
+/**
+ * Chamada entre serviços, com o segredo `SERVICO_TOKEN` no cabeçalho
+ * `X-Servico-Token`. O JWT de usuário não abre a rota, nem o do Admin Geral.
+ */
+export const SERVICO = 'servico';
+
 export const INVENTARIO = {
   'GET /api/auth/docs/openapi.json': { acesso: PUBLICA },
   'POST /api/auth/forgot-password': { acesso: PUBLICA },
@@ -56,6 +62,7 @@ export const INVENTARIO = {
   'GET /api/estatisticas/condominios/:id': { acesso: TOKEN, nega: [P.ADMIN_SINDICO, P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'GET /api/estatisticas/plataforma': { acesso: TOKEN, nega: [P.ADMIN_SINDICO, P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'GET /api/health': { acesso: PUBLICA },
+  'GET /api/interno/sindicos': { acesso: SERVICO },
   'POST /api/invites/activate': { acesso: PUBLICA },
   'POST /api/invites/validate': { acesso: PUBLICA },
   'GET /api/perfis/info': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
@@ -72,11 +79,6 @@ export const INVENTARIO = {
   'GET /api/portaria/residentes': { acesso: TOKEN, nega: [P.MORADOR, P.CONVIDADO] },
   'POST /api/portaria/saida/:userId': { acesso: TOKEN, nega: [P.MORADOR, P.CONVIDADO] },
   'GET /api/portaria/usuarios-condominio': { acesso: TOKEN, nega: [P.MORADOR, P.CONVIDADO] },
-  'POST /api/reclamacoes': { acesso: TOKEN, nega: [] },
-  'PATCH /api/reclamacoes/:id': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
-  'GET /api/reclamacoes/minhas': { acesso: TOKEN, nega: [] },
-  'GET /api/reclamacoes/todas': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
-  'GET /api/reclamacoes/estatisticas': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'POST /api/user-management/invites': { acesso: TOKEN, nega: [P.PORTEIRO, P.CONVIDADO] },
   'POST /api/user-management/invites/:id/resend': { acesso: TOKEN, nega: [P.PORTEIRO, P.CONVIDADO] },
   'GET /api/user-management/units/:unidadeId/occupants': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },

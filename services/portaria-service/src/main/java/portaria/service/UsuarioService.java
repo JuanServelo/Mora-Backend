@@ -16,6 +16,7 @@ import portaria.repository.FuncionarioRepository;
 import portaria.repository.ApartamentoRepository;
 import portaria.repository.BlocoRepository;
 import portaria.model.enums.TipoProprietario;
+import portaria.security.Permissoes;
 import java.util.UUID;
 
 @Service
@@ -32,6 +33,7 @@ public class UsuarioService {
     private final BlocoRepository blocoRepository;
 
     public Object criarUsuario(CriarUsuarioDTO dto) {
+        Permissoes.exigirAdmin("cadastrar usuários");
         validarCpfUnico(dto.getCpf());
 
         switch (dto.getTipoUsuario()) {

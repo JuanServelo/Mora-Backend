@@ -133,6 +133,7 @@ const documentacao = pasta('00 Documentação', [
   req('Especificação do auth-api', 'GET', '{{gw}}/api/auth/docs/openapi.json', { testes: conferirEspecificacao('auth-api') }),
   req('Especificação do portaria', 'GET', '{{gw}}/api/portaria/v3/api-docs', { testes: conferirEspecificacao('portaria-service') }),
   req('Especificação do comunicacao', 'GET', '{{gw}}/api/comunicacao/v3/api-docs', { testes: conferirEspecificacao('comunicacao-service') }),
+  req('Especificação do ocorrencias', 'GET', '{{gw}}/api/ocorrencias/v3/api-docs', { testes: conferirEspecificacao('ocorrencias-service') }),
   req('Especificação do financeiro', 'GET', '{{gw}}/api/financeiro/docs/openapi.json', { testes: conferirEspecificacao('financeiro') }),
   req('Especificação do gestao-geral', 'GET', '{{gw}}/api/gestao/docs/openapi.json', { testes: conferirEspecificacao('gestao-geral') }),
   req('Especificação do plan', 'GET', '{{gw}}/api/plans/v3/api-docs', { testes: conferirEspecificacao('plan-service') }),
@@ -144,7 +145,7 @@ const infra = pasta('00 Infraestrutura', [
   req('Consul lista os serviços Node e Java', 'GET', '{{consul}}/v1/catalog/services', {
     testes: () => {
       const s = pm.response.json();
-      ['auth-api', 'comunicacao-service', 'financeiro', 'gestao-geral', 'portaria-service']
+      ['auth-api', 'comunicacao-service', 'financeiro', 'gestao-geral', 'ocorrencias-service', 'portaria-service']
         .forEach((nome) => pm.test(`${nome} registrado`, () => pm.expect(s).to.have.property(nome)));
       pm.test('auth-api não anuncia /api/portaria (é do portaria-service)', () => {
         pm.expect(s['auth-api'].join(' ')).to.not.include('/api/portaria');
@@ -176,7 +177,6 @@ const autenticacao = pasta('01 Autenticação', [
       pm.collectionVariables.set('hoje', hoje);
       pm.collectionVariables.set('fim', fim);
       pm.collectionVariables.set('mesAtual', hoje.slice(0, 7));
-      pm.collectionVariables.set('categoria', `[newman] Teste ${Date.now()}`);
     },
     testes: () => pm.test('datas definidas', () => pm.expect(pm.collectionVariables.get('hoje')).to.match(/^\d{4}-\d{2}-\d{2}$/)),
   }),
@@ -193,15 +193,28 @@ const autenticacao = pasta('01 Autenticação', [
   }),
 ], 'Contas do seed (`scripts/seed-dev.mjs`). A senha chega pelo `rodar.mjs`, nunca fica gravada aqui.');
 
-// ── 02 auth-api: ocorrências agregadas ─────────────────────────────────────
+// ── 02 ocorrencias-service: ocorrências e ordens de serviço ────────────────
 
-const authApi = pasta('02 auth-api — estatísticas de ocorrências', [
-  req('Morador abre uma ocorrência', 'POST', '{{gw}}/api/reclamacoes', {
+const ocorrencias = pasta('02 ocorrencias-service — ocorrências e ordens de serviço', [
+  req('Morador abre uma ocorrência', 'POST', '{{gw}}/api/ocorrencias/reclamacoes', {
     token: 'tokenMorador',
-    corpo: '{ "category": "{{categoria}}", "description": "[newman] Ocorrência criada pelo teste de API" }',
-    testes: espera(201),
+    corpo: '{ "categoria": "OUTROS", "descricao": "[newman] Ocorrência criada pelo teste de API" }',
+    testes: () => {
+      pm.test('responde 201', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.test('nasce PENDENTE, com protocolo', () => {
+        pm.expect(r.status).to.eql('PENDENTE');
+        pm.expect(r.protocolo).to.match(/^REC-/);
+      });
+      pm.collectionVariables.set('reclamacaoId', String(r.id));
+    },
   }),
-  req('Síndico consulta estatísticas (6 meses)', 'GET', '{{gw}}/api/reclamacoes/estatisticas?meses=6', {
+  req('Categoria fora da lista é recusada', 'POST', '{{gw}}/api/ocorrencias/reclamacoes', {
+    token: 'tokenMorador',
+    corpo: '{ "categoria": "QUALQUER", "descricao": "[newman] não deve gravar" }',
+    testes: espera(400),
+  }),
+  req('Síndico consulta estatísticas (6 meses)', 'GET', '{{gw}}/api/ocorrencias/reclamacoes/estatisticas?meses=6', {
     token: 'tokenSindico',
     testes: () => {
       pm.test('responde 200', () => pm.response.to.have.status(200));
@@ -215,34 +228,98 @@ const authApi = pasta('02 auth-api — estatísticas de ocorrências', [
         pm.expect(r.atual.pendentes).to.be.at.least(1);
         pm.expect(r.atual.abertas).to.eql(r.atual.pendentes + r.atual.emAnalise);
       });
-      pm.test('categoria nova aparece com 1', () => {
-        const c = r.porCategoria.find((x) => x.categoria === pm.collectionVariables.get('categoria'));
-        pm.expect(c && c.total).to.eql(1);
+      pm.test('categoria OUTROS aparece', () => {
+        const c = r.porCategoria.find((x) => x.categoria === 'OUTROS');
+        pm.expect(c && c.total).to.be.at.least(1);
       });
       pm.test('abertas do mês atual ≥ 1', () => pm.expect(r.porMes[5].abertas).to.be.at.least(1));
     },
   }),
-  req('Janela absurda é limitada a 24 meses', 'GET', '{{gw}}/api/reclamacoes/estatisticas?meses=999', {
+  req('Janela absurda é limitada a 24 meses', 'GET', '{{gw}}/api/ocorrencias/reclamacoes/estatisticas?meses=999', {
     token: 'tokenSindico',
     testes: espera(200, "pm.test('24 meses', () => pm.expect(pm.response.json().meses).to.have.length(24));"),
   }),
-  req('Síndico de outro condomínio não vê a ocorrência', 'GET', '{{gw}}/api/reclamacoes/estatisticas?meses=1', {
+  req('Síndico de outro condomínio não vê a ocorrência', 'GET', '{{gw}}/api/ocorrencias/reclamacoes/{{reclamacaoId}}', {
     token: 'tokenSindicoOutro',
+    testes: espera(404),
+  }),
+  req('Morador não acessa estatísticas', 'GET', '{{gw}}/api/ocorrencias/reclamacoes/estatisticas', { token: 'tokenMorador', testes: espera(403) }),
+  req('Morador não responde ocorrência', 'PATCH', '{{gw}}/api/ocorrencias/reclamacoes/{{reclamacaoId}}', {
+    token: 'tokenMorador',
+    corpo: '{ "status": "RESOLVIDO", "mensagem": "[newman] tentativa" }',
+    testes: espera(403),
+  }),
+  req('Sem token é recusado', 'GET', '{{gw}}/api/ocorrencias/reclamacoes/estatisticas', { testes: espera(401) }),
+  req('Síndico responde e põe em análise', 'PATCH', '{{gw}}/api/ocorrencias/reclamacoes/{{reclamacaoId}}', {
+    token: 'tokenSindico',
+    corpo: '{ "status": "EM_ANALISE", "mensagem": "[newman] Vamos verificar." }',
     testes: () => {
       pm.test('responde 200', () => pm.response.to.have.status(200));
-      pm.test('categoria do teste não aparece', () => {
-        const cat = pm.collectionVariables.get('categoria');
-        pm.expect(pm.response.json().porCategoria.map((c) => c.categoria)).to.not.include(cat);
+      const r = pm.response.json();
+      pm.test('status mudou', () => pm.expect(r.status).to.eql('EM_ANALISE'));
+      pm.test('histórico com autor e a mudança', () => {
+        const i = r.interacoes.at(-1);
+        pm.expect(i.statusAnterior).to.eql('PENDENTE');
+        pm.expect(i.statusNovo).to.eql('EM_ANALISE');
+        pm.expect(i.autorPerfil).to.eql('ADMIN_SINDICO');
       });
     },
   }),
-  req('Morador não acessa estatísticas', 'GET', '{{gw}}/api/reclamacoes/estatisticas', { token: 'tokenMorador', testes: espera(403) }),
-  req('Sem token é recusado', 'GET', '{{gw}}/api/reclamacoes/estatisticas', { testes: espera(401) }),
+  req('Síndico abre OS a partir da ocorrência', 'POST', '{{gw}}/api/ocorrencias/ordens-servico', {
+    token: 'tokenSindico',
+    corpo: '{ "descricao": "[newman] Trocar a peça", "prioridade": "ALTA", "prazo": "{{fim}}", "responsavel": "Equipe interna", "reclamacaoId": {{reclamacaoId}} }',
+    testes: () => {
+      pm.test('responde 201', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.test('nasce ABERTA e vinculada', () => {
+        pm.expect(r.status).to.eql('ABERTA');
+        pm.expect(String(r.reclamacao.id)).to.eql(pm.collectionVariables.get('reclamacaoId'));
+        pm.expect(r.preventiva).to.eql(false);
+      });
+      pm.collectionVariables.set('ordemServicoId', String(r.id));
+    },
+  }),
+  req('OS preventiva, sem ocorrência', 'POST', '{{gw}}/api/ocorrencias/ordens-servico', {
+    token: 'tokenSindico',
+    corpo: '{ "descricao": "[newman] Revisão do gerador", "prioridade": "BAIXA", "prazo": "{{fim}}", "responsavel": "Equipe interna" }',
+    testes: espera(201, "pm.test('preventiva', () => pm.expect(pm.response.json().preventiva).to.eql(true));"),
+  }),
+  req('Morador vê a OS vinculada à ocorrência', 'GET', '{{gw}}/api/ocorrencias/reclamacoes/minhas', {
+    token: 'tokenMorador',
+    testes: () => {
+      pm.test('responde 200', () => pm.response.to.have.status(200));
+      const r = pm.response.json().find((x) => String(x.id) === pm.collectionVariables.get('reclamacaoId'));
+      pm.test('OS no vínculo', () => pm.expect(r.ordensServico.map((o) => String(o.id)))
+        .to.include(pm.collectionVariables.get('ordemServicoId')));
+    },
+  }),
+  req('Síndico registra andamento', 'POST', '{{gw}}/api/ocorrencias/ordens-servico/{{ordemServicoId}}/andamentos', {
+    token: 'tokenSindico',
+    corpo: '{ "mensagem": "[newman] Peça encomendada." }',
+    testes: espera(200, "pm.test('em execução', () => pm.expect(pm.response.json().status).to.eql('EM_EXECUCAO'));"),
+  }),
+  req('Síndico conclui a OS', 'POST', '{{gw}}/api/ocorrencias/ordens-servico/{{ordemServicoId}}/conclusao', {
+    token: 'tokenSindico',
+    corpo: '{ "custo": 150.00, "observacoes": "[newman] Peça trocada." }',
+    testes: () => {
+      pm.test('responde 200', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('concluída no prazo', () => {
+        pm.expect(r.status).to.eql('CONCLUIDA');
+        pm.expect(r.concluidaNoPrazo).to.eql(true);
+      });
+    },
+  }),
+  req('Indicadores das OS', 'GET', '{{gw}}/api/ocorrencias/ordens-servico/estatisticas', {
+    token: 'tokenSindico',
+    testes: espera(200, "pm.test('conta a concluída no prazo', () => pm.expect(pm.response.json().concluidasNoPrazo).to.be.at.least(1));"),
+  }),
   req('Gateway leva /api/portaria ao portaria-service', 'GET', '{{gw}}/api/portaria/entregas/pendentes', {
     token: 'tokenSindico',
     testes: espera(200, "pm.test('resposta do portaria (lista)', () => pm.expect(pm.response.json()).to.be.an('array'));"),
   }),
-], 'RNF-20: as contagens do painel saem do banco do auth-api, já recortadas pelo condomínio do token.');
+], 'RF de ocorrências e ordens de serviço: registro, atendimento, OS vinculada e preventiva, recorte por condomínio. '
+  + 'As contagens do painel saem do banco do ocorrencias-service (RNF-20).');
 
 // ── 03 comunicacao ─────────────────────────────────────────────────────────
 
@@ -478,7 +555,7 @@ const colecao = {
     description: 'Fluxos ponta a ponta dos serviços. Rode com `npm test` dentro de `tests-api/`.',
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
-  item: [documentacao, infra, autenticacao, authApi, comunicacao, financeiro, gestao, limpeza],
+  item: [documentacao, infra, autenticacao, ocorrencias, comunicacao, financeiro, gestao, limpeza],
   variable: [],
 };
 

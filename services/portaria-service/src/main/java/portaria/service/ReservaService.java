@@ -16,6 +16,7 @@ import portaria.model.enums.StatusReserva;
 import portaria.model.enums.TipoReserva;
 import portaria.repository.ReservaRepository;
 import portaria.security.CondominioUtils;
+import portaria.security.AuthContext;
 import portaria.security.JwtClaims;
 import portaria.util.FuncionamentoUtils;
 
@@ -47,9 +48,12 @@ public class ReservaService {
     private final FuncionamentoAreaComumService funcionamentoService;
     private final AuthApiClient authApiClient;
     private final portaria.repository.ReservaAuditoriaRepository auditoriaRepository;
+    private final NotificacaoPortariaService notificacoes;
 
     public static boolean podeAprovar(String perfil) {
-        return PERFIS_APROVAM.contains(perfil);
+        // List.of(...).contains(null) lança NPE. Perfil ausente na claim é um
+        // token malformado, e isso precisa virar "não pode", não um 500.
+        return perfil != null && PERFIS_APROVAM.contains(perfil);
     }
 
     // ─── Criação ─────────────────────────────────────────────────────────────
@@ -77,6 +81,7 @@ public class ReservaService {
         if (!area.isPodeReservar()) {
             throw new OperacaoInvalidaException("Esta área comum não está disponível para reserva");
         }
+        exigirAntecedenciaMinima(area, inicio);
 
         Reserva reserva = new Reserva();
         aplicarResponsavel(claims, request, reserva);
@@ -130,7 +135,43 @@ public class ReservaService {
             reserva.setValorTotal(BigDecimal.valueOf(area.getTaxaLocacao() * dias));
         }
 
-        return reservaRepository.save(reserva);
+        Reserva salva = reservaRepository.save(reserva);
+        if (salva.getStatus() == StatusReserva.PENDENTE) {
+            notificacoes.reservaAguardandoAprovacao(salva);
+        }
+        return salva;
+    }
+
+    /**
+     * RF-10: pedido com antecedência suficiente.
+     *
+     * Vale para quem solicita, não para quem administra: o síndico precisa
+     * conseguir encaixar um evento de última hora, e barrá-lo transformaria
+     * uma regra de convivência em um impedimento operacional.
+     */
+    private void exigirAntecedenciaMinima(AreaComum area, LocalDateTime inicio) {
+        int horas = area.getAntecedenciaMinimaHoras();
+        if (horas <= 0) return;
+
+        JwtClaims claims = AuthContext.get();
+        if (claims != null && podeAprovar(claims.perfil())) return;
+
+        LocalDateTime limite = LocalDateTime.now().plusHours(horas);
+        if (inicio.isBefore(limite)) {
+            throw new OperacaoInvalidaException(
+                    "O espaço " + area.getNome() + " exige " + textoAntecedencia(horas)
+                    + " de antecedência. A reserva mais próxima possível começa em "
+                    + limite.format(DT_BR) + ".");
+        }
+    }
+
+    /** "48 horas" lido como "2 dias": a mensagem é para o morador, não para o log. */
+    private static String textoAntecedencia(int horas) {
+        if (horas % 24 == 0) {
+            int dias = horas / 24;
+            return dias + (dias == 1 ? " dia" : " dias");
+        }
+        return horas + (horas == 1 ? " hora" : " horas");
     }
 
     /**
@@ -309,6 +350,7 @@ public class ReservaService {
         reserva.setAtualizadoEm(agora);
         Reserva salva = reservaRepository.save(reserva);
         auditar(salva, anterior, StatusReserva.APROVADA, null, claims);
+        notificacoes.reservaDecidida(salva, true, null);
         return salva;
     }
 
@@ -332,6 +374,7 @@ public class ReservaService {
         reserva.setAtualizadoEm(LocalDateTime.now());
         Reserva salva = reservaRepository.save(reserva);
         auditar(salva, anterior, StatusReserva.RECUSADA, motivo.trim(), claims);
+        notificacoes.reservaDecidida(salva, false, motivo.trim());
         return salva;
     }
 

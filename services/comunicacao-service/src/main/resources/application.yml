@@ -36,6 +36,24 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 
+  # Fila de notificações: outros serviços publicam, este consome e grava na
+  # caixa de entrada (ver NotificacaoConsumer). Broker fora do ar não impede o
+  # serviço de subir — o consumidor reconecta sozinho quando ele voltar.
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        # Falha passageira (banco ocupado) ganha mais duas tentativas; depois a
+        # mensagem é descartada com log, em vez de voltar à fila para sempre.
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+        default-requeue-rejected: false
+
   jpa:
     hibernate:
       # O Hibernate só confere: se a entidade pedir coluna que o banco não tem,
@@ -83,6 +101,11 @@ jwt:
 servico:
   token: ${SERVICO_TOKEN:}
 
+# A exchange onde os serviços publicam, e a fila deste consumidor.
+notificacoes:
+  exchange: ${NOTIFICACOES_EXCHANGE:mora.notificacoes}
+  fila: comunicacao.notificacoes
+
 # Onde ficam as imagens dos avisos. No Docker é o volume comunicacao_uploads.
 uploads:
   dir: ${UPLOADS_DIR:/app/uploads}
@@ -92,3 +115,8 @@ management:
     web:
       exposure:
         include: health
+  # O broker fora do ar não pode tirar o comunicacao do gateway: avisos, chat e
+  # a caixa de entrada continuam funcionando; só a fila espera ele voltar.
+  health:
+    rabbit:
+      enabled: false

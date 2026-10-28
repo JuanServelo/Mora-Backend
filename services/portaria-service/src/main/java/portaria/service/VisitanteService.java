@@ -9,6 +9,7 @@ import portaria.model.Visitante;
 import portaria.model.enums.StatusAcesso;
 import portaria.repository.VisitanteRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,17 +22,17 @@ public class VisitanteService {
     private final VisitanteRepository visitanteRepository;
 
     public Visitante registrarEntrada(Visitante visitante) {
-        var claims = AuthContext.get();
-        if (claims != null && claims.condominioId() != null && !"default".equals(claims.condominioId())) {
-            visitante.setCondominioId(claims.condominioId());
-        }
+        Permissoes.exigirOperacao("registrar entrada de visitantes");
+        visitante.setCondominioId(Permissoes.condominioParaGravar(visitante.getCondominioId()));
         visitante.setHorarioEntrada(LocalDateTime.now());
         visitante.setStatus(StatusAcesso.DENTRO);
         return visitanteRepository.save(visitante);
     }
 
     public Visitante registrarSaida(String id) {
+        Permissoes.exigirOperacao("registrar saída de visitantes");
         Visitante visitante = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(visitante.getCondominioId());
         if (visitante.getStatus() != StatusAcesso.DENTRO) {
             throw new OperacaoInvalidaException("Visitante não está registrado como DENTRO do condomínio.");
         }

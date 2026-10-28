@@ -30,7 +30,7 @@ Os dois ficam vazios nos arquivos de propósito. O `npm test` os lê na hora da 
 | 00 Documentação | Portal `/docs` e a especificação de cada serviço pelo gateway: toda operação com sumário, descrição e exemplos |
 | 00 Infraestrutura | Serviços no Consul; auth-api sem `/api/portaria`; Swagger do comunicacao e do portaria |
 | 01 Autenticação | Login de cada perfil; e-mail inexistente recusado |
-| 02 auth-api | Estatísticas de ocorrências agregadas no banco; recorte por condomínio; 401/403; gateway leva `/api/portaria` ao portaria |
+| 02 ocorrencias-service | Ocorrência nasce PENDENTE com protocolo; categoria inválida recusada; resposta do síndico no histórico com a mudança de status; OS vinculada e preventiva; andamento e conclusão no prazo; estatísticas agregadas no banco; recorte por condomínio; 401/403/404; gateway leva `/api/portaria` ao portaria |
 | 03 comunicacao | Aviso por público-alvo; confirmação de leitura; panorama e relatório "x de y"; upload de imagem (PNG aceito, texto disfarçado recusado); rota interna com token de serviço |
 | 04 financeiro | Multa aplicada → notificação no sino do morador, uma vez só (reenvio não duplica); multas por mês |
 | 05 gestao-geral | Painel operacional e estratégico com as fontes agregadas; 400/403 |

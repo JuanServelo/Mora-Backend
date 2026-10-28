@@ -69,6 +69,15 @@ spring:
         health-check-path: /actuator/health
         health-check-interval: 15s
 
+# RF-7: o aviso de encomenda sai por aqui. Sem SERVICO_TOKEN a publicacao e
+# pulada com aviso no log — a entrega continua sendo registrada.
+comunicacao:
+  service:
+    url: ${COMUNICACAO_SERVICE_URL:http://comunicacao-service:8094}
+
+servico:
+  token: ${SERVICO_TOKEN:}
+
 jwt:
   secret: ${JWT_SECRET:changeme-insecure-default}
 

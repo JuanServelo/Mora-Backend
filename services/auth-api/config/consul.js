@@ -16,7 +16,6 @@ const PREFIXOS = [
   '/api/invites',
   '/api/user-management',
   '/api/users',
-  '/api/reclamacoes',
   '/api/condominios',
   '/api/perfis',
   '/api/estatisticas',

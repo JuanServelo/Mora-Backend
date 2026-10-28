@@ -9,7 +9,7 @@
 const SERVICOS = [
   {
     nome: 'auth-api', url: '/api/auth/docs/openapi.json',
-    faz: 'Login (e-mail e Google), usuários, convites, condomínios, perfis e ocorrências',
+    faz: 'Login (e-mail e Google), usuários, convites, condomínios e perfis',
     responsavel: 'João Victor', banco: 'auth_db',
   },
   {
@@ -23,14 +23,19 @@ const SERVICOS = [
     responsavel: 'João Victor', banco: 'mora',
   },
   {
+    nome: 'ocorrencias-service', url: '/api/ocorrencias/v3/api-docs',
+    faz: 'Ocorrências dos moradores, ordens de serviço e fornecedores; notificações pela fila (RabbitMQ)',
+    responsavel: 'Ray Govaski', banco: 'mora_ocorrencias',
+  },
+  {
     nome: 'financeiro', url: '/api/financeiro/docs/openapi.json',
     faz: 'Taxas, rateio, faturas, multas, contratos, prestação de contas e cobrança via Asaas',
     responsavel: 'João Victor', banco: 'mora_financeiro',
   },
   {
     nome: 'gestao-geral', url: '/api/gestao/docs/openapi.json',
-    faz: 'Painéis da plataforma e do síndico, agregando os outros serviços',
-    responsavel: 'João Victor', banco: '—',
+    faz: 'Painéis da plataforma e do síndico, agregando os outros serviços; preferências dos painéis',
+    responsavel: 'João Victor', banco: 'mora_gestao',
   },
   {
     nome: 'plan-service', url: '/api/plans/v3/api-docs',

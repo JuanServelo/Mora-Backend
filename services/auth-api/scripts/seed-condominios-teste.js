@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import { Sequelize, QueryTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import { PERFIS, STATUS_USUARIO, STATUS_CONVITE } from '../constants/perfis.js';
 
@@ -121,7 +122,8 @@ const SOBRENOMES = ['Almeida', 'Barbosa', 'Cardoso', 'Duarte', 'Esteves', 'Ferre
   'Gonçalves', 'Henriques', 'Ibrahim', 'Jardim', 'Klein', 'Lopes', 'Moraes',
   'Nogueira', 'Oliveira', 'Pereira', 'Ramos', 'Silveira', 'Tavares', 'Vieira'];
 
-const CATEGORIAS = ['Barulho', 'Vazamento', 'Limpeza', 'Animais', 'Vandalismo', 'Outros'];
+// As categorias aceitas pelo ocorrencias-service (`CategoriaReclamacao`).
+const CATEGORIAS = ['BARULHO', 'HIDRAULICA', 'LIMPEZA', 'ANIMAIS', 'INFRAESTRUTURA', 'OUTROS'];
 const STATUS_OCORRENCIA = ['PENDENTE', 'EM_ANALISE', 'RESOLVIDO'];
 
 /** Gerador determinístico: rodar duas vezes produz os mesmos nomes. */
@@ -131,6 +133,37 @@ function criarRandom(semente) {
     s = (s * 1103515245 + 12345) % 2147483648;
     return s / 2147483648;
   };
+}
+
+/**
+ * As ocorrências moram no banco do ocorrencias-service (D27), não no auth_db.
+ * Mesmo servidor e credenciais; só o banco muda.
+ */
+const ocorrenciasDb = new Sequelize(
+  process.env.OCORRENCIAS_DB || 'mora_ocorrencias',
+  process.env.POSTGRES_USER || 'admin',
+  process.env.POSTGRES_PASSWORD || process.env.POSTGRES_PASS || '',
+  {
+    host: process.env.POSTGRES_HOST || 'localhost',
+    port: Number(process.env.POSTGRES_PORT) || 5432,
+    dialect: 'postgres',
+    logging: false,
+  },
+);
+
+/**
+ * Se o banco de ocorrências está pronto. As tabelas são criadas pelo
+ * ocorrencias-service na primeira subida; antes disso o seed pula as
+ * ocorrências em vez de falhar o resto.
+ */
+async function ocorrenciasDisponivel() {
+  try {
+    const [linha] = await ocorrenciasDb.query(
+      "SELECT to_regclass('public.reclamacoes') AS tabela", { type: QueryTypes.SELECT });
+    return Boolean(linha?.tabela);
+  } catch {
+    return false;
+  }
 }
 
 const dataAtras = (meses, dias = 0) => {
@@ -144,8 +177,12 @@ async function limpar() {
   const t = await sequelize.transaction();
   try {
     const opts = { transaction: t };
-    await sequelize.query(
-      `DELETE FROM reclamacoes WHERE "condominioId" LIKE '${PREFIXO}%'`, opts);
+    if (await ocorrenciasDisponivel()) {
+      await ocorrenciasDb.query(`
+        DELETE FROM reclamacao_interacoes WHERE reclamacao_id IN
+          (SELECT id FROM reclamacoes WHERE condominio_id LIKE '${PREFIXO}%')`);
+      await ocorrenciasDb.query(`DELETE FROM reclamacoes WHERE condominio_id LIKE '${PREFIXO}%'`);
+    }
     await sequelize.query(
       `DELETE FROM invites WHERE "condominioId" LIKE '${PREFIXO}%'`, opts);
     await sequelize.query(
@@ -168,7 +205,8 @@ async function semear() {
     const opts = { transaction: t };
     let totalUsuarios = 0;
     let totalConvites = 0;
-    let totalOcorrencias = 0;
+    // Gravadas depois do commit, no outro banco: uma transação não abrange dois.
+    const ocorrencias = [];
 
     for (const [indice, cond] of CONDOMINIOS.entries()) {
       const rnd = criarRandom(indice + 1);
@@ -275,37 +313,47 @@ async function semear() {
       }
 
       // Ocorrências abertas e resolvidas, para o KPI e a série do painel.
-      const ocorrencias = cond.porte === 'grande' ? 9 : cond.porte === 'médio' ? 5 : 2;
-      for (let i = 0; i < ocorrencias && idsMoradores.length; i += 1) {
+      const quantas = cond.porte === 'grande' ? 9 : cond.porte === 'médio' ? 5 : 2;
+      for (let i = 0; i < quantas && idsMoradores.length; i += 1) {
         const autor = idsMoradores[Math.floor(rnd() * idsMoradores.length)];
         const status = STATUS_OCORRENCIA[Math.floor(rnd() * STATUS_OCORRENCIA.length)];
-        await sequelize.query(`
-          INSERT INTO reclamacoes ("userId", "protocolNumber", category, description,
-                                   status, interactions, "condominioId", "createdAt", "updatedAt")
-          VALUES (:autor, :protocolo, :categoria, :descricao, :status, '[]'::json, :cond, :criadoEm, :criadoEm)
-          ON CONFLICT ("protocolNumber") DO NOTHING
-        `, {
-          ...opts,
-          replacements: {
-            autor,
-            protocolo: `QA-${cond.id.slice(3, 9).toUpperCase()}-${String(i).padStart(3, '0')}`,
-            categoria: CATEGORIAS[Math.floor(rnd() * CATEGORIAS.length)],
-            descricao: 'Registro gerado para testes de painel.',
-            status,
-            cond: cond.id,
-            criadoEm: dataAtras(0, Math.floor(rnd() * 45)),
-          },
+        const criadoEm = dataAtras(0, Math.floor(rnd() * 45));
+        ocorrencias.push({
+          autor: String(autor),
+          protocolo: `QA-${cond.id.slice(3, 9).toUpperCase()}-${String(i).padStart(3, '0')}`,
+          categoria: CATEGORIAS[Math.floor(rnd() * CATEGORIAS.length)],
+          descricao: 'Registro gerado para testes de painel.',
+          status,
+          cond: cond.id,
+          criadoEm,
+          resolvidoEm: status === 'RESOLVIDO' ? criadoEm : null,
         });
-        totalOcorrencias += 1;
       }
 
       console.log(
         `  ${cond.porte.padEnd(7)} ${cond.nome.padEnd(32)} `
-        + `${String(perfis.length).padStart(3)} usuários · ${convites} convites · ${ocorrencias} ocorrências`,
+        + `${String(perfis.length).padStart(3)} usuários · ${convites} convites · ${quantas} ocorrências`,
       );
     }
 
     await t.commit();
+
+    let totalOcorrencias = 0;
+    if (await ocorrenciasDisponivel()) {
+      for (const o of ocorrencias) {
+        await ocorrenciasDb.query(`
+          INSERT INTO reclamacoes (usuario_id, protocolo, categoria, descricao, status,
+                                   condominio_id, criado_em, atualizado_em, resolvido_em)
+          VALUES (:autor, :protocolo, :categoria, :descricao, :status, :cond, :criadoEm, :criadoEm, :resolvidoEm)
+          ON CONFLICT (protocolo) DO NOTHING
+        `, { replacements: o });
+        totalOcorrencias += 1;
+      }
+    } else {
+      console.warn('\nBanco mora_ocorrencias sem tabelas: suba o ocorrencias-service uma vez. '
+        + 'Ocorrências não semeadas.');
+    }
+
     console.log(`\n${CONDOMINIOS.length} condomínios · ${totalUsuarios} usuários · `
       + `${totalConvites} convites · ${totalOcorrencias} ocorrências`);
     console.log(`Senha de todos os usuários de teste: ${SENHA_PADRAO}`);
@@ -332,4 +380,5 @@ try {
   process.exitCode = 1;
 } finally {
   await sequelize.close();
+  await ocorrenciasDb.close();
 }

@@ -53,6 +53,26 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
 
+  # 3.5. Mensageria (RabbitMQ) — fila de notificacoes entre servicos.
+  # O ocorrencias-service publica; o comunicacao-service consome e grava na
+  # caixa de entrada. Painel em http://localhost:15672 (mora/mora por padrao;
+  # o usuario guest da imagem so aceita conexao local, e os servicos vem de
+  # outros containers).
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-mora}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-mora}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - microservices-net
+    volumes:
+      # Mensagem duravel sobrevive a restart do broker so com volume.
+      - rabbitmq_data:/var/lib/rabbitmq
+
   # 4. Microservice 1: Portaria (Java)
   portaria-service:
     build:
@@ -76,6 +96,10 @@ services:
       - SPRING_CLOUD_CONSUL_PORT=8500
       # Quem mora em qual unidade é dado do auth-api (RN-06).
       - AUTH_API_URL=http://auth-api:3001
+      # RF-7: aviso de encomenda. Sem SERVICO_TOKEN a entrega é registrada do
+      # mesmo jeito e só o aviso é pulado, com registro no log.
+      - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       - TZ=America/Sao_Paulo
 
   # 5. vagas-service: fundido no portaria-service (D11) e removido do repositório.
@@ -89,6 +113,7 @@ services:
     depends_on:
       - consul
       - postgres
+      - rabbitmq
     networks:
       - microservices-net
     ports:
@@ -108,6 +133,10 @@ services:
       # usuario logado — o caso e o fechamento de competencia do financeiro,
       # que roda por job. Sem ela, /interno responde 503 em vez de ficar aberta.
       - SERVICO_TOKEN=${SERVICO_TOKEN:-}
+      # Consome a fila de notificacoes (hoje, as do ocorrencias-service).
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=${RABBITMQ_USER:-mora}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-mora}
       - TZ=America/Sao_Paulo
     volumes:
       # Imagens dos avisos. A coluna `imagem_url` aponta para estes arquivos:
@@ -115,6 +144,36 @@ services:
       # apontando para 404 — foi o que aconteceu com as fotos de perfil do
       # auth-api antes do `auth_uploads`.
       - comunicacao_uploads:/app/uploads
+
+  # 5.6. Microservice: Ocorrencias — reclamacoes, ordens de servico, fornecedores
+  ocorrencias-service:
+    build:
+      context: ../services/ocorrencias-service
+      dockerfile: Dockerfile
+    container_name: ocorrencias-service
+    depends_on:
+      - consul
+      - postgres
+      - rabbitmq
+    networks:
+      - microservices-net
+    ports:
+      - "8095:8095"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=mora_ocorrencias
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
+      - JWT_SECRET=${JWT_SECRET:?defina JWT_SECRET no docker/.env}
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
+      # Nome de quem abriu a ocorrencia, na lista da gestao. Falha macia.
+      - AUTH_API_URL=http://auth-api:3001
+      # Publica as notificacoes na fila; o comunicacao entrega.
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=${RABBITMQ_USER:-mora}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-mora}
+      - TZ=America/Sao_Paulo
 
   # 6. Microservice 3: Meetings e Atas (Java)
   meeting-service:
@@ -208,6 +267,9 @@ services:
       - CONSUL_HOST=consul
       - CONSUL_PORT=8500
       - SERVICE_HOST=auth-api
+      # Credencial das consultas entre servicos (/api/interno). O portaria
+      # usa para descobrir os sindicos ao avisar de reserva pendente.
+      - SERVICO_TOKEN=${SERVICO_TOKEN:-}
       - TZ=America/Sao_Paulo
     volumes:
       # As fotos de perfil sao gravadas em disco, e a coluna fotoUrl no banco
@@ -228,6 +290,7 @@ services:
     depends_on:
       - auth-api
       - consul
+      - postgres
     networks:
       - microservices-net
     ports:
@@ -245,8 +308,18 @@ services:
       - PORTARIA_SERVICE_URL=http://portaria-service:8090
       - PLAN_SERVICE_URL=http://plan-service:8093
       - COMUNICACAO_SERVICE_URL=http://comunicacao-service:8094
+      # Ocorrencias e ordens de servico dos paineis.
+      - OCORRENCIAS_SERVICE_URL=http://ocorrencias-service:8095
       # Inadimplência e multas dos painéis do síndico.
       - FINANCEIRO_SERVICE_URL=http://financeiro:3004
+      # Banco proprio: as preferencias dos paineis (como cada usuario monta os
+      # seus). As migracoes rodam na subida; sem banco, os paineis continuam no
+      # ar e so a personalizacao fica indisponivel.
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=mora_gestao
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       - TZ=America/Sao_Paulo
 
   # 7.95. Financeiro (Node) — faturas, cobrancas, multas e prestacao de contas
@@ -315,6 +388,7 @@ volumes:
   postgres_data:
   auth_uploads:
   comunicacao_uploads:
+  rabbitmq_data:
 
 networks:
   microservices-net:

@@ -50,6 +50,7 @@ const criados = {};
 const guardar = {
   'Síndico aplica multa ao morador': (r) => { criados.multaId = String(r.multa?.id ?? ''); },
   'Upload de imagem PNG': (r) => { criados.imagemUrl = r.url; },
+  'Morador abre uma ocorrência': (r) => { criados.reclamacaoId = String(r.id ?? ''); },
 };
 
 newman.run({
@@ -97,14 +98,23 @@ function limpar(vars) {
 
   // O id vai para dentro do SQL; só passa se tiver o formato esperado.
   const multaId = /^[\w-]+$/.test(vars.multaId ?? '') ? vars.multaId : null;
+  const reclamacaoId = /^\d+$/.test(vars.reclamacaoId ?? '') ? vars.reclamacaoId : null;
   const tarefas = [
     ['multas', () => psql('mora_financeiro', "DELETE FROM multas WHERE motivo LIKE '[newman]%'")],
     ['notificações', () => psql('mora', `DELETE FROM notificacoes WHERE titulo LIKE '[newman]%'${
-      multaId ? ` OR chave_unica = 'financeiro:MULTA_APLICADA:${multaId}'` : ''}`)],
+      multaId ? ` OR chave_unica = 'financeiro:MULTA_APLICADA:${multaId}'` : ''}${
+      reclamacaoId ? ` OR chave_unica LIKE 'ocorrencias:reclamacao:${reclamacaoId}:%'` : ''}`)],
     ['avisos que sobraram', () => psql('mora',
       "DELETE FROM aviso_leituras WHERE aviso_id IN (SELECT id FROM avisos WHERE titulo LIKE '[newman]%'); "
       + "DELETE FROM avisos WHERE titulo LIKE '[newman]%'")],
-    ['ocorrências', () => psql('auth_db', "DELETE FROM reclamacoes WHERE description LIKE '[newman]%'")],
+    ['ordens de serviço', () => psql('mora_ocorrencias',
+      "DELETE FROM ordem_servico_andamentos WHERE ordem_servico_id IN "
+      + "(SELECT id FROM ordens_servico WHERE descricao LIKE '[newman]%'); "
+      + "DELETE FROM ordens_servico WHERE descricao LIKE '[newman]%'")],
+    ['ocorrências', () => psql('mora_ocorrencias',
+      "DELETE FROM reclamacao_interacoes WHERE reclamacao_id IN "
+      + "(SELECT id FROM reclamacoes WHERE descricao LIKE '[newman]%'); "
+      + "DELETE FROM reclamacoes WHERE descricao LIKE '[newman]%'")],
   ];
   const imagem = (vars.imagemUrl ?? '').match(/^\/uploads\/avisos\/([0-9a-f-]{36}\.(png|jpg))$/);
   if (imagem) {

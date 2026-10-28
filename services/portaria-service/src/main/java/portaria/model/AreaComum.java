@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "areas_comuns", uniqueConstraints = {
-    @UniqueConstraint(name = "areas_comuns_nome_condominioId_key", columnNames = {"nome", "condominioId"})
+    @UniqueConstraint(name = "areas_comuns_nome_condominioId_key", columnNames = {"nome", "`condominioId`"})
 })
 public class AreaComum {
 
@@ -67,6 +67,16 @@ public class AreaComum {
      */
     @Column(name = "exige_aprovacao", nullable = false)
     private boolean exigeAprovacao = false;
+
+    /**
+     * RF-10: antecedência mínima entre o pedido e o início da reserva, em horas.
+     *
+     * Por espaço, e não global: churrasqueira que precisa de limpeza prévia
+     * pede dois dias, quadra de uso livre não pede nada. Zero desliga a regra,
+     * que é o comportamento de quem já tinha espaço cadastrado antes disto.
+     */
+    @Column(name = "antecedencia_minima_horas", nullable = false)
+    private int antecedenciaMinimaHoras = 0;
 
     private boolean ativo = true;
 

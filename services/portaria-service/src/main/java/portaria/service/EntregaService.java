@@ -11,6 +11,7 @@ import portaria.model.Morador;
 import portaria.repository.EntregaRepository;
 import portaria.repository.MoradorRepository;
 import portaria.security.AuthContext;
+import portaria.security.Permissoes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,10 +25,11 @@ public class EntregaService {
 
     private final EntregaRepository entregaRepository;
     private final MoradorRepository moradorRepository;
+    private final NotificacaoPortariaService notificacoes;
 
     public Entrega cadastrar(EntregaRequestDTO dto) {
-        var claims = AuthContext.get();
-        String condominioId = (claims != null) ? claims.condominioId() : null;
+        Permissoes.exigirOperacao("registrar entregas");
+        String condominioId = Permissoes.condominioParaGravar(null);
 
         Entrega entrega = new Entrega();
         if (condominioId != null && !condominioId.isBlank() && !"default".equals(condominioId)) {
@@ -61,11 +63,17 @@ public class EntregaService {
         entrega.setDestinatario(dto.getDestinatarioNome());
         entrega.setNomeEntregador(dto.getRemetente() != null ? dto.getRemetente() : "");
         entrega.setRetirada(false);
-        return entregaRepository.save(entrega);
+
+        Entrega salva = entregaRepository.save(entrega);
+        notificacoes.entregaRecebida(salva);
+        return salva;
     }
 
+
     public Entrega atualizar(String id, EntregaRequestDTO dto) {
+        Permissoes.exigirOperacao("alterar entregas");
         Entrega entrega = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(entrega.getCondominioId());
 
         entrega.setDestinatarioId(dto.getDestinatarioId());
         entrega.setDestinatarioNome(dto.getDestinatarioNome());
@@ -104,24 +112,68 @@ public class EntregaService {
     }
 
     public void excluir(String id) {
-        if (!entregaRepository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("Entrega não encontrada com id: " + id);
-        }
-        entregaRepository.deleteById(id);
+        Permissoes.exigirOperacao("excluir entregas");
+        Entrega entrega = buscarPorId(id);
+        Permissoes.exigirMesmoCondominio(entrega.getCondominioId());
+        entregaRepository.deleteById(entrega.getId());
     }
 
     public Entrega retirar(String id, String recebedor) {
+        return retirar(id, recebedor, null);
+    }
+
+    /**
+     * @param dataRetirada quando a retirada aconteceu. Nulo significa agora — o
+     *                     caso do porteiro entregando no balcão. O morador
+     *                     pode informar um dia anterior, se só confirmou
+     *                     depois; o futuro é recusado, e nada antes da
+     *                     chegada da encomenda.
+     */
+    public Entrega retirar(String id, String recebedor, java.time.LocalDate dataRetirada) {
         Entrega entrega = buscarPorId(id);
+        Permissoes.exigirOperacaoOuProprio(
+                entrega.getDestinatarioId() != null
+                        ? String.valueOf(entrega.getDestinatarioId()) : null,
+                "dar baixa nesta encomenda");
+        Permissoes.exigirMesmoCondominio(entrega.getCondominioId());
         if ("RETIRADA".equals(entrega.getStatus())) {
             throw new OperacaoInvalidaException("Entrega já foi retirada.");
         }
         entrega.setStatus("RETIRADA");
-        entrega.setDataRetirada(LocalDateTime.now());
+        entrega.setDataRetirada(resolverDataRetirada(entrega, dataRetirada));
         entrega.setRecebedorNome(recebedor != null && !recebedor.isBlank() ? recebedor : entrega.getDestinatarioNome());
         entrega.setDestinatario(entrega.getDestinatarioNome());
         entrega.setRetirada(true);
         entrega.setAtualizadoEm(LocalDateTime.now());
-        return entregaRepository.save(entrega);
+
+        Entrega salva = entregaRepository.save(entrega);
+        // Quem retirou sai da claim: o porteiro registra, mas a retirada é
+        // creditada a quem está autenticado levando a encomenda.
+        var claims = AuthContext.get();
+        notificacoes.entregaRetirada(salva, claims != null ? claims.authUserId() : null);
+        return salva;
+    }
+
+    /**
+     * Converte a data escolhida em instante, recusando o que não pode ter
+     * acontecido. Validar só no frontend não vale: o endpoint é alcançável
+     * direto, e uma retirada datada no futuro bagunça qualquer relatório.
+     */
+    private LocalDateTime resolverDataRetirada(Entrega entrega, java.time.LocalDate escolhida) {
+        if (escolhida == null) return LocalDateTime.now();
+
+        if (escolhida.isAfter(java.time.LocalDate.now())) {
+            throw new OperacaoInvalidaException("A data de retirada não pode ser futura.");
+        }
+        if (entrega.getDataRecebimento() != null
+                && escolhida.isBefore(entrega.getDataRecebimento().toLocalDate())) {
+            throw new OperacaoInvalidaException(
+                    "A data de retirada não pode ser anterior à chegada da encomenda.");
+        }
+        // Mesmo dia: guarda a hora corrente, que é mais informativa que 00:00.
+        return escolhida.isEqual(java.time.LocalDate.now())
+                ? LocalDateTime.now()
+                : escolhida.atTime(12, 0);
     }
 
     public List<Entrega> listarTodas(String condominioId) {

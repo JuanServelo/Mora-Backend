@@ -1,4 +1,5 @@
 import * as auth from '../clients/authClient.js';
+import * as ocorrenciasClient from '../clients/ocorrenciasClient.js';
 import { estruturaDoCondominio } from '../clients/portariaClient.js';
 import { assinaturaDoCondominio } from '../clients/planClient.js';
 
@@ -27,7 +28,13 @@ export async function montarDashboard(authorization, filtros = {}) {
   const plataforma = await auth.estatisticasPlataforma(authorization, filtros);
   if (!plataforma.ok) return falhaDaFontePrincipal(plataforma, 'dados da plataforma');
 
-  const { condominios, usuarios, ocorrencias } = plataforma.dados;
+  const { condominios, usuarios, condominioIds } = plataforma.dados;
+
+  // Mesmo recorte de condomínios que o auth-api aplicou. Fonte acessória: se
+  // cair, o bloco vem nulo e o resto do painel aparece.
+  const contagem = await ocorrenciasClient.contagemReclamacoes(condominioIds ?? null, authorization);
+  if (!contagem.ok) fontesIndisponiveis.push('ocorrencias-service');
+  const ocorrencias = contagem.ok ? contagem.dados : null;
 
   return {
     sucesso: true,
@@ -48,19 +55,23 @@ export async function montarResumoCondominio(id, authorization) {
   const resumo = await auth.resumoCondominio(id, authorization);
   if (!resumo.ok) return falhaDaFontePrincipal(resumo, 'este condomínio');
 
-  // Estrutura e assinatura são acessórias: se caírem, o resumo ainda serve.
-  const [estrutura, assinatura] = await Promise.all([
+  // Estrutura, assinatura e ocorrências são acessórias: se caírem, o resumo
+  // ainda serve.
+  const [estrutura, assinatura, contagem] = await Promise.all([
     estruturaDoCondominio(id, authorization),
     assinaturaDoCondominio(id, authorization),
+    ocorrenciasClient.contagemReclamacoes([id], authorization),
   ]);
 
   if (!estrutura.ok) fontesIndisponiveis.push('portaria-service');
   if (!assinatura.ok) fontesIndisponiveis.push('plan-service');
+  if (!contagem.ok) fontesIndisponiveis.push('ocorrencias-service');
 
   return {
     sucesso: true,
     geradoEm: new Date().toISOString(),
-    resumo: resumo.dados.resumo,
+    // `ocorrencias` é o total do condomínio, como o auth-api devolvia antes.
+    resumo: { ...resumo.dados.resumo, ocorrencias: contagem.ok ? contagem.dados.total : null },
     estrutura: estrutura.ok ? estrutura.dados : null,
     assinatura: assinatura.ok ? assinatura.dados : null,
     fontesIndisponiveis,
