@@ -203,6 +203,7 @@ export const openapi = {
     { name: 'Condomínio', description: 'Números de um condomínio: o Admin Geral escolhe qual; a gestão vê o próprio.' },
     { name: 'Painéis do síndico', description: 'RF-18: o operacional (o que pede ação agora) e o estratégico (séries mensais).' },
     { name: 'Preferências', description: 'Como cada usuário monta os próprios painéis, guardado no banco `mora_gestao`.' },
+    { name: 'Câmbio', description: 'Cotação do dólar para a tela em inglês mostrar valores aproximados em US$. Só exibição: a cobrança é sempre em real.' },
     { name: 'Documentação', description: 'O portal de documentação e esta especificação.' },
     { name: 'Saúde', description: 'Verificação usada pelo Consul.' },
   ],
@@ -349,6 +350,18 @@ export const openapi = {
         responses: {
           200: resposta('Removida.', { sucesso: true, chave: 'painel.condominio.operacional', valor: null }),
           ...ERROS_PREFERENCIA,
+        },
+      },
+    },
+    '/api/gestao/cambio': {
+      get: {
+        tags: ['Câmbio'],
+        summary: 'Cotação do dólar',
+        description: 'Cotação de venda mais recente da PTAX (Banco Central), guardada por 6 horas. Em fim de semana e feriado vale a do último dia útil; se o Banco Central não responder, vale a última conhecida. Qualquer perfil logado.',
+        responses: {
+          200: resposta('Cotação.', { sucesso: true, moeda: 'USD', reaisPorDolar: 5.3346, dataCotacao: '2026-10-27', fonte: 'Banco Central (PTAX)' }),
+          401: ERROS[401],
+          503: falha('O Banco Central não respondeu e não há cotação guardada.', 'Cotação do dólar indisponível no momento.'),
         },
       },
     },
