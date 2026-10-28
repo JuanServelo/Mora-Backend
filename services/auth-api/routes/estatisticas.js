@@ -4,7 +4,6 @@ import { PERFIS } from '../constants/perfis.js';
 import {
   estatisticasCondominios,
   estatisticasUsuarios,
-  estatisticasOcorrencias,
   estatisticasDoCondominio,
   condominiosDoFiltro,
 } from '../services/estatisticasService.js';
@@ -28,28 +27,30 @@ function adminGeralMiddleware(req, res, next) {
  * Números da plataforma, com filtros aplicados aqui — não no frontend.
  *
  * `meses` recorta a janela das séries; `status` restringe a quais condomínios
- * tudo se refere, inclusive as contagens de usuário e ocorrência. Filtrar aqui
+ * tudo se refere, inclusive as contagens de usuário. Filtrar aqui
  * evita mandar a base inteira para a tela peneirar, que era o que aconteceria
  * com dezenas de clientes.
  */
 router.get('/plataforma', adminGeralMiddleware, async (req, res) => {
   try {
     const { meses, status } = req.query;
-    // Resolvido uma vez e reaproveitado: as três agregações precisam do mesmo
+    // Resolvido uma vez e reaproveitado: as agregações precisam do mesmo
     // recorte, e repetir a consulta em cada uma seria desperdício.
     const condominioIds = await condominiosDoFiltro(status);
 
-    const [condominios, usuarios, ocorrencias] = await Promise.all([
+    const [condominios, usuarios] = await Promise.all([
       estatisticasCondominios({ meses, status }),
       estatisticasUsuarios({ condominioIds }),
-      estatisticasOcorrencias({ condominioIds }),
     ]);
     res.json({
       sucesso: true,
       filtros: { meses: condominios.meses, status: status || 'todos' },
       condominios,
       usuarios,
-      ocorrencias,
+      // Os ids que passaram no filtro: o gestao-geral os usa para pedir a
+      // contagem de ocorrências ao ocorrencias-service com o mesmo recorte.
+      // `null` = sem filtro.
+      condominioIds,
     });
   } catch (err) {
     console.error('Erro ao montar estatísticas da plataforma:', err);

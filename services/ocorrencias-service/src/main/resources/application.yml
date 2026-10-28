@@ -1,0 +1,103 @@
+server:
+  port: 8095
+  # Respeita o X-Forwarded-Prefix do Traefik: o Swagger monta o endereço do
+  # servidor como /api/ocorrencias, e o "Try it out" passa pelo gateway.
+  forward-headers-strategy: framework
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: ocorrencias-service
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:mora_ocorrencias}
+    username: ${POSTGRES_USER:admin}
+    # Sem valor padrão: a senha vem do docker/.env e não pode estar no repositório.
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # Quem cria e evolui o banco é o Flyway, com os scripts de db/migration.
+  # `baseline-version: 0` faz o V1 rodar também em banco que já existe (ele é
+  # idempotente), como nos outros serviços Java.
+  flyway:
+    enabled: true
+    table: flyway_historico_ocorrencias
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  jpa:
+    hibernate:
+      # O Hibernate só confere: se a entidade pedir coluna que o banco não tem,
+      # o serviço não sobe, em vez de criar a coluna por conta própria.
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # Notificações saem por fila: o comunicacao-service consome e grava na caixa
+  # de entrada do usuário. Broker fora do ar não derruba o serviço — a
+  # ocorrência é registrada e só o aviso deixa de sair (ver NotificacaoPublisher).
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    # O envio acontece na thread da requisição, depois do commit. Sem limite
+    # curto, um broker fora do ar seguraria a resposta da tela por um minuto.
+    connection-timeout: 3s
+
+  cloud:
+    consul:
+      host: ${SPRING_CLOUD_CONSUL_HOST:localhost}
+      port: ${SPRING_CLOUD_CONSUL_PORT:8500}
+      discovery:
+        register: true
+        instance-id: ${spring.application.name}:${random.value}
+        prefer-ip-address: true
+        tags:
+          - "traefik.enable=true"
+          - "traefik.http.routers.ocorrencias.rule=PathPrefix(`/api/ocorrencias`)"
+          - "traefik.http.routers.ocorrencias.entrypoints=web"
+          - "traefik.http.middlewares.ocorrencias-stripprefix.stripprefix.prefixes=/api/ocorrencias"
+          - "traefik.http.routers.ocorrencias.middlewares=ocorrencias-stripprefix"
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+
+# Nome e e-mail de quem abriu a ocorrência, para a lista da gestão. Consultado
+# em nome de quem pediu (repassando o Bearer). Sem isso a lista aparece sem o
+# nome do morador — falha macia, de propósito.
+auth:
+  api:
+    url: ${AUTH_API_URL:http://auth-api:3001}
+
+# Sem valor padrão de propósito: o serviço recusa subir sem a chave (ver JwtUtil).
+jwt:
+  secret: ${JWT_SECRET:}
+
+notificacoes:
+  exchange: ${NOTIFICACOES_EXCHANGE:mora.notificacoes}
+  routing-key: notificacao.ocorrencias
+
+# Marca como ATRASADA a OS com prazo vencido. Todo dia às 6h, no fuso do condomínio.
+ordens-servico:
+  atraso:
+    cron: ${OS_ATRASO_CRON:0 0 6 * * *}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  # O broker fora do ar derrubaria o /actuator/health, o Consul marcaria o
+  # serviço como doente e o Traefik tiraria a rota — o serviço inteiro sairia do
+  # ar por causa da notificação, que é justamente o que pode falhar.
+  health:
+    rabbit:
+      enabled: false

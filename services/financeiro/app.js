@@ -10,6 +10,7 @@ import webhooksRoutes from './routes/webhooks.js';
 import multasRoutes from './routes/multas.js';
 import contratosRoutes from './routes/contratos.js';
 import prestacaoRoutes from './routes/prestacao.js';
+import plataformaRoutes from './routes/plataforma.js';
 import { verificarConexao } from './config/database.js';
 import { gatewayConfigurado } from './config/asaas.js';
 import { openapi } from './docs/openapi.js';
@@ -55,6 +56,7 @@ app.use('/api/financeiro', webhooksRoutes);
 app.use('/api/financeiro', multasRoutes);
 app.use('/api/financeiro', contratosRoutes);
 app.use('/api/financeiro', prestacaoRoutes);
+app.use('/api/financeiro', plataformaRoutes);
 
 app.get('/health', async (_req, res) => {
   const banco = await verificarConexao().catch(() => false);
@@ -67,6 +69,12 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
+  // 23001 é o que os gatilhos de fatura encerrada levantam: regra de negócio
+  // recusada pelo banco, não falha. A mensagem foi escrita para gente, na
+  // própria migração, e não leva SQL.
+  if (err.code === '23001') {
+    return res.status(409).json({ sucesso: false, mensagem: err.message });
+  }
   console.error('[financeiro] erro não tratado:', err);
   // Mensagem genérica de propósito: erro de banco costuma vazar nome de tabela
   // e trecho de SQL para quem chamou.

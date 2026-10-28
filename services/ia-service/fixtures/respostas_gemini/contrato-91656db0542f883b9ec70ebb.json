@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": "MARIA HELENA ANDRADE GOULART",
+      "confianca": 1,
+      "citacao": "MARIA HELENA ANDRADE GOULART"
+    },
+    "locatario": {
+      "valor": "RAFAEL TEIXEIRA DE ALMEIDA",
+      "confianca": 1,
+      "citacao": "RAFAEL TEIXEIRA DE ALMEIDA"
+    },
+    "endereco_unidade": {
+      "valor": "Rua das Acácias, n.º 1.408, apartamento 302, Bloco A, integrante do empreendimento Residencial Parque Verde, nesta Capital",
+      "confianca": 1,
+      "citacao": "Rua das Acácias, n.º 1.408, apartamento 302, Bloco A, integrante do empreendimento Residencial Parque Verde, nesta Capital"
+    },
+    "inicio": {
+      "valor": "2025-03-01",
+      "confianca": 1,
+      "citacao": "1.º de março de 2025"
+    },
+    "fim": {
+      "valor": "2027-08-31",
+      "confianca": 1,
+      "citacao": "31 de agosto de 2027"
+    },
+    "valor_aluguel_centavos": {
+      "valor": "285000",
+      "confianca": 1,
+      "citacao": "R$ 2.850,00 (dois mil, oitocentos e cinquenta reais)"
+    },
+    "responsavel_taxas": {
+      "valor": "INQUILINO",
+      "confianca": 1,
+      "citacao": "Correrão integralmente por conta do LOCATÁRIO, além do aluguel, as despesas ordinárias de condomínio"
+    }
+  }
+}

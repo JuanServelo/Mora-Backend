@@ -10,8 +10,10 @@ stack.
 | portaria-service | `mora` | Flyway | `src/main/resources/db/migration` | `flyway_historico_portaria` |
 | plan-service | `mora_plan` | Flyway | `src/main/resources/db/migration` | `flyway_historico_plan` |
 | meeting-service | `mora_meeting` | Flyway | `src/main/resources/db/migration` | `flyway_historico_meeting` |
+| ocorrencias-service | `mora_ocorrencias` | Flyway | `src/main/resources/db/migration` | `flyway_historico_ocorrencias` |
 | auth-api | `auth_db` | Umzug (o executor do Sequelize) | `migrations/index.js` | `SequelizeMeta` |
 | financeiro | `mora_financeiro` | node-pg-migrate | `migrations/*.sql` | `pgmigrations` |
+| gestao-geral | `mora_gestao` | node-pg-migrate | `migrations/*.sql` | `pgmigrations` |
 
 O gestao-geral não tem banco: ele agrega dados dos outros serviços.
 

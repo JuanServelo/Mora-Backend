@@ -104,6 +104,30 @@ const EX_PRESTACAO = {
 
 // ── Especificação ───────────────────────────────────────────────────────────
 
+const ESTORNO = '7e1d3c5a-2b4f-4a6e-8c9d-0f1e2d3c4b5a';
+const ASSINATURA = 'f3b8a1c2-4d5e-4f6a-9b7c-8d9e0f1a2b3c';
+const PAGAMENTO_PLAT = '0c9d8e7f-6a5b-4c3d-2e1f-0a9b8c7d6e5f';
+const EX_ESTORNO = {
+  id: ESTORNO, condominioId: COND, faturaId: FATURA, pagamentoPlataformaId: null,
+  asaasPagamentoId: 'pay_vzmknqbhb01tz8hf', valorCentavos: 82840, motivo: 'Valor da taxa cobrado em dobro',
+  status: 'SOLICITADO', detalhe: null, solicitadoPorId: 2, solicitadoEm: '2026-10-28T13:10:00.000Z', concluidoEm: null,
+};
+const EX_PAGAMENTO_PLAT = {
+  id: PAGAMENTO_PLAT, assinaturaId: ASSINATURA, asaasPagamentoId: 'pay_uhh6xsthuokakhpx', valorCentavos: 100000,
+  vencimento: '2026-11-05', status: 'PENDENTE', forma: 'BOLETO', urlPagamento: 'https://sandbox.asaas.com/i/uhh6xsthuokakhpx',
+  pagoEm: null, atualizadoEm: '2026-10-28T13:00:00.000Z',
+};
+const EX_ASSINATURA_PLAT = {
+  id: ASSINATURA, condominioId: COND, planoNome: 'Completo', planoAssinaturaId: 7, asaasAssinaturaId: 'sub_ojd9nic5735hrci8',
+  asaasClienteId: 'cus_000009708966', forma: 'BOLETO', valorCentavos: 100000, ciclo: 'MONTHLY', status: 'ATIVA',
+  ativadaPorId: 1, criadoEm: '2026-10-28T13:00:00.000Z', canceladaEm: null, pagamentos: [EX_PAGAMENTO_PLAT],
+};
+const SO_PIX = falha('Fora da regra do gateway ou já estornado.', 'O gateway só estorna pagamentos feitos por PIX. Boleto pago se devolve por transferência, fora do sistema.');
+const MOTIVO = corpo('Motivo do estorno, que vai para o gateway e para o aviso do morador.', { motivo: 'Valor da taxa cobrado em dobro' }, {
+  type: 'object', required: ['motivo'], properties: { motivo: { type: 'string', minLength: 5, maxLength: 300 } },
+});
+const E502 = falha('O gateway não respondeu.', 'O gateway de pagamento não respondeu. Tente de novo em instantes.');
+
 const op = (tag, summary, description, extra = {}) => ({ tags: [tag], summary, description, ...extra });
 
 export const openapi = {
@@ -113,7 +137,7 @@ export const openapi = {
     version: '1.0',
     description: [
       'Taxas, rateio, faturas mensais, multas, contratos de locação, prestação de contas e cobrança via Asaas',
-      '(boleto e PIX), RF-15 a RF-17.',
+      '(boleto e PIX, cobrança recorrente por assinatura e estorno), RF-15 a RF-17.',
       '',
       '- **Responsável:** João Victor',
       '- **Banco:** `mora_financeiro` (migrações com `node-pg-migrate`)',
@@ -138,6 +162,8 @@ export const openapi = {
     { name: 'Multas', description: 'Aplicação, recurso do morador e julgamento pelo síndico.' },
     { name: 'Contratos de locação', description: 'Quem é inquilino de qual unidade, e quem paga a taxa.' },
     { name: 'Prestação de contas', description: 'Receitas e despesas da competência, publicadas para os moradores (RF-17).' },
+    { name: 'Estornos', description: 'Devolução, pelo Asaas, de um pagamento recebido por PIX. Assíncrona: o pedido é aceito na hora e se conclui quando o gateway confirma (webhook PAYMENT_REFUNDED ou conciliação).' },
+    { name: 'Cobrança recorrente da plataforma', description: 'A mensalidade do Mora cobrada do condomínio por assinatura no Asaas: o gateway gera a cobrança de cada mês sozinho. O Admin Geral ativa e acompanha; o síndico vê e paga.' },
     { name: 'Documentação', description: 'Esta especificação.' },
     { name: 'Saúde', description: 'Verificação usada pelo Consul.' },
   ],
@@ -370,6 +396,22 @@ export const openapi = {
         },
       }),
     },
+    '/api/financeiro/admin/faturas/kpis/por-mes': {
+      get: op('Faturas', 'Indicadores mês a mês', `Os mesmos indicadores para cada mês da janela, numa consulta agrupada (função \`kpis_faturas_por_mes\` no banco). Mês sem fatura vem com zeros. Usado pelo painel estratégico do síndico. ${GESTAO}`, {
+        parameters: [pQuery('meses', 'Janela: 3, 6 ou 12 (padrão 6).', 3, { type: 'integer', enum: [3, 6, 12] })],
+        responses: {
+          200: resposta('Série mensal.', {
+            sucesso: true,
+            meses: [
+              { mes: '2026-08', total: 0, totalCentavos: 0, pagas: 0, pagasCentavos: 0, abertas: 0, emAtraso: 0 },
+              { mes: '2026-09', total: 4, totalCentavos: 380000, pagas: 3, pagasCentavos: 285000, abertas: 1, emAtraso: 1 },
+              { mes: '2026-10', total: 4, totalCentavos: 380000, pagas: 1, pagasCentavos: 82840, abertas: 3, emAtraso: 0 },
+            ],
+          }),
+          400: E400('Use meses=3, 6 ou 12.'), 401: E401, 403: E403,
+        },
+      }),
+    },
     '/api/financeiro/admin/fechamento/preview': {
       get: op('Faturas', 'Prévia do fechamento', `O que o fechamento da competência faria, sem gravar nada: unidades, faturas novas, taxas, contas, multas e estornos. ${GESTAO}`, {
         parameters: [pQuery('competencia', 'Competência AAAA-MM (obrigatória).', '2026-10')],
@@ -398,6 +440,71 @@ export const openapi = {
           200: resposta('Baixa registrada.', { sucesso: true, fatura: { ...EX_FATURA, status: 'PAGA', pagoEm: '2026-10-08T14:30:00.000Z', valorPagoCentavos: 82840, formaBaixa: 'MANUAL' } }),
           401: E401, 403: E403, 404: E404('Fatura'), 409: falha('Fatura já paga ou cancelada.', 'Fatura com status PAGA não aceita baixa.'),
         },
+      }),
+    },
+    '/api/financeiro/admin/faturas/{id}/estornar': {
+      post: op('Estornos', 'Estornar fatura paga', `Pede ao Asaas a devolução integral do pagamento da fatura. Só fatura PAGA pelo gateway e por PIX: o Asaas não estorna boleto, e a baixa manual não passou por ele. A fatura continua PAGA até o gateway confirmar; aí vira ESTORNADA, sai dos totais, libera a competência para reemissão, e o morador recebe \`PAGAMENTO_ESTORNADO\`. Responde 202 enquanto o pedido está em aberto (a conta pode exigir autorização da ação no painel do Asaas). ${SINDICO}`, {
+        parameters: [pId('id', 'Id da fatura.', FATURA)],
+        requestBody: MOTIVO,
+        responses: {
+          200: resposta('Estorno concluído na hora.', { sucesso: true, estorno: { ...EX_ESTORNO, status: 'CONCLUIDO', concluidoEm: '2026-10-28T13:10:02.000Z' } }),
+          202: resposta('Pedido aceito pelo gateway, aguardando a devolução.', { sucesso: true, estorno: EX_ESTORNO }),
+          400: E400('Explique o motivo do estorno (mínimo de 5 caracteres).'), 401: E401, 403: E403, 404: E404('Fatura'),
+          409: SO_PIX, 502: E502,
+        },
+      }),
+    },
+    '/api/financeiro/admin/estornos': {
+      get: op('Estornos', 'Estornos do condomínio', `Pedidos de estorno das faturas, com a competência e a unidade. Antes de responder, pergunta ao Asaas pelos pedidos em aberto, o que conclui os que o webhook não alcançou. ${GESTAO}`, {
+        responses: { 200: resposta('Estornos.', { sucesso: true, total: 1, estornos: [{ ...EX_ESTORNO, competencia: '2026-09-01T03:00:00.000Z', unidadeId: UNIDADE_101, faturaStatus: 'PAGA' }] }), 401: E401, 403: E403 },
+      }),
+    },
+    '/api/financeiro/plataforma/assinaturas': {
+      post: op('Cobrança recorrente da plataforma', 'Ativar cobrança recorrente', 'Cria no Asaas uma assinatura mensal para o condomínio pagar a mensalidade do Mora. Plano e valor vêm da assinatura vigente no plan-service; o pagador é o condomínio, pelo CNPJ cadastrado no auth-api. O Asaas gera a primeira cobrança no `proximoVencimento` e as seguintes todo mês, sozinho. Uma ativa por condomínio. Perfil: ADMIN_GERAL.', {
+        requestBody: corpo('Condomínio, forma de pagamento e primeiro vencimento.', { condominioId: COND, forma: 'BOLETO', proximoVencimento: '2026-11-05' }, {
+          type: 'object', required: ['condominioId'],
+          properties: {
+            condominioId: { type: 'string' }, forma: { type: 'string', enum: ['BOLETO', 'PIX'], description: 'Padrão BOLETO.' },
+            proximoVencimento: { type: 'string', format: 'date', description: 'Hoje ou depois. Padrão: hoje.' },
+          },
+        }),
+        responses: {
+          201: resposta('Assinatura criada, com a primeira cobrança.', { sucesso: true, assinatura: EX_ASSINATURA_PLAT }),
+          400: E400('Cadastre o CNPJ do condomínio: o gateway exige o documento do pagador.'), 401: E401, 403: E403,
+          404: falha('Condomínio inexistente.', 'Condomínio não encontrado.'),
+          409: falha('Já existe uma ativa, ou o condomínio não tem plano.', 'Este condomínio já tem cobrança recorrente ativa. Cancele a atual para trocar.'),
+          502: falha('O gateway recusou.', 'O gateway recusou a assinatura: ...'),
+        },
+      }),
+      get: op('Cobrança recorrente da plataforma', 'Assinaturas da plataforma', 'Todas as cobranças recorrentes, ativas primeiro, cada uma com as cobranças que o Asaas já gerou (conciliadas com o gateway antes de responder). Perfil: ADMIN_GERAL.', {
+        responses: { 200: resposta('Assinaturas.', { sucesso: true, total: 1, assinaturas: [EX_ASSINATURA_PLAT] }), 401: E401, 403: E403 },
+      }),
+    },
+    '/api/financeiro/plataforma/assinaturas/{id}/cancelar': {
+      patch: op('Cobrança recorrente da plataforma', 'Cancelar cobrança recorrente', 'Remove a assinatura no Asaas, que apaga as cobranças ainda não pagas; aqui elas viram CANCELADA. As pagas ficam no histórico. Perfil: ADMIN_GERAL.', {
+        parameters: [pId('id', 'Id da assinatura.', ASSINATURA)],
+        'x-sem-corpo': true,
+        responses: {
+          200: resposta('Cancelada.', { sucesso: true, assinatura: { ...EX_ASSINATURA_PLAT, status: 'CANCELADA', canceladaEm: '2026-12-01T10:00:00.000Z', pagamentos: [{ ...EX_PAGAMENTO_PLAT, status: 'CANCELADA' }] } }),
+          401: E401, 403: E403, 404: falha('Assinatura inexistente.', 'Assinatura não encontrada.'), 409: falha('Já cancelada.', 'Esta assinatura já está cancelada.'),
+        },
+      }),
+    },
+    '/api/financeiro/plataforma/pagamentos/{id}/estornar': {
+      post: op('Cobrança recorrente da plataforma', 'Estornar mensalidade', 'Devolve ao condomínio uma mensalidade recebida, pelo mesmo fluxo do estorno de fatura: só PIX, assíncrono, 202 enquanto em aberto. Perfil: ADMIN_GERAL.', {
+        parameters: [pId('id', 'Id do pagamento da assinatura.', PAGAMENTO_PLAT)],
+        requestBody: MOTIVO,
+        responses: {
+          200: resposta('Estorno concluído na hora.', { sucesso: true, estorno: { ...EX_ESTORNO, faturaId: null, pagamentoPlataformaId: PAGAMENTO_PLAT, valorCentavos: 100000, status: 'CONCLUIDO', concluidoEm: '2026-10-28T13:10:02.000Z' } }),
+          202: resposta('Pedido aceito, aguardando a devolução.', { sucesso: true, estorno: { ...EX_ESTORNO, faturaId: null, pagamentoPlataformaId: PAGAMENTO_PLAT, valorCentavos: 100000 } }),
+          400: E400('Explique o motivo do estorno (mínimo de 5 caracteres).'), 401: E401, 403: E403,
+          404: falha('Pagamento inexistente.', 'Pagamento não encontrado.'), 409: SO_PIX, 502: E502,
+        },
+      }),
+    },
+    '/api/financeiro/plataforma/minha-assinatura': {
+      get: op('Cobrança recorrente da plataforma', 'Mensalidade do meu condomínio', 'A cobrança recorrente do condomínio de quem chama (a ativa, ou a última), com as cobranças geradas e o link de pagamento de cada uma (boleto e PIX na mesma página do Asaas). `assinatura` vem nula se o Mora ainda não cobra este condomínio. Perfil: ADMIN_SINDICO.', {
+        responses: { 200: resposta('Assinatura do condomínio.', { sucesso: true, assinatura: EX_ASSINATURA_PLAT }), 401: E401, 403: E403 },
       }),
     },
     '/api/financeiro/admin/taxa-plataforma': {
@@ -500,7 +607,7 @@ export const openapi = {
       get: op('Contratos de locação', 'Contratos do condomínio', `Contratos ativos e encerrados. ${GESTAO}`, {
         responses: { 200: resposta('Contratos.', { sucesso: true, total: 1, contratos: [EX_CONTRATO] }), 401: E401, 403: E403 },
       }),
-      post: op('Contratos de locação', 'Registrar contrato', `O síndico registra o contrato de qualquer unidade. \`responsavelTaxas\` decide quem recebe a fatura. ${SINDICO}`, {
+      post: op('Contratos de locação', 'Registrar contrato', `O síndico registra o contrato de qualquer unidade. \`responsavelTaxas\` decide quem recebe a fatura. O banco recusa (409) um segundo contrato vigente na unidade e um período que cruze o de outro contrato dela, mesmo encerrado (restrição de exclusão \`ex_contrato_periodo_unico\`). ${SINDICO}`, {
         requestBody: corpo('Contrato.', { unidadeId: UNIDADE_101, proprietarioUsuarioId: 6, inquilinoUsuarioId: 4, inicio: '2026-03-01', fim: '2027-02-28', valorAluguel: '2200,00', responsavelTaxas: 'INQUILINO' }, {
           type: 'object', required: ['unidadeId', 'inicio'],
           properties: {
@@ -509,7 +616,10 @@ export const openapi = {
             responsavelTaxas: { type: 'string', enum: ['PROPRIETARIO', 'INQUILINO'] },
           },
         }),
-        responses: { 201: resposta('Contrato registrado.', { sucesso: true, contrato: EX_CONTRATO }), 400: E400('Informe a data de início (AAAA-MM-DD).'), 401: E401, 403: E403 },
+        responses: {
+          201: resposta('Contrato registrado.', { sucesso: true, contrato: EX_CONTRATO }), 400: E400('Informe a data de início (AAAA-MM-DD).'), 401: E401, 403: E403,
+          409: falha('Contrato vigente ou período sobreposto.', 'O período informado cruza o de outro contrato desta unidade. Ajuste o início ou o fim.'),
+        },
       }),
     },
     '/api/financeiro/admin/contratos/{id}/encerrar': {

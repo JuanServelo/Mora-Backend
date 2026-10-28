@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": "SÔNIA REGINA BITTENCOURT",
+      "confianca": 1,
+      "citacao": "SÔNIA REGINA BITTENCOURT, brasileira, médica, inscrita no CPF sob o n.º 602.337.189-04, doravante denominada simplesmente LOCADORA"
+    },
+    "locatario": {
+      "valor": "CAMILA NOGUEIRA SANT'ANNA",
+      "confianca": 1,
+      "citacao": "CAMILA NOGUEIRA SANT'ANNA, brasileira, professora, inscrito no CPF sob o n.º 118.445.206-73, doravante denominado LOCATÁRIO"
+    },
+    "endereco_unidade": {
+      "valor": "Rua das Acácias, n.º 1.408, apartamento 104, Bloco B, integrante do empreendimento Residencial Parque Verde",
+      "confianca": 1,
+      "citacao": "Rua das Acácias, n.º 1.408, apartamento 104, Bloco B, integrante do empreendimento Residencial Parque Verde, nesta Capital"
+    },
+    "inicio": {
+      "valor": "2024-07-01",
+      "confianca": 1,
+      "citacao": "tendo seu termo inicial em 1.º de julho de 2024"
+    },
+    "fim": {
+      "valor": "2027-06-30",
+      "confianca": 1,
+      "citacao": "termo final em 30 de junho de 2027"
+    },
+    "valor_aluguel_centavos": {
+      "valor": "198000",
+      "confianca": 1,
+      "citacao": "O aluguel mensal ora convencionado é de R$ 1.980,00"
+    },
+    "responsavel_taxas": {
+      "valor": "INQUILINO",
+      "confianca": 1,
+      "citacao": "o valor das quotas condominiais mensais será suportado pelo LOCATÁRIO"
+    }
+  }
+}

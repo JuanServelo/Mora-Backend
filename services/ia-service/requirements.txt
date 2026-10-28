@@ -1,0 +1,25 @@
+# Modelo e dados
+scikit-learn>=1.6
+pandas>=2.2
+numpy>=1.26
+joblib>=1.4
+
+# API
+fastapi>=0.115
+uvicorn>=0.30
+pydantic>=2.9
+python-multipart>=0.0.9
+
+# LLM (REST, sem SDK) e leitura de PDF
+httpx>=0.27
+PyMuPDF>=1.24
+
+# Testes
+pytest>=8.0
+
+# Deliberadamente AUSENTES:
+#   shap     — extensão C sem wheel estável para numpy 2.4; o modelo publicado
+#              é aditivo, então a contribuição por feature é exata e não
+#              precisa de aproximação. Ver treino.explicar().
+#   xgboost  — dependência binária que não acrescenta nada: o
+#              GradientBoostingClassifier do sklearn já dá a comparação.

@@ -4,6 +4,7 @@ import * as faturamentoService from '../services/faturamentoService.js';
 import * as asaasClient from '../gateway/asaasClient.js';
 import { identidadeDoAtor } from '../clients/authClient.js';
 import { emTransacao, consultar } from '../config/database.js';
+import { paraTexto as competenciaDe } from '../utils/competencia.js';
 
 function seErro(r, res) {
   if (!r?.erro) return false;
@@ -95,12 +96,20 @@ export async function gerarCobranca(req, res) {
     return res.status(502).json({ sucesso: false, mensagem: 'Não foi possível registrar seus dados no gateway. Tente novamente.' });
   }
 
+  // O Asaas recusa vencimento no passado ("Não é permitido data de vencimento
+  // inferior a hoje"). Sem isto, justamente a fatura em atraso — a de quem mais
+  // precisa pagar — não gerava PIX nem boleto. Ela é cobrada para hoje; a
+  // fatura em si guarda o vencimento original.
+  const local = (d) => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const hoje = local(Date.now());
+  const vencimento = local(fatura.vencimento) < hoje ? hoje : local(fatura.vencimento);
+
   const cobr = await asaasClient.criarCobranca({
     clienteId: cliente.dados.id,
     forma,
     valorCentavos: fatura.valorCentavos,
-    vencimento: fatura.vencimento,
-    descricao: `Condominio - ${String(fatura.competencia).slice(0, 7)}`,
+    vencimento,
+    descricao: `Condominio - ${competenciaDe(fatura.competencia)}`,
     faturaId: fatura.id,
   });
 
@@ -131,7 +140,7 @@ export async function gerarCobranca(req, res) {
     asaasId: cobr.dados.id,
     billingType: forma,
     valorCentavos: fatura.valorCentavos,
-    vencimento: fatura.vencimento,
+    vencimento,
     urlBoleto,
     pixPayload,
     pixQrcode,
@@ -170,6 +179,16 @@ export async function kpis(req, res) {
   const competencia = comp.length === 7 ? comp + '-01' : comp;
   const kpi = await faturasModel.kpisPorCompetencia(condominioId, competencia);
   res.json({ sucesso: true, ...kpi });
+}
+
+/** KPIs mês a mês, para o painel estratégico. Janela de 3, 6 ou 12 meses. */
+export async function kpisPorMes(req, res) {
+  const meses = Number(req.query.meses ?? 6);
+  if (![3, 6, 12].includes(meses)) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Use meses=3, 6 ou 12.' });
+  }
+  const linhas = await faturasModel.kpisPorMes(req.escopo.condominioId, meses);
+  res.json({ sucesso: true, meses: linhas });
 }
 
 /** Preview do fechamento de competência (não grava nada). */

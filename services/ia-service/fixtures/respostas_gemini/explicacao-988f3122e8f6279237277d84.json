@@ -1,0 +1,15 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "explicacao",
+  "resposta": {
+    "explicacao": "O sistema atribuiu o score de 0.5581 à unidade com base em seu histórico de pagamento. O risco é elevado principalmente pelos 3 atrasos nos últimos 3 meses, o percentual de 58% das faturas pagas em dia no último ano e o fato de a unidade ser ocupada pelo proprietário. Em contrapartida, a antecedência média do pagamento e a taxa sob responsabilidade do proprietário contribuem para amenizar esse indicador.",
+    "fatores_citados": [
+      "3 atraso(s) nos últimos 3 meses",
+      "58% das faturas pagas em dia no último ano",
+      "unidade ocupada pelo proprietário",
+      "antecedência média do pagamento",
+      "taxa sob responsabilidade do proprietário"
+    ],
+    "score_citado": 0.5581
+  }
+}

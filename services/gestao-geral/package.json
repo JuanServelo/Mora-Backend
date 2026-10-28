@@ -16,6 +16,8 @@
     "express": "^4.18.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "node-pg-migrate": "^9.0.0",
+    "pg": "^8.23.1",
     "swagger-ui-dist": "^5.17.14"
   },
   "devDependencies": {

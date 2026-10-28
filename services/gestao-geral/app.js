@@ -5,6 +5,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUiDist from 'swagger-ui-dist';
 import dashboardRoutes from './routes/dashboard.js';
+import preferenciasRoutes from './routes/preferencias.js';
+import cambioRoutes from './routes/cambio.js';
 import { openapi } from './docs/openapi.js';
 
 const aqui = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +30,11 @@ app.use('/docs/swagger-ui', express.static(swaggerUiDist.getAbsoluteFSPath()));
 app.get('/docs', (_req, res) => res.sendFile(path.join(aqui, 'docs/portal/index.html')));
 app.use('/docs', express.static(path.join(aqui, 'docs/portal')));
 
+// Antes do dashboard: o router dele exige token em tudo que passa por ele, e
+// a recusa das preferências tem regra própria (chave e sessão).
+app.use('/api/gestao/preferencias', preferenciasRoutes);
+// Também antes: o dashboard exige perfil de gestão, e a cotação é para todos.
+app.use('/api/gestao/cambio', cambioRoutes);
 app.use('/api/gestao', dashboardRoutes);
 
 app.get('/health', (_req, res) => {

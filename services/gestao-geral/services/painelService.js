@@ -2,6 +2,7 @@ import * as auth from '../clients/authClient.js';
 import * as portaria from '../clients/portariaClient.js';
 import * as comunicacao from '../clients/comunicacaoClient.js';
 import * as financeiro from '../clients/financeiroClient.js';
+import * as ocorrenciasClient from '../clients/ocorrenciasClient.js';
 
 /**
  * Painéis do síndico (RF-18): operacional, o que pede ação agora; estratégico,
@@ -14,8 +15,8 @@ import * as financeiro from '../clients/financeiroClient.js';
  * Cada bloco é independente: fonte fora do ar vira bloco `null` e entra em
  * `fontesIndisponiveis`, e o resto do painel aparece normalmente.
  *
- * Agregação no banco (RNF-20): ocorrências (auth-api), leitura de avisos
- * (comunicacao) e multas e faturas (financeiro) chegam já contadas, em SQL, por
+ * Agregação no banco (RNF-20): ocorrências e OS (ocorrencias-service), leitura de avisos
+ * (comunicacao) e multas e faturas mês a mês (financeiro) chegam já contadas, em SQL, por
  * quem é dono do dado. Só o portaria ainda é contado aqui, sobre as listas que
  * ele devolve — falta a ele um endpoint de contagem. O contrato deste endpoint
  * não muda quando isso for feito.
@@ -78,7 +79,7 @@ const menor = (valores) => valores.filter(Boolean).sort()[0] ?? null;
  * Situação de agora. Cada argumento é o que a fonte devolveu, ou `null` se ela
  * não respondeu.
  *
- * - `ocorrencias`: a situação atual agregada pelo auth-api
+ * - `ocorrencias`: a situação atual agregada pelo ocorrencias-service
  *   (`{ abertas, pendentes, emAnalise, maisAntigaDesde }`);
  * - `avisos`: o panorama do comunicacao — só os vigentes, cada um com
  *   `confirmacoes`.
@@ -86,7 +87,7 @@ const menor = (valores) => valores.filter(Boolean).sort()[0] ?? null;
 export function resumirOperacional(fontes) {
   const {
     entregas, reservasPendentes, pessoasDentro, visitantesDentro,
-    ocorrencias, conversas, avisos, porPerfil, kpis,
+    ocorrencias, ordensServico, conversas, avisos, porPerfil, kpis,
   } = fontes;
 
   const entregasBloco = entregas && {
@@ -110,6 +111,14 @@ export function resumirOperacional(fontes) {
     pendentes: ocorrencias.pendentes ?? 0,
     emAnalise: ocorrencias.emAnalise ?? 0,
     maisAntigaDesde: ocorrencias.maisAntigaDesde ?? null,
+  };
+
+  // RF-24: o que está atrasado e quanto se conclui no prazo.
+  const ordensServicoBloco = ordensServico && {
+    abertas: (ordensServico.abertas ?? 0) + (ordensServico.emExecucao ?? 0),
+    atrasadas: ordensServico.atrasadas ?? 0,
+    criticasAtrasadas: ordensServico.criticasAtrasadas ?? 0,
+    percentualNoPrazo: ordensServico.percentualNoPrazo ?? null,
   };
 
   const conversasBloco = conversas && {
@@ -150,6 +159,7 @@ export function resumirOperacional(fontes) {
     reservas: reservasBloco || null,
     presenca: presencaBloco || null,
     ocorrencias: ocorrenciasBloco || null,
+    ordensServico: ordensServicoBloco || null,
     conversas: conversasBloco || null,
     avisos: avisosBloco,
     financeiro: financeiroBloco || null,
@@ -192,8 +202,8 @@ export function resumirEstrategico({ reservas, ocorrencias, kpisPorMes, multasPo
         resolvidas: doMes.get(mes)?.resolvidas ?? 0,
       })),
       porCategoria: ocorrencias.porCategoria ?? [],
-      // Calculado no auth-api, com o `updatedAt` da resolvida como data de
-      // resolução — a ocorrência não guarda quando foi resolvida.
+      // Calculado no ocorrencias-service, com a data em que a ocorrência
+      // passou a resolvida.
       tempoMedioResolucaoDias: ocorrencias.tempoMedioResolucaoDias ?? null,
     };
   }
@@ -256,14 +266,15 @@ const objeto = (r, chave) => {
 export async function montarOperacional(condominioId, authorization) {
   const competencia = hojeLocal().slice(0, 7);
 
-  const [entregas, pendentes, dentro, visitantes, ocorrencias, conversas, panorama, resumo, kpis] =
+  const [entregas, pendentes, dentro, visitantes, ocorrencias, ordens, conversas, panorama, resumo, kpis] =
     await Promise.all([
       portaria.listar('/entregas/pendentes', authorization),
       portaria.listar('/reservas/pendentes', authorization),
       portaria.listar('/atendimento/dentro', authorization),
       portaria.listar('/visitantes/dentro', authorization),
       // Aqui só a situação atual interessa; a menor janela poupa as séries.
-      auth.estatisticasReclamacoes(1, authorization),
+      ocorrenciasClient.estatisticasReclamacoes(1, authorization),
+      ocorrenciasClient.indicadoresOrdensServico(authorization),
       comunicacao.listarConversas(authorization),
       comunicacao.panoramaDeLeitura(authorization),
       auth.resumoCondominio(condominioId, authorization),
@@ -272,7 +283,8 @@ export async function montarOperacional(condominioId, authorization) {
 
   const fontesIndisponiveis = new Set();
   if (![entregas, pendentes, dentro, visitantes].every((r) => r.ok)) fontesIndisponiveis.add('portaria-service');
-  if (!ocorrencias.ok || !resumo.ok) fontesIndisponiveis.add('auth-api');
+  if (!resumo.ok) fontesIndisponiveis.add('auth-api');
+  if (!ocorrencias.ok || !ordens.ok) fontesIndisponiveis.add('ocorrencias-service');
   if (!conversas.ok || !panorama.ok) fontesIndisponiveis.add('comunicacao-service');
   if (!kpis.ok) fontesIndisponiveis.add('financeiro');
 
@@ -286,6 +298,7 @@ export async function montarOperacional(condominioId, authorization) {
       pessoasDentro: lista(dentro),
       visitantesDentro: lista(visitantes),
       ocorrencias: objeto(ocorrencias, 'atual'),
+      ordensServico: objeto(ordens),
       conversas: lista(conversas, 'conversas'),
       avisos: lista(panorama, 'avisos'),
       porPerfil: resumo.ok ? (resumo.dados?.resumo?.usuarios?.porPerfil ?? null) : null,
@@ -298,22 +311,22 @@ export async function montarOperacional(condominioId, authorization) {
 export async function montarEstrategico(condominioId, numeroMeses, authorization) {
   const meses = ultimosMeses(numeroMeses);
 
-  const [reservas, ocorrencias, multas, ...kpis] = await Promise.all([
+  // Uma chamada para a série inteira: o financeiro agrupa por mês no banco.
+  // Antes era uma chamada por mês da janela.
+  const [reservas, ocorrencias, multas, kpis] = await Promise.all([
     portaria.listar('/reservas', authorization),
-    auth.estatisticasReclamacoes(numeroMeses, authorization),
+    ocorrenciasClient.estatisticasReclamacoes(numeroMeses, authorization),
     financeiro.multasPorMes(numeroMeses, authorization),
-    ...meses.map((mes) => financeiro.kpisDaCompetencia(mes, authorization)),
+    financeiro.kpisPorMes(numeroMeses, authorization),
   ]);
 
-  const kpisOk = kpis.some((k) => k.ok);
-  const kpisPorMes = kpisOk
-    ? Object.fromEntries(meses.map((mes, i) => [mes, kpis[i].ok ? kpis[i].dados : null]))
-    : null;
+  const linhasKpis = lista(kpis, 'meses');
+  const kpisPorMes = linhasKpis && Object.fromEntries(linhasKpis.map((k) => [k.mes, k]));
 
   const fontesIndisponiveis = new Set();
   if (!reservas.ok) fontesIndisponiveis.add('portaria-service');
-  if (!ocorrencias.ok) fontesIndisponiveis.add('auth-api');
-  if (!multas.ok || !kpis.every((k) => k.ok)) fontesIndisponiveis.add('financeiro');
+  if (!ocorrencias.ok) fontesIndisponiveis.add('ocorrencias-service');
+  if (!multas.ok || !linhasKpis) fontesIndisponiveis.add('financeiro');
 
   return {
     sucesso: true,

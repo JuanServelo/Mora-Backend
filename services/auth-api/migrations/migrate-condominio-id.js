@@ -7,8 +7,17 @@ import { CONDOMINIO_DEFAULT } from '../constants/perfis.js';
  * O condomínio é o cliente da plataforma: todo dado de domínio precisa apontar
  * para ele, senão um síndico enxerga a operação de outro condomínio.
  * `reclamacoes` era a última tabela do auth_db sem esse vínculo.
+ *
+ * As ocorrências migraram para o ocorrencias-service (D27) e a tabela não é
+ * mais criada aqui. A migração continua na lista porque o nome é a chave do
+ * histórico do Umzug; num banco novo, sem a tabela, ela não tem o que fazer.
  */
 export async function garantirCondominioIdReclamacoes() {
+  const [[{ existe }]] = await sequelize.query(
+    "SELECT to_regclass('public.reclamacoes') IS NOT NULL AS existe",
+  );
+  if (!existe) return;
+
   await sequelize.query(`
     ALTER TABLE reclamacoes
       ADD COLUMN IF NOT EXISTS "condominioId" VARCHAR(50)

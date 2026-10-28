@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": "BEATRIZ QUEIROZ MONTENEGRO",
+      "confianca": 1,
+      "citacao": "BEATRIZ QUEIROZ MONTENEGRO, brasileira, arquiteta, inscrita no CPF sob o n.º 019.663.542-88, doravante denominada simplesmente LOCADORA"
+    },
+    "locatario": {
+      "valor": "THIAGO BARRETO CAVALCANTI",
+      "confianca": 1,
+      "citacao": "THIAGO BARRETO CAVALCANTI, brasileiro, músico, inscrito no CPF sob o n.º 563.019.724-41, doravante denominado LOCATÁRIO"
+    },
+    "endereco_unidade": {
+      "valor": "Rua das Acácias, n.º 1.408, apartamento 806, Bloco B, integrante do empreendimento Residencial Parque Verde",
+      "confianca": 1,
+      "citacao": "o imóvel residencial situado na Rua das Acácias, n.º 1.408, apartamento 806, Bloco B, integrante do empreendimento Residencial Parque Verde"
+    },
+    "inicio": {
+      "valor": "2026-10-01",
+      "confianca": 1,
+      "citacao": "tendo seu termo inicial em 1.º de outubro de 2026"
+    },
+    "fim": {
+      "valor": "2029-03-31",
+      "confianca": 1,
+      "citacao": "termo final em 31 de março de 2029"
+    },
+    "valor_aluguel_centavos": {
+      "valor": "260000",
+      "confianca": 1,
+      "citacao": "O aluguel mensal ora convencionado é de R$ 2.600,00"
+    },
+    "responsavel_taxas": {
+      "valor": "INQUILINO",
+      "confianca": 1,
+      "citacao": "o valor das quotas condominiais mensais será suportado pelo LOCATÁRIO"
+    }
+  }
+}

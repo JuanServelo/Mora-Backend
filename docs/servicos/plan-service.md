@@ -43,3 +43,7 @@ Valide o registro saudável de `plan-service` em `http://localhost:8500/v1/healt
 `mvn -Dtest=PlanModuleFilterTest test` em portaria, comunicação e meeting: recusa direta em todos os métodos, módulo autorizado, ausência de token e indisponibilidade do serviço de planos.
 
 `npm test` em financeiro e auth-api: middleware de plano e regressões de autenticação/perfis. `npm run build` no frontend.
+
+## Receita da plataforma
+
+`GET /api/assinaturas/receita` exige `ADMIN_GERAL` e retorna o painel calculado no PostgreSQL pela função `receita_plataforma(meses, plano)`, criada na migração `V3__receita_plataforma.sql`. A função agrega receita por plano e por mês, vigências e histórico usando `GROUP BY`, `generate_series`, `daterange`, `DISTINCT ON` e JSON. O `gestao-geral` consome esse endpoint em `/api/gestao/receita`.

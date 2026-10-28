@@ -1,0 +1,44 @@
+{
+  "A-302": {
+    "unidade_id": "8826d916-cdfb-21c6-c1ff-91a761565a70",
+    "arquivo": "01-risco-alto-inquilino.pdf",
+    "bloco": "A",
+    "apartamento": "302",
+    "responsavel_esperado": "INQUILINO"
+  },
+  "B-104": {
+    "unidade_id": "f5734c2a-c309-12c2-1f79-55b3be36c25a",
+    "arquivo": "02-risco-baixo-inquilino.pdf",
+    "bloco": "B",
+    "apartamento": "104",
+    "responsavel_esperado": "INQUILINO"
+  },
+  "A-507": {
+    "unidade_id": "fc85e6da-3f50-b390-f347-461412f7d6c3",
+    "arquivo": "03-risco-alto-proprietario.pdf",
+    "bloco": "A",
+    "apartamento": "507",
+    "responsavel_esperado": "PROPRIETARIO"
+  },
+  "C-211": {
+    "unidade_id": "d4ec9d46-efa3-957c-fbc8-ceab3cf99e7d",
+    "arquivo": "04-vigencia-terminando.pdf",
+    "bloco": "C",
+    "apartamento": "211",
+    "responsavel_esperado": "INQUILINO"
+  },
+  "B-806": {
+    "unidade_id": "b1a8533d-7d06-b8ae-b1d2-02a39ad1c623",
+    "arquivo": "05-sem-historico.pdf",
+    "bloco": "B",
+    "apartamento": "806",
+    "responsavel_esperado": "INQUILINO"
+  },
+  "C-403": {
+    "unidade_id": "7b5c2f17-5333-288f-aa64-7fcb72accf4d",
+    "arquivo": "06-risco-medio-proprietario.pdf",
+    "bloco": "C",
+    "apartamento": "403",
+    "responsavel_esperado": "PROPRIETARIO"
+  }
+}

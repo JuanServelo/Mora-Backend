@@ -8,6 +8,9 @@ import com.mora.plan.enums.StatusAssinatura;
 import com.mora.plan.repository.AssinaturaRepository;
 import com.mora.plan.repository.PlanRepository;
 import com.mora.plan.security.AuthContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +25,24 @@ public class AssinaturaService {
 
     private final AssinaturaRepository assinaturaRepository;
     private final PlanRepository planRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<AssinaturaResponseDTO> listarTodas() {
         return assinaturaRepository.findAll().stream().map(this::paraDTO).toList();
+    }
+
+    /**
+     * Receita da plataforma, agregada no banco. O JSON sai pronto da função
+     * {@code receita_plataforma}; aqui só vira objeto para o Spring serializar.
+     */
+    @Transactional(readOnly = true)
+    public JsonNode receita(Integer meses, String plano) {
+        try {
+            return objectMapper.readTree(assinaturaRepository.receitaPlataforma(meses, plano));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("A função receita_plataforma devolveu um JSON inválido.", e);
+        }
     }
 
     @Transactional(readOnly = true)

@@ -45,7 +45,7 @@ const CONDOMINIOS = [
     id: 'cond-parque-verde',
     nome: 'Residencial Parque Verde',
     slug: 'verde',
-    cnpj: '12.345.678/0001-99',
+    cnpj: '12.345.678/0001-95',
     endereco: 'Rua das Flores, 100 — Batel, Curitiba/PR',
     telefone: '(41) 3321-5500',
     modo: 'FRACAO_IDEAL',
@@ -60,7 +60,7 @@ const CONDOMINIOS = [
     id: 'cond-vista-mar',
     nome: 'Edifício Vista Mar',
     slug: 'vistamar',
-    cnpj: '98.765.432/0001-10',
+    cnpj: '98.765.432/0001-98',
     endereco: 'Av. Beira-Mar, 2200 — Centro, Florianópolis/SC',
     telefone: '(48) 3222-8080',
     modo: 'FIXO',
@@ -75,7 +75,7 @@ const CONDOMINIOS = [
     id: 'cond-jardim-sol',
     nome: 'Condomínio Jardim do Sol',
     slug: 'jardimsol',
-    cnpj: '11.222.333/0001-44',
+    cnpj: '11.222.333/0001-81',
     endereco: 'Rua do Sol, 45 — Savassi, Belo Horizonte/MG',
     telefone: '(31) 3444-1200',
     modo: 'FRACAO_IDEAL',
@@ -154,7 +154,9 @@ async function limpar() {
   log('🧹', 'Limpando auth_db, mora e mora_financeiro...');
 
   const alvos = {
-    auth_db: ['users', 'invites', 'reclamacoes', 'condominios', 'registros_acesso'],
+    auth_db: ['users', 'invites', 'condominios', 'registros_acesso'],
+    mora_ocorrencias: ['ordem_servico_andamentos', 'ordens_servico', 'reclamacao_interacoes',
+      'reclamacoes', 'fornecedores'],
     mora: ['apartamentos', 'areas_comuns', 'blocos', 'carros', 'chaves', 'visitantes',
       'vagas_estacionamento', 'turno_saidas', 'entregas', 'moradores', 'funcionarios',
       'turno_entradas', 'turnos', 'avisos', 'veiculos', 'artigos_conhecimento'],
