@@ -57,3 +57,13 @@ export async function listarResidentesPorUnidade(unidadeId, authorization) {
   const url = `${SERVICOS.auth}/api/user-management/units/${encodeURIComponent(unidadeId)}/residents`;
   return buscar(url, authorization);
 }
+
+/**
+ * Cadastro do condomínio: nome, CNPJ e e-mail, que viram o pagador da
+ * mensalidade da plataforma no gateway. Com o token do Admin Geral.
+ */
+export async function condominio(condominioId, authorization) {
+  const r = await buscar(`${SERVICOS.auth}/api/condominios/${encodeURIComponent(condominioId)}`, authorization);
+  if (!r.ok) return r;
+  return { ok: true, dados: r.dados?.condominio ?? null };
+}

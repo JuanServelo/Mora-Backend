@@ -61,6 +61,9 @@ async function chamar(metodo, caminho, corpo) {
  *
  * Criar sem procurar duplicaria o cliente a cada fatura, e o gateway passaria a
  * ter um cadastro por mês para o mesmo morador.
+ *
+ * `cpf` aceita também CNPJ: é o mesmo campo `cpfCnpj` no Asaas, e é como o
+ * condomínio paga a mensalidade da plataforma.
  */
 export async function garantirCliente({ nome, cpf, email, usuarioId }) {
   const busca = await chamar('GET', `/customers?cpfCnpj=${encodeURIComponent(cpf)}`);
@@ -122,3 +125,49 @@ export async function cancelarCobranca(cobrancaId) {
   await new Promise((r) => setTimeout(r, 500));
   return chamar('DELETE', `/payments/${cobrancaId}`);
 }
+
+// ── Cobrança recorrente ─────────────────────────────────────────────────────
+
+/**
+ * Cria a assinatura: o Asaas passa a gerar uma cobrança por ciclo sozinho, a
+ * primeira já no `proximoVencimento`.
+ *
+ * `externalReference` leva o condomínio, para a assinatura ser reconhecível
+ * no painel do Asaas.
+ */
+export async function criarAssinatura({
+  clienteId, forma, valorCentavos, proximoVencimento, descricao, condominioId,
+}) {
+  if (!FORMAS_ACEITAS.includes(forma)) {
+    return { ok: false, erro: `Forma de pagamento não aceita: ${forma}`, status: 400 };
+  }
+  return chamar('POST', '/subscriptions', {
+    customer: clienteId,
+    billingType: forma,
+    value: Number(paraDecimalString(valorCentavos)),
+    nextDueDate: proximoVencimento,
+    cycle: 'MONTHLY',
+    description: descricao,
+    externalReference: condominioId,
+  });
+}
+
+/** Cobranças já geradas pela assinatura, da mais recente para a mais antiga. */
+export const listarPagamentosDaAssinatura = (assinaturaId) =>
+  chamar('GET', `/subscriptions/${assinaturaId}/payments?limit=100`);
+
+/** Encerra a assinatura. O Asaas remove as cobranças ainda pendentes dela. */
+export const cancelarAssinatura = (assinaturaId) => chamar('DELETE', `/subscriptions/${assinaturaId}`);
+
+// ── Estorno ─────────────────────────────────────────────────────────────────
+
+/**
+ * Pede a devolução integral de um pagamento recebido.
+ *
+ * O Asaas só estorna PIX e cartão; boleto é recusado com 400, e a mensagem
+ * dele chega a quem pediu. A devolução é assíncrona: a resposta traz o pedido
+ * em `refunds`, e a conclusão chega depois (status REFUNDED do pagamento), às
+ * vezes só após alguém autorizar a ação no painel da conta.
+ */
+export const estornarPagamento = (pagamentoId, descricao) =>
+  chamar('POST', `/payments/${pagamentoId}/refund`, { description: descricao });

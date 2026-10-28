@@ -2,6 +2,7 @@ import express from 'express';
 import { autenticar, exigirPerfis, PERFIS_GESTAO, PERFIS_UNIDADE } from '../middleware/auth.js';
 import { resolverEscopo, resolverUnidade, exigirEscrita } from '../middleware/escopo.js';
 import * as ctrl from '../controllers/faturasController.js';
+import * as estornos from '../controllers/estornosController.js';
 import { protegerRotas } from '../utils/assincrono.js';
 
 const router = express.Router();
@@ -76,6 +77,24 @@ router.get(
   exigirPerfis(...PERFIS_GESTAO),
   resolverEscopo,
   ctrl.preview,
+);
+
+// Estorno: devolver pelo gateway uma fatura paga por PIX. Só o síndico opera.
+router.post(
+  '/admin/faturas/:id/estornar',
+  autenticar,
+  exigirPerfis('ADMIN_SINDICO'),
+  resolverEscopo,
+  exigirEscrita,
+  estornos.estornarFatura,
+);
+
+router.get(
+  '/admin/estornos',
+  autenticar,
+  exigirPerfis(...PERFIS_GESTAO),
+  resolverEscopo,
+  estornos.listar,
 );
 
 router.post(

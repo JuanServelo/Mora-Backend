@@ -5,6 +5,7 @@ const CAMPOS_FATURA = `id, condominio_id AS "condominioId", unidade_id AS "unida
   responsavel_usuario_id AS "responsavelUsuarioId",
   pago_em AS "pagoEm", valor_pago_centavos AS "valorPagoCentavos",
   forma_baixa AS "formaBaixa",
+  estornado_em AS "estornadoEm", estorno_motivo AS "estornoMotivo",
   criado_em AS "criadoEm", atualizado_em AS "atualizadoEm"`;
 
 /**
@@ -27,7 +28,7 @@ export async function criarOuObter(condominioId, unidadeId, competencia, dados) 
     const { rows } = await consultar(
       `SELECT ${CAMPOS_FATURA} FROM faturas
         WHERE condominio_id = $1 AND unidade_id = $2 AND competencia = $3
-          AND status <> 'CANCELADA'`,
+          AND status NOT IN ('CANCELADA', 'ESTORNADA')`,
       [condominioId, unidadeId, competencia],
     );
     return { fatura: rows[0] ?? null, criada: false };
@@ -96,7 +97,7 @@ export async function listarItensUnidade(condominioId, unidadeId, ano) {
        FROM fatura_itens fi
        JOIN faturas f ON f.id = fi.fatura_id
       WHERE f.condominio_id = $1 AND f.unidade_id = $2
-        AND f.status <> 'CANCELADA'${filtroAno}
+        AND f.status NOT IN ('CANCELADA', 'ESTORNADA')${filtroAno}
       ORDER BY f.competencia DESC, fi.tipo, fi.descricao`,
     params,
   );
@@ -167,12 +168,12 @@ export async function marcarEmAtraso() {
 export async function kpisPorCompetencia(condominioId, competencia) {
   const { rows } = await consultar(
     `SELECT
-       COUNT(*) FILTER (WHERE status <> 'CANCELADA') AS total,
+       COUNT(*) FILTER (WHERE status NOT IN ('CANCELADA', 'ESTORNADA')) AS total,
        -- ::bigint nao e enfeite: SUM() sobre BIGINT devolve NUMERIC, que o
        -- driver entrega como string, e o parser de tipos so converte BIGINT.
        -- Sem o cast, uma subtracao funciona por coercao, mas uma soma
        -- concatena as strings e o total vira lixo sem erro nenhum.
-       COALESCE(SUM(valor_centavos) FILTER (WHERE status <> 'CANCELADA'), 0)::bigint AS "totalCentavos",
+       COALESCE(SUM(valor_centavos) FILTER (WHERE status NOT IN ('CANCELADA', 'ESTORNADA')), 0)::bigint AS "totalCentavos",
        COUNT(*) FILTER (WHERE status = 'PAGA') AS pagas,
        COALESCE(SUM(valor_centavos) FILTER (WHERE status = 'PAGA'), 0)::bigint AS "pagasCentavos",
        COUNT(*) FILTER (WHERE status IN ('ABERTA', 'EM_ATRASO')) AS abertas,
@@ -197,4 +198,21 @@ export async function kpisPorMes(condominioId, meses) {
     [condominioId, meses],
   );
   return rows;
+}
+
+/**
+ * Conclui o estorno da fatura: PAGA vira ESTORNADA. O gatilho
+ * `trg_fatura_encerrada` só deixa a paga sair por aqui, sem tocar no valor nem
+ * na baixa. Devolve `null` se a fatura não estava paga (já estornada, por
+ * exemplo), o que torna a chamada repetível.
+ */
+export async function marcarEstornada(cliente, faturaId, motivo) {
+  const { rows } = await cliente.query(
+    `UPDATE faturas
+        SET status = 'ESTORNADA', estornado_em = now(), estorno_motivo = $2, atualizado_em = now()
+      WHERE id = $1 AND status = 'PAGA'
+      RETURNING ${CAMPOS_FATURA}`,
+    [faturaId, motivo],
+  );
+  return rows[0] ?? null;
 }
