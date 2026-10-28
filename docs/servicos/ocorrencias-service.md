@@ -142,7 +142,7 @@ O serviço publica na exchange `mora.notificacoes` (tópico), chave `notificacao
 - **Só sai depois do commit**: se a transação desfizer, ninguém é avisado de algo que não foi gravado.
 - **Falha macia**: com o broker fora do ar a ocorrência e a OS funcionam; só o aviso deixa de
   sair, com log. O comunicacao aceita os tipos novos a partir da migração Flyway
-  `V4__notificacoes_ocorrencias.sql`. O health do Rabbit está desligado nos dois serviços, para o broker parado não
+  `V5__notificacoes_ocorrencias.sql`. O health do Rabbit está desligado nos dois serviços, para o broker parado não
   tirar o serviço do gateway.
 
 > A decisão D10 previa notificação por HTTP, sem broker. Para este serviço a equipe optou pela

@@ -1,0 +1,15 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "explicacao",
+  "resposta": {
+    "explicacao": "Risco de 86% de atraso para a próxima fatura desta unidade. Esse índice é impulsionado pelo histórico de pagamentos do último ano, em que apenas 25% das faturas foram pagas em dia, apresentando um atraso médio de 22 dias. Adicionalmente, a ocorrência de 7 multas no período, 3 atrasos nos últimos 3 meses e a falta de antecedência média do pagamento aumentam o risco.",
+    "fatores_citados": [
+      "25% das faturas pagas em dia no último ano",
+      "atraso médio de 22 dias",
+      "7 multa(s) no período",
+      "3 atraso(s) nos últimos 3 meses",
+      "antecedência média do pagamento"
+    ],
+    "score_citado": 86
+  }
+}

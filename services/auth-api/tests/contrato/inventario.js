@@ -31,6 +31,12 @@ export const PUBLICA = 'publica';
 /** Exige `Authorization: Bearer`. Sem ele, 401 antes de qualquer consulta. */
 export const TOKEN = 'token';
 
+/**
+ * Chamada entre serviços, com o segredo `SERVICO_TOKEN` no cabeçalho
+ * `X-Servico-Token`. O JWT de usuário não abre a rota, nem o do Admin Geral.
+ */
+export const SERVICO = 'servico';
+
 export const INVENTARIO = {
   'GET /api/auth/docs/openapi.json': { acesso: PUBLICA },
   'POST /api/auth/forgot-password': { acesso: PUBLICA },
@@ -56,6 +62,7 @@ export const INVENTARIO = {
   'GET /api/estatisticas/condominios/:id': { acesso: TOKEN, nega: [P.ADMIN_SINDICO, P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'GET /api/estatisticas/plataforma': { acesso: TOKEN, nega: [P.ADMIN_SINDICO, P.PORTEIRO, P.MORADOR, P.CONVIDADO] },
   'GET /api/health': { acesso: PUBLICA },
+  'GET /api/interno/sindicos': { acesso: SERVICO },
   'POST /api/invites/activate': { acesso: PUBLICA },
   'POST /api/invites/validate': { acesso: PUBLICA },
   'GET /api/perfis/info': { acesso: TOKEN, nega: [P.PORTEIRO, P.MORADOR, P.CONVIDADO] },

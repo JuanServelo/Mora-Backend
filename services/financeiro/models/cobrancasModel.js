@@ -59,3 +59,13 @@ export async function atualizar(cliente, id, dados) {
   );
   return rows[0] ?? null;
 }
+
+/** A cobrança paga da fatura: é ela que o estorno devolve. */
+export async function recebidaDaFatura(faturaId) {
+  const { rows } = await consultar(
+    `SELECT ${CAMPOS} FROM cobrancas WHERE fatura_id = $1 AND status = 'RECEBIDA'
+      ORDER BY criado_em DESC LIMIT 1`,
+    [faturaId],
+  );
+  return rows[0] ?? null;
+}

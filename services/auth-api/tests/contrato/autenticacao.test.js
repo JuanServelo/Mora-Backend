@@ -1,7 +1,7 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.js';
-import { INVENTARIO, PUBLICA, TOKEN, rotasCom, separar, comParametros } from './inventario.js';
+import { INVENTARIO, PUBLICA, SERVICO, TOKEN, rotasCom, separar, comParametros } from './inventario.js';
 
 /**
  * A porta de entrada de cada rota, exercitada uma a uma.
@@ -74,9 +74,31 @@ describe('rotas públicas respondem sem token', () => {
   });
 });
 
+describe('rotas entre serviços recusam quem não tem o token de serviço', () => {
+  const internas = rotasCom(SERVICO);
+  // Sem SERVICO_TOKEN no ambiente a rota fica fechada (503); com ele, recusa
+  // o cabeçalho ausente ou errado (401). As duas são recusa.
+  const RECUSA = [401, 503];
+
+  test.each(internas)('%s → recusa sem X-Servico-Token', async (chave) => {
+    const r = await chamar(chave, null);
+    expect(RECUSA).toContain(r.status);
+  });
+
+  test.each(internas)('%s → recusa o JWT válido do Admin Geral', async (chave) => {
+    const admin = jwt.sign(
+      { id: 1, perfil: 'ADMIN_GERAL', tokenVersion: 0 },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' },
+    );
+    const r = await chamar(chave, admin);
+    expect(RECUSA).toContain(r.status);
+  });
+});
+
 describe('cobertura', () => {
-  test('toda rota do inventário aparece em algum dos dois grupos', () => {
-    const cobertas = [...rotasCom(TOKEN), ...rotasCom(PUBLICA)].sort();
+  test('toda rota do inventário aparece em algum dos três grupos', () => {
+    const cobertas = [...rotasCom(TOKEN), ...rotasCom(PUBLICA), ...rotasCom(SERVICO)].sort();
     expect(cobertas).toEqual(Object.keys(INVENTARIO).sort());
   });
 });

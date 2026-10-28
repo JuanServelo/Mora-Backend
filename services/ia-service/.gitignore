@@ -1,0 +1,14 @@
+# A chave do Gemini vive aqui e nunca entra no repositório.
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Artefatos e dados são reproduzíveis: `python gerador.py && python treino.py`.
+dados/*.csv
+artefatos/*.joblib
+fixtures/contrato-exemplo.pdf
+
+# O cache de respostas do Gemini é versionado de propósito: é o que faz a
+# demonstração funcionar offline. Confira que não há dado pessoal antes.
+!fixtures/respostas_gemini/

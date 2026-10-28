@@ -1,0 +1,115 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "assistente",
+  "pergunta": "Quantas unidades alugadas estão em risco alto?",
+  "resposta": {
+    "resposta": "Há 26 unidades alugadas em risco alto.",
+    "chamadas": [
+      {
+        "ferramenta": "resumo_do_condominio",
+        "argumentos": {},
+        "resultado": {
+          "competencia": "2026-11-01",
+          "unidades_com_previsao": 116,
+          "unidades_sem_previsao": 4,
+          "em_risco_alto": 48,
+          "em_risco_alto_alugadas": 26,
+          "em_risco_alto_proprias": 22
+        }
+      },
+      {
+        "ferramenta": "unidades_em_risco",
+        "argumentos": {
+          "somente_risco_alto": true,
+          "ocupacao": "alugadas"
+        },
+        "resultado": {
+          "total_no_filtro": 26,
+          "unidades": [
+            {
+              "unidade": "A-302",
+              "risco": "93%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 12,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-086",
+              "risco": "88%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "A-507",
+              "risco": "86%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-018",
+              "risco": "85%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-085",
+              "risco": "85%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 9,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-075",
+              "risco": "85%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-076",
+              "risco": "84%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 9,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-020",
+              "risco": "78%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-001",
+              "risco": "77%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 10,
+              "principal_fator": "proporção de faturas pagas em dia"
+            },
+            {
+              "unidade": "U-055",
+              "risco": "76%",
+              "classe": "RISCO_ALTO",
+              "ocupacao": "alugada",
+              "atrasos_12m": 9,
+              "principal_fator": "proporção de faturas pagas em dia"
+            }
+          ]
+        }
+      }
+    ],
+    "modelo": "gemini-3.6-flash"
+  }
+}

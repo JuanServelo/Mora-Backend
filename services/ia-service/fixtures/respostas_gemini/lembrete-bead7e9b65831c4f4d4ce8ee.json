@@ -1,0 +1,8 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "lembrete",
+  "resposta": {
+    "titulo": "Lembrete da taxa condominial - Vencimento 10/11/2026",
+    "mensagem": "Olá, Rafael! Lembramos que a sua taxa condominial referente a 11/2026 vence em 10/11/2026. O boleto e o PIX estão disponíveis no aplicativo Mora. Se tiver qualquer dificuldade, a administração está à disposição para ajudar."
+  }
+}

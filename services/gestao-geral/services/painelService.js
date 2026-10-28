@@ -16,7 +16,7 @@ import * as ocorrenciasClient from '../clients/ocorrenciasClient.js';
  * `fontesIndisponiveis`, e o resto do painel aparece normalmente.
  *
  * Agregação no banco (RNF-20): ocorrências e OS (ocorrencias-service), leitura de avisos
- * (comunicacao) e multas e faturas (financeiro) chegam já contadas, em SQL, por
+ * (comunicacao) e multas e faturas mês a mês (financeiro) chegam já contadas, em SQL, por
  * quem é dono do dado. Só o portaria ainda é contado aqui, sobre as listas que
  * ele devolve — falta a ele um endpoint de contagem. O contrato deste endpoint
  * não muda quando isso for feito.
@@ -311,22 +311,22 @@ export async function montarOperacional(condominioId, authorization) {
 export async function montarEstrategico(condominioId, numeroMeses, authorization) {
   const meses = ultimosMeses(numeroMeses);
 
-  const [reservas, ocorrencias, multas, ...kpis] = await Promise.all([
+  // Uma chamada para a série inteira: o financeiro agrupa por mês no banco.
+  // Antes era uma chamada por mês da janela.
+  const [reservas, ocorrencias, multas, kpis] = await Promise.all([
     portaria.listar('/reservas', authorization),
     ocorrenciasClient.estatisticasReclamacoes(numeroMeses, authorization),
     financeiro.multasPorMes(numeroMeses, authorization),
-    ...meses.map((mes) => financeiro.kpisDaCompetencia(mes, authorization)),
+    financeiro.kpisPorMes(numeroMeses, authorization),
   ]);
 
-  const kpisOk = kpis.some((k) => k.ok);
-  const kpisPorMes = kpisOk
-    ? Object.fromEntries(meses.map((mes, i) => [mes, kpis[i].ok ? kpis[i].dados : null]))
-    : null;
+  const linhasKpis = lista(kpis, 'meses');
+  const kpisPorMes = linhasKpis && Object.fromEntries(linhasKpis.map((k) => [k.mes, k]));
 
   const fontesIndisponiveis = new Set();
   if (!reservas.ok) fontesIndisponiveis.add('portaria-service');
   if (!ocorrencias.ok) fontesIndisponiveis.add('ocorrencias-service');
-  if (!multas.ok || !kpis.every((k) => k.ok)) fontesIndisponiveis.add('financeiro');
+  if (!multas.ok || !linhasKpis) fontesIndisponiveis.add('financeiro');
 
   return {
     sucesso: true,

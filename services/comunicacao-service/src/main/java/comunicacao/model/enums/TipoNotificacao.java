@@ -16,6 +16,7 @@ public enum TipoNotificacao {
     PAGAMENTO_CONFIRMADO,
     MULTA_APLICADA,
     MULTA_JULGADA,
+    PAGAMENTO_ESTORNADO,
 
     // Publicados pelo ocorrencias-service pela fila `mora.notificacoes`.
     OCORRENCIA_RESPONDIDA,

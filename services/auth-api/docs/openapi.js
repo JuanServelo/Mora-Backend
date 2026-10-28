@@ -103,12 +103,14 @@ export const openapi = {
     { name: 'Perfis', description: 'O que cada perfil pode fazer e quem ele pode cadastrar.' },
     { name: 'Portaria', description: 'Entrada e saída de pessoas cadastradas. Fora do gateway (o prefixo /api/portaria lá é do portaria-service).' },
     { name: 'Estatísticas', description: 'Números da plataforma e de um condomínio, agregados em SQL.' },
+    { name: 'Entre serviços', description: 'Consultas de outro serviço, sem usuário logado. Fora do gateway: só na rede interna.' },
     { name: 'Documentação', description: 'Esta especificação.' },
     { name: 'Saúde', description: 'Verificação usada pelo Consul.' },
   ],
   components: {
     securitySchemes: {
       bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Token devolvido por POST /api/auth/login.' },
+      servicoToken: { type: 'apiKey', in: 'header', name: 'X-Servico-Token', description: 'Segredo compartilhado entre os serviços (`SERVICO_TOKEN`). Não é o JWT do usuário.' },
     },
   },
   security: [{ bearerAuth: [] }],
@@ -579,6 +581,29 @@ export const openapi = {
         responses: {
           200: resposta('Resumo.', { sucesso: true, resumo: { condominioId: COND, usuarios: { total: 8, ativos: 8, porPerfil: { ADMIN_SINDICO: 1, PORTEIRO: 1, MORADOR: 4, DONO_ALUGUEL: 1, CONVIDADO: 1 }, porStatus: { active: 8 } }, convitesPendentes: 0 } }),
           401: E401, 403: falha('Condomínio de outro cliente.', 'Acesso negado'),
+        },
+      }),
+    },
+    // ── Entre serviços ──────────────────────────────────────────────────────
+    '/api/interno/sindicos': {
+      get: op('Entre serviços', 'Síndicos de um condomínio', [
+        'Síndicos ativos do condomínio, para outro serviço saber a quem notificar. Usada pelo portaria-service',
+        'quando um morador pede uma reserva que depende de aprovação: o token que ele tem é o do morador, que não',
+        'pode listar a equipe. Devolve só id, nome, e-mail e perfil.',
+        '',
+        'Credencial: `X-Servico-Token`. O JWT de usuário não abre a rota. Sem `SERVICO_TOKEN` configurado, a rota fica fechada (503).',
+      ].join('\n'), {
+        security: [{ servicoToken: [] }],
+        servers: [{ url: 'http://localhost:3001', description: 'Porta do auth-api (fora do gateway)' }],
+        parameters: [{ ...pQuery('condominioId', 'Id do condomínio.', COND), required: true }],
+        responses: {
+          200: resposta('Síndicos ativos, por nome.', {
+            sucesso: true,
+            sindicos: [{ id: '2', nome: SINDICO.nome, email: SINDICO.email, perfil: 'ADMIN_SINDICO' }],
+          }),
+          400: E400('Informe o condominioId.'),
+          401: falha('Token de serviço ausente ou errado.', 'Token de serviço inválido.'),
+          503: falha('SERVICO_TOKEN não configurado no auth-api.', 'Consulta entre serviços não configurada.'),
         },
       }),
     },

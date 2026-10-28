@@ -3,14 +3,13 @@ import * as cobrancasModel from '../models/cobrancasModel.js';
 import * as faturasModel from '../models/faturasModel.js';
 import * as notificacaoService from './notificacaoService.js';
 import * as emailService from './emailFinanceiroService.js';
+import * as estornoService from './estornoService.js';
+import * as plataformaService from './plataformaService.js';
 import { formatarBRL } from '../utils/dinheiro.js';
+import { rotulo as rotuloCompetencia } from '../utils/competencia.js';
 
-function competenciaLabel(competenciaDate) {
-  const [ano, mes] = competenciaDate.split('-');
-  const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-    'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  return `${meses[Number(mes) - 1]}/${ano}`;
-}
+const EVENTOS = ['PAYMENT_CREATED', 'PAYMENT_UPDATED', 'PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED',
+  'PAYMENT_OVERDUE', 'PAYMENT_DELETED', 'PAYMENT_REFUNDED', 'PAYMENT_REFUND_REVERSED'];
 
 /**
  * Processa um evento do Asaas de forma idempotente.
@@ -27,12 +26,13 @@ export async function processar(payload) {
   const asaasPagamentoId = payload.payment?.id;
   const tipo = payload.event;
 
-  if (!['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED', 'PAYMENT_OVERDUE',
-    'PAYMENT_DELETED', 'PAYMENT_REFUND_REVERSED'].includes(tipo)) {
+  if (!EVENTOS.includes(tipo)) {
     return { ignorado: true, motivo: `evento ${tipo} não tratado` };
   }
 
   try {
+    let estornada = null;
+
     await emTransacao(async (cliente) => {
       // Idempotência: falha se o evento já foi registrado (UNIQUE no evento_id).
       await cliente.query(
@@ -42,6 +42,17 @@ export async function processar(payload) {
       );
 
       if (!asaasPagamentoId) return;
+
+      // Cobrança gerada pela assinatura da plataforma: só se registra o
+      // estado. O estorno dela segue abaixo, pelo mesmo caminho da fatura.
+      if (payload.payment.subscription && tipo !== 'PAYMENT_REFUNDED') {
+        if (await plataformaService.registrarDoWebhook(cliente, tipo, payload.payment)) return;
+      }
+
+      if (tipo === 'PAYMENT_REFUNDED') {
+        estornada = await estornoService.concluirNa(cliente, asaasPagamentoId);
+        return;
+      }
 
       const cobranca = await cobrancasModel.porAsaasId(asaasPagamentoId);
       if (!cobranca) return; // webhook de cobrança fora deste sistema
@@ -58,7 +69,7 @@ export async function processar(payload) {
         });
 
         if (fatura) {
-          const label = competenciaLabel(String(fatura.competencia).slice(0, 7));
+          const label = rotuloCompetencia(fatura.competencia);
           await notificacaoService.criar(
             fatura.responsavelUsuarioId, fatura.condominioId,
             'PAGAMENTO_CONFIRMADO',
@@ -79,7 +90,7 @@ export async function processar(payload) {
         );
         const fatura = rows[0];
         if (fatura) {
-          const label = competenciaLabel(String(fatura.competencia).slice(0, 7));
+          const label = rotuloCompetencia(fatura.competencia);
           await notificacaoService.criar(
             fatura.responsavelUsuarioId, fatura.condominioId,
             'FATURA_VENCIDA',
@@ -97,6 +108,9 @@ export async function processar(payload) {
         );
       }
     });
+
+    // Fora da transação: o aviso não pode desfazer o estorno se falhar.
+    await estornoService.notificarEstorno(estornada);
 
     return { processado: true };
   } catch (err) {

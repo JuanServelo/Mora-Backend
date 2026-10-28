@@ -25,13 +25,14 @@ export async function assinaturaDoCondominio(condominioId, authorization) {
 }
 
 /**
- * Todas as assinaturas da plataforma, para agregar receita.
- *
- * Uma chamada só em vez de uma por condomínio: com dezenas de clientes, o
- * caminho por condomínio faria o painel esperar dezenas de idas ao plan-service.
+ * Painel de receita da plataforma, já agregado no banco do plan-service pela
+ * função `receita_plataforma`: indicadores, receita por plano, evolução mensal
+ * e um resumo por cliente. Antes vinham todas as assinaturas para somar aqui.
  */
-export async function listarAssinaturas(authorization) {
-  const r = await buscar(`${SERVICOS.plan}/api/assinaturas`, authorization);
-  if (!r.ok) return r;
-  return { ok: true, dados: Array.isArray(r.dados) ? r.dados : [] };
+export function receitaDaPlataforma(filtros, authorization) {
+  const params = new URLSearchParams();
+  if (filtros.meses) params.set('meses', filtros.meses);
+  if (filtros.plano && filtros.plano !== 'todos') params.set('plano', filtros.plano);
+  const query = params.toString();
+  return buscar(`${SERVICOS.plan}/api/assinaturas/receita${query ? `?${query}` : ''}`, authorization);
 }
