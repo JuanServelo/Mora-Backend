@@ -1,0 +1,174 @@
+{
+  "competencias_treino": [
+    "2024-05-01",
+    "2024-06-01",
+    "2024-07-01",
+    "2024-08-01",
+    "2024-09-01",
+    "2024-10-01",
+    "2024-11-01",
+    "2024-12-01",
+    "2025-01-01",
+    "2025-02-01",
+    "2025-03-01",
+    "2025-04-01",
+    "2025-05-01",
+    "2025-06-01",
+    "2025-07-01",
+    "2025-08-01",
+    "2025-09-01",
+    "2025-10-01",
+    "2025-11-01",
+    "2025-12-01",
+    "2026-01-01",
+    "2026-02-01"
+  ],
+  "competencias_teste": [
+    "2026-03-01",
+    "2026-04-01",
+    "2026-05-01",
+    "2026-06-01",
+    "2026-07-01",
+    "2026-08-01",
+    "2026-09-01",
+    "2026-10-01"
+  ],
+  "n_treino": 2552,
+  "n_teste": 928,
+  "features": [
+    "atrasos_3m",
+    "media_dias_atraso",
+    "taxa_em_dia_12m",
+    "antecedencia_media",
+    "abertas_vencidas_no_corte",
+    "multas_12m",
+    "meses_historico",
+    "razao_valor_media_unidade",
+    "mes_competencia",
+    "alugada",
+    "responsavel_inquilino",
+    "meses_restantes_contrato",
+    "troca_recente_3m"
+  ],
+  "features_excluidas_por_etica": [
+    "valor_aluguel_centavos",
+    "valor_aluguel",
+    "razao_taxa_aluguel",
+    "aluguel"
+  ],
+  "modelo_publicado": "regressao_logistica",
+  "modelos": {
+    "regressao_logistica": {
+      "auc_roc": 0.7517,
+      "precision": 0.5587,
+      "recall": 0.6738,
+      "f1": 0.6109,
+      "matriz_confusao": {
+        "verdadeiro_negativo": 430,
+        "falso_positivo": 173,
+        "falso_negativo": 106,
+        "verdadeiro_positivo": 219
+      },
+      "n": 928,
+      "taxa_positivos": 0.3502
+    },
+    "gradient_boosting": {
+      "auc_roc": 0.7523,
+      "precision": 0.6708,
+      "recall": 0.5015,
+      "f1": 0.5739,
+      "matriz_confusao": {
+        "verdadeiro_negativo": 523,
+        "falso_positivo": 80,
+        "falso_negativo": 162,
+        "verdadeiro_positivo": 163
+      },
+      "n": 928,
+      "taxa_positivos": 0.3502
+    }
+  },
+  "auditoria_vies_por_ocupacao": {
+    "alugadas": {
+      "auc_roc": 0.7639,
+      "precision": 0.5714,
+      "recall": 0.7425,
+      "f1": 0.6458,
+      "matriz_confusao": {
+        "verdadeiro_negativo": 180,
+        "falso_positivo": 93,
+        "falso_negativo": 43,
+        "verdadeiro_positivo": 124
+      },
+      "n": 440,
+      "taxa_positivos": 0.3795
+    },
+    "proprias": {
+      "auc_roc": 0.735,
+      "precision": 0.5429,
+      "recall": 0.6013,
+      "f1": 0.5706,
+      "matriz_confusao": {
+        "verdadeiro_negativo": 250,
+        "falso_positivo": 80,
+        "falso_negativo": 63,
+        "verdadeiro_positivo": 95
+      },
+      "n": 488,
+      "taxa_positivos": 0.3238
+    }
+  },
+  "importancia_permutacao": [
+    {
+      "feature": "taxa_em_dia_12m",
+      "importancia": 0.0909
+    },
+    {
+      "feature": "multas_12m",
+      "importancia": 0.02618
+    },
+    {
+      "feature": "antecedencia_media",
+      "importancia": 0.00383
+    },
+    {
+      "feature": "media_dias_atraso",
+      "importancia": 0.00293
+    },
+    {
+      "feature": "troca_recente_3m",
+      "importancia": 0.00257
+    },
+    {
+      "feature": "alugada",
+      "importancia": 0.00113
+    },
+    {
+      "feature": "atrasos_3m",
+      "importancia": 0.00099
+    },
+    {
+      "feature": "meses_restantes_contrato",
+      "importancia": 0.00057
+    },
+    {
+      "feature": "razao_valor_media_unidade",
+      "importancia": 0.00024
+    },
+    {
+      "feature": "mes_competencia",
+      "importancia": 0.00012
+    },
+    {
+      "feature": "abertas_vencidas_no_corte",
+      "importancia": -0.0
+    },
+    {
+      "feature": "meses_historico",
+      "importancia": 0.0
+    },
+    {
+      "feature": "responsavel_inquilino",
+      "importancia": -0.0
+    }
+  ]
+}

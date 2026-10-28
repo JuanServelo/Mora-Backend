@@ -1,0 +1,49 @@
+{
+  "modelo": "gemini-3.6-flash",
+  "rotulo": "assistente",
+  "pergunta": "A unidade A-507 é alugada? Quem paga a taxa e qual o risco dela?",
+  "resposta": {
+    "resposta": "Sim, a unidade A-507 é alugada.\n\n- **Responsável pelas taxas:** Proprietário\n- **Risco de atraso:** 86% (Risco Alto)",
+    "chamadas": [
+      {
+        "ferramenta": "contrato_da_unidade",
+        "argumentos": {
+          "unidade": "A-507"
+        },
+        "resultado": {
+          "unidade": "A-507",
+          "alugada": true,
+          "inicio": "2024-02-01",
+          "fim": null,
+          "responsavel_taxas": "PROPRIETARIO"
+        }
+      },
+      {
+        "ferramenta": "risco_da_unidade",
+        "argumentos": {
+          "unidade": "A-507"
+        },
+        "resultado": {
+          "unidade": "A-507",
+          "competencia": "2026-11-01",
+          "risco": "86%",
+          "classe": "RISCO_ALTO",
+          "fatores_que_mais_pesaram": [
+            "17% das faturas pagas em dia no último ano",
+            "9 multa(s) no período",
+            "atraso médio de 17 dias",
+            "3 atraso(s) nos últimos 3 meses"
+          ],
+          "historico": {
+            "faturas_analisadas": 12,
+            "atrasos_12m": 10,
+            "pagas_em_dia_12m": "17%",
+            "media_dias_atraso": 17,
+            "multas_12m": 9
+          }
+        }
+      }
+    ],
+    "modelo": "gemini-3.6-flash"
+  }
+}

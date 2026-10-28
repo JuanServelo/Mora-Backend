@@ -1,0 +1,41 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "contrato",
+  "resposta": {
+    "locador": {
+      "valor": "JOSÉ RICARDO VASCONCELOS",
+      "confianca": 1.0,
+      "citacao": "JOSÉ RICARDO VASCONCELOS, brasileiro, comerciante,\ninscrita no CPF sob o n.º 408.552.763-17, doravante denominada simplesmente LOCADORA"
+    },
+    "locatario": {
+      "valor": "MARIANA OLIVEIRA DUTRA",
+      "confianca": 1.0,
+      "citacao": "MARIANA OLIVEIRA DUTRA, brasileira, enfermeira, inscrito no CPF sob o n.º 672.884.930-05, doravante\ndenominado LOCATÁRIO"
+    },
+    "endereco_unidade": {
+      "valor": "Rua das Acácias, n.º 1.408, apartamento 403, Bloco C, integrante do empreendimento Residencial Parque Verde",
+      "confianca": 1.0,
+      "citacao": "imóvel residencial situado na Rua das Acácias, n.º 1.408, apartamento 403,\nBloco C, integrante do empreendimento Residencial Parque Verde"
+    },
+    "inicio": {
+      "valor": "2025-04-01",
+      "confianca": 1.0,
+      "citacao": "tendo seu termo inicial em 1.º de\nabril de 2025"
+    },
+    "fim": {
+      "valor": "2028-03-31",
+      "confianca": 1.0,
+      "citacao": "termo final em 31 de março de 2028"
+    },
+    "valor_aluguel_centavos": {
+      "valor": "210000",
+      "confianca": 1.0,
+      "citacao": "O aluguel mensal ora convencionado é de R$ 2.100,00"
+    },
+    "responsavel_taxas": {
+      "valor": "PROPRIETARIO",
+      "confianca": 1.0,
+      "citacao": "nele já compreendida a quota de condomínio,\ncujo recolhimento perante a administradora incumbirá ao LOCADOR."
+    }
+  }
+}

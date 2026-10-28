@@ -1,0 +1,13 @@
+{
+  "modelo": "gemini-3.5-flash-lite",
+  "rotulo": "explicacao",
+  "resposta": {
+    "explicacao": "Risco de 93% para a próxima fatura. O histórico da unidade aponta que 0% das faturas foram pagas em dia no último ano, além de registrar um atraso médio de 25 dias e 8 multas no período. Esses registros anteriores elevam a probabilidade de novos atrasos.",
+    "fatores_citados": [
+      "0% das faturas pagas em dia no último ano",
+      "atraso médio de 25 dias",
+      "8 multa(s) no período"
+    ],
+    "score_citado": 0.9301
+  }
+}
