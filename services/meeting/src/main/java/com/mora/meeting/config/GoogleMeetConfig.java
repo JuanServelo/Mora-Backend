@@ -22,7 +22,7 @@ public class GoogleMeetConfig {
             @Value("${google.meet.enabled:true}") boolean enabled,
             @Value("${google.meet.credentials-path:}") String credentialsPath,
             @Value("${google.meet.tokens-path:tokens}") String tokensPath,
-            @Value("${google.meet.redirect-uri:http://localhost:8091/api/meetings/google/callback}") String redirectUri,
+            @Value("${google.meet.redirect-uri:http://localhost:8087/api/meetings/google/callback}") String redirectUri,
             @Value("${google.meet.frontend-url:http://localhost:5173/adm/reunioes}") String frontendUrl) throws Exception {
         return new GoogleMeetOAuthService(enabled, credentialsPath, tokensPath,
                 redirectUri, frontendUrl, GoogleNetHttpTransport.newTrustedTransport(), Clock.systemUTC());

@@ -99,7 +99,7 @@ app.use('/api/user-management', userManagementRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/condominios', condominiosRoutes);
 app.use('/api/perfis', perfisRoutes);
-app.use('/api/portaria', authMiddleware, exigirModulo('portaria'), portariaRoutes);
+app.use('/api/acessos', authMiddleware, exigirModulo('portaria'), portariaRoutes);
 // Consultas entre serviços: autenticadas por X-Servico-Token, não por JWT.
 app.use('/api/interno', internoRoutes);
 app.use('/api/estatisticas', estatisticasRoutes);

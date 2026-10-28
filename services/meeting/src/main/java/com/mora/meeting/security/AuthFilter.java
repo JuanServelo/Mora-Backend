@@ -22,6 +22,8 @@ public class AuthFilter extends OncePerRequestFilter {
         return "OPTIONS".equals(request.getMethod()) || path.equals("/actuator/health")
                 || path.startsWith("/actuator/health/") || path.equals("/swagger-ui.html")
                 || path.startsWith("/swagger-ui/") || path.equals("/api-docs") || path.startsWith("/api-docs/")
+                || path.equals("/api/meetings/v3/api-docs") || path.startsWith("/api/meetings/v3/api-docs/")
+                || path.equals("/api/meetings/swagger-ui.html") || path.startsWith("/api/meetings/swagger-ui/")
                 || ("GET".equals(request.getMethod()) && path.equals("/api/meetings/google/callback"));
     }
 

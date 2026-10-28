@@ -5,14 +5,14 @@ const NOME = 'auth-api';
 /**
  * Prefixos que o gateway encaminha para cá.
  *
- * `/api/portaria` fica de fora de propósito: o auth-api também monta rotas
- * nesse prefixo (registro de acesso), mas no Traefik ele pertence ao
- * portaria-service. Anunciar os dois faria o gateway escolher um deles por
- * prioridade de regra, e metade das chamadas cairia no serviço errado. Essas
- * rotas continuam acessíveis pela porta publicada do auth-api.
+ * O controle de acesso usa /api/acessos. /api/portaria pertence exclusivamente
+ * ao serviço Java; assim os dois serviços não disputam a mesma regra.
  */
 const PREFIXOS = [
   '/api/auth',
+  '/api/acessos',
+  '/api/interno',
+  '/api/health',
   '/api/invites',
   '/api/user-management',
   '/api/users',
@@ -28,9 +28,8 @@ export const regraDoGateway = () => PREFIXOS.map((p) => `PathPrefix(\`${p}\`)`).
 /**
  * Registra o serviço no Consul, com as tags que o Traefik consome.
  *
- * Mesmo desenho do gestao-geral e do financeiro. Falha de registro não derruba
- * o serviço: sem Consul ele continua acessível pela porta publicada, que é como
- * o frontend o alcança hoje.
+ * Mesmo desenho do gestao-geral e do financeiro. Sem registro no Consul,
+ * o gateway não consegue encaminhar chamadas para esta instância.
  */
 export async function registrarNoConsul(porta) {
   const host = process.env.CONSUL_HOST;
@@ -41,7 +40,7 @@ export async function registrarNoConsul(porta) {
 
   const port = Number(porta);
   const consul = new Consul({ host, port: process.env.CONSUL_PORT || 8500 });
-  const id = `${NOME}-${process.env.HOSTNAME || port}`;
+  const id = process.env.SERVICE_ID || NOME;
   const endereco = process.env.SERVICE_HOST || NOME;
 
   const registro = {

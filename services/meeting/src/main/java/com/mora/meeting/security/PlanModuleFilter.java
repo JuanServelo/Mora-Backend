@@ -35,6 +35,8 @@ public class PlanModuleFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return "OPTIONS".equalsIgnoreCase(request.getMethod()) || module(path(request)) == null
+                || path(request).equals("/api/meetings/v3/api-docs") || path(request).startsWith("/api/meetings/v3/api-docs/")
+                || path(request).equals("/api/meetings/swagger-ui.html") || path(request).startsWith("/api/meetings/swagger-ui/")
                 || ("GET".equals(request.getMethod()) && path(request).equals("/api/meetings/google/callback"));
     }
 

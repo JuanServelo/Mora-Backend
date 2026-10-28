@@ -1,7 +1,7 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.js';
-import { INVENTARIO, PUBLICA, SERVICO, TOKEN, rotasCom, separar, comParametros } from './inventario.js';
+import { INVENTARIO, PUBLICA, TOKEN, SERVICO, rotasCom, separar, comParametros } from './inventario.js';
 
 /**
  * A porta de entrada de cada rota, exercitada uma a uma.
@@ -97,7 +97,7 @@ describe('rotas entre serviços recusam quem não tem o token de serviço', () =
 });
 
 describe('cobertura', () => {
-  test('toda rota do inventário aparece em algum dos três grupos', () => {
+  test('toda rota tem autenticação de usuário, de serviço ou acesso público declarado', () => {
     const cobertas = [...rotasCom(TOKEN), ...rotasCom(PUBLICA), ...rotasCom(SERVICO)].sort();
     expect(cobertas).toEqual(Object.keys(INVENTARIO).sort());
   });

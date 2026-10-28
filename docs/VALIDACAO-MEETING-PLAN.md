@@ -43,6 +43,6 @@ O aviso de conexão Google bem-sucedida fica oculto. Falhas de conexão mantêm 
 
 ## Configuração para autorização real
 
-Em cada ambiente, cadastre **`http://localhost:8091/api/meetings/google/callback`** (ou a URL configurada naquele ambiente) no cliente OAuth do Google Cloud e conclua o consentimento no navegador. Editar o JSON local não substitui esse cadastro. Os testes automáticos usam transporte Google simulado e não concedem consentimento em nome do usuário.
+Em cada ambiente, cadastre **`http://localhost:8087/api/meetings/google/callback`** (ou a URL configurada naquele ambiente) no cliente OAuth do Google Cloud e conclua o consentimento no navegador. Editar o JSON local não substitui esse cadastro. Os testes automáticos usam transporte Google simulado e não concedem consentimento em nome do usuário.
 
 Configuração, endpoints e armazenamento estão documentados em [meeting-service.md](servicos/meeting-service.md). Referência: [OAuth para aplicações web do Google](https://developers.google.com/identity/protocols/oauth2/web-server).

@@ -700,7 +700,7 @@ export const openapi = {
     '/health': {
       get: op('Saúde', 'Saúde do serviço', 'Banco e gateway. Usada pelo Consul. Fora do gateway: responde só na porta do serviço.', {
         security: [],
-        servers: [{ url: 'http://localhost:3004', description: 'Porta do serviço' }],
+        servers: [{ url: 'http://financeiro:3004', description: 'Health check interno do Consul' }],
         responses: { 200: resposta('No ar.', { status: 'ok', servico: 'financeiro', banco: 'ok', gateway: 'configurado' }) },
       }),
     },

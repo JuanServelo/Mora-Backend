@@ -57,7 +57,7 @@ O serviço inicia sem `credentials.json`, com integração desabilitada ou sem t
 
 No Compose principal, coloque o cliente OAuth em `secrets/google-meet/credentials.json`. A pasta é montada somente para leitura em `/run/secrets/google-meet`, fora da imagem, e ignorada pelo Git. Se não houver arquivo, o backend ainda sobe. O overlay `docker-compose.meet.yml` continua disponível para montar um arquivo externo como Docker secret.
 
-Cadastre no cliente web do Google Cloud a URI exata `http://localhost:8091/api/meetings/google/callback`. Em outro ambiente, ajuste `GOOGLE_MEET_REDIRECT_URI` e registre a mesma URL no Google. `GOOGLE_MEET_FRONTEND_URL` define o retorno fixo à tela, por padrão `http://localhost:5173/adm/reunioes`. O [fluxo OAuth oficial do Google](https://developers.google.com/identity/protocols/oauth2/web-server) exige consentimento e URI de retorno cadastrada.
+Cadastre no cliente web do Google Cloud a URI exata `http://localhost:8087/api/meetings/google/callback`. Em outro ambiente, ajuste `GOOGLE_MEET_REDIRECT_URI` e registre a mesma URL no Google. `GOOGLE_MEET_FRONTEND_URL` define o retorno fixo à tela, por padrão `http://localhost:5173/adm/reunioes`. O [fluxo OAuth oficial do Google](https://developers.google.com/identity/protocols/oauth2/web-server) exige consentimento e URI de retorno cadastrada.
 
 Na primeira entrada da administração na seção de reuniões, o frontend consulta `GET /api/meetings/google/status`. Se houver configuração e faltar autorização, inicia `POST /api/meetings/google/authorize` com JWT e abre o consentimento Google na mesma aba. Não executa comandos nem abre navegador dentro do container. Moradores usam as reuniões existentes, sem autorizar a conta de gestão.
 
@@ -69,7 +69,7 @@ O helper CLI antigo permanece como utilitário de diagnóstico independente. O f
 
 ## Rotas e infraestrutura
 
-`/api/meetings`, `/api/meetings/{id}/ata`, `/api/polls`. Consul anuncia as duas bases de negócio no Traefik. `/actuator/health`, `/api-docs`, `/swagger-ui.html` e assets do Swagger são públicos; isso não libera operações de negócio.
+`/api/meetings`, `/api/meetings/{id}/ata`, `/api/polls`. Consul anuncia as duas bases de negócio no Traefik. `/actuator/health` (interno), `/api/meetings/v3/api-docs`, `/api/meetings/swagger-ui.html` e assets do Swagger são públicos; isso não libera operações de negócio.
 
 Atualize backend e frontend juntos, pois o estado do voto na resposta mudou. Faça build limpo para remover artefatos antigos (`mvn clean package`) e reconstrua a imagem. O Flyway aplica V3 para acrescentar `unidade_id` e seu índice único sem apagar votos antigos; Hibernate usa `ddl-auto=validate`. Execute uma versão por vez na atualização para impedir gravações pelo código anterior.
 

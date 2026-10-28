@@ -273,7 +273,8 @@ class MeetingSecurityIntegrationTest {
     @Test void planOutageFailsClosedAndDocsRemainPublic() throws Exception {
         PLAN_STATUS.set(500);
         as(get("/api/meetings"), 2, "MORADOR").andExpect(status().isServiceUnavailable());
-        mvc.perform(get("/api-docs")).andExpect(status().isOk());
+        mvc.perform(get("/api/meetings/v3/api-docs")).andExpect(status().isOk());
+        mvc.perform(get("/api/meetings/swagger-ui.html")).andExpect(status().is3xxRedirection());
     }
 
     @Test void googleAuthorizationRequiresManagerAndContractButCallbackUsesStateInsteadOfJwt() throws Exception {
