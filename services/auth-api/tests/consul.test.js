@@ -8,7 +8,7 @@ describe('regra do gateway', () => {
 
   it('anuncia os prefixos do auth-api', () => {
     const regra = regraDoGateway();
-    for (const p of ['/api/auth', '/api/reclamacoes', '/api/estatisticas', '/uploads/avatars']) {
+    for (const p of ['/api/auth', '/api/estatisticas', '/uploads/avatars']) {
       expect(regra).toContain(`PathPrefix(\`${p}\`)`);
     }
   });

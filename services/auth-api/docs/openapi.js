@@ -56,15 +56,6 @@ const CONDOMINIO = {
   telefone: '(41) 3321-5500', email: 'contato.verde@mora.test', status: 'active', criadoPorId: 1,
   createdAt: '2026-09-09T23:46:25.970Z', updatedAt: '2026-09-11T01:42:35.354Z',
 };
-// Como o morador vê (sem dados de quem abriu)...
-const RECLAMACAO = {
-  id: 31, protocolNumber: 'REC-MGD2K8QF-7XQ1', category: 'Barulho', description: 'Som alto no 202 depois das 23h, de novo.',
-  attachmentUrl: null, status: 'PENDENTE', condominioId: COND, createdAt: '2026-10-19T14:12:03.000Z', interactions: [],
-};
-// ...e como a gestão vê.
-const RECLAMACAO_GESTAO = {
-  ...RECLAMACAO, residentId: 'morador1.verde@mora.test', usuario: { nome: 'Ana Souza', email: 'morador1.verde@mora.test' },
-};
 const CONVITE = {
   id: 58, email: 'joana.ribeiro@mora.test', perfil: 'MORADOR', codigo: 'MORA-7K3P-Q9XD', expiresAt: '2026-10-27T18:00:00.000Z',
 };
@@ -87,12 +78,12 @@ export const openapi = {
     version: '1.0',
     description: [
       'Autenticação e cadastro: login por e-mail e senha ou Google, convites, usuários, ocupantes das unidades,',
-      'condomínios, perfis, registro de entrada e saída na portaria e ocorrências (RF-01 a RF-03, RF-07, RF-14).',
+      'condomínios, perfis e registro de entrada e saída na portaria (RF-01 a RF-03, RF-07). As ocorrências são do ocorrencias-service.',
       '',
       '- **Responsável:** João Victor',
       '- **Banco:** `auth_db`',
       '- **Pelo gateway:** `/api/auth`, `/api/users`, `/api/user-management`, `/api/invites`, `/api/condominios`,',
-      '  `/api/perfis`, `/api/estatisticas`, `/api/reclamacoes`. As rotas `/api/portaria` deste serviço respondem',
+      '  `/api/perfis`, `/api/estatisticas`. As rotas `/api/portaria` deste serviço respondem',
       '  só na porta dele (3001): no gateway, esse prefixo é do portaria-service.',
       '- **Autenticação:** é este serviço que emite o JWT. Faça `POST /api/auth/login` com uma conta do seed e',
       '  cole o `token` no botão **Authorize**. O token vale para todos os serviços.',
@@ -111,7 +102,6 @@ export const openapi = {
     { name: 'Condomínios', description: 'Cadastro dos condomínios clientes da plataforma.' },
     { name: 'Perfis', description: 'O que cada perfil pode fazer e quem ele pode cadastrar.' },
     { name: 'Portaria', description: 'Entrada e saída de pessoas cadastradas. Fora do gateway (o prefixo /api/portaria lá é do portaria-service).' },
-    { name: 'Ocorrências', description: 'Reclamações dos moradores e respostas da gestão, com estatísticas agregadas em SQL.' },
     { name: 'Estatísticas', description: 'Números da plataforma e de um condomínio, agregados em SQL.' },
     { name: 'Documentação', description: 'Esta especificação.' },
     { name: 'Saúde', description: 'Verificação usada pelo Consul.' },
@@ -565,63 +555,9 @@ export const openapi = {
         responses: { 200: resposta('Atualizado.', { sucesso: true, mensagem: 'Entrada de Rita Convidada autorizada.', entradaPermitida: true }), 401: E401, 403: E403, 404: E404('Convidado') },
       }),
     },
-    // ── Ocorrências ─────────────────────────────────────────────────────────
-    '/api/reclamacoes': {
-      post: op('Ocorrências', 'Abrir ocorrência', 'Registra uma reclamação, com protocolo gerado. Qualquer perfil, no próprio condomínio.', {
-        requestBody: corpo('Ocorrência.', { category: 'Barulho', description: 'Som alto no 202 depois das 23h, de novo.', attachmentUrl: null }, {
-          type: 'object', required: ['category', 'description'],
-          properties: { category: { type: 'string' }, description: { type: 'string' }, attachmentUrl: { type: 'string', nullable: true } },
-        }),
-        responses: {
-          201: resposta('Aberta.', { sucesso: true, reclamacao: RECLAMACAO }),
-          400: E400('Categoria e descrição são obrigatórias'), 401: E401,
-        },
-      }),
-    },
-    '/api/reclamacoes/minhas': {
-      get: op('Ocorrências', 'Minhas ocorrências', 'As ocorrências que quem chama abriu. Qualquer perfil.', {
-        responses: { 200: resposta('Ocorrências.', { sucesso: true, reclamacoes: [RECLAMACAO] }), 401: E401 },
-      }),
-    },
-    '/api/reclamacoes/todas': {
-      get: op('Ocorrências', 'Ocorrências do condomínio', 'Todas, com quem abriu. O Admin Geral pode filtrar por `condominioId`. Perfis: ADMIN_GERAL, ADMIN_SINDICO e DONO_ALUGUEL.', {
-        parameters: [pQuery('condominioId', 'Só para o Admin Geral.', COND)],
-        responses: { 200: resposta('Ocorrências.', { sucesso: true, reclamacoes: [RECLAMACAO_GESTAO] }), 401: E401, 403: E403 },
-      }),
-    },
-    '/api/reclamacoes/estatisticas': {
-      get: op('Ocorrências', 'Estatísticas das ocorrências', 'Situação atual, abertas e resolvidas por mês, por categoria e tempo médio de resolução, agregados em SQL no fuso de São Paulo. Usado pelo painel do síndico. Perfis: ADMIN_GERAL, ADMIN_SINDICO e DONO_ALUGUEL.', {
-        parameters: [pQuery('meses', 'Janela das séries, de 1 a 24 (padrão 6).', 6, { type: 'integer', minimum: 1, maximum: 24 })],
-        responses: {
-          200: resposta('Estatísticas.', {
-            sucesso: true, meses: ['2026-09', '2026-10'],
-            atual: { abertas: 1, pendentes: 1, emAnalise: 0, maisAntigaDesde: '2026-10-19T14:12:03.000Z' },
-            porMes: [{ mes: '2026-09', abertas: 2, resolvidas: 2 }, { mes: '2026-10', abertas: 1, resolvidas: 0 }],
-            porCategoria: [{ categoria: 'Barulho', total: 2 }, { categoria: 'Limpeza', total: 1 }],
-            tempoMedioResolucaoDias: 1.5,
-          }),
-          401: E401, 403: E403,
-        },
-      }),
-    },
-    '/api/reclamacoes/{id}': {
-      patch: op('Ocorrências', 'Responder ocorrência', 'Muda o status e acrescenta uma resposta ao histórico de interações. Perfis: ADMIN_GERAL, ADMIN_SINDICO e DONO_ALUGUEL, no próprio condomínio.', {
-        parameters: [pId('id', 'Id da ocorrência.', 31, { type: 'integer' })],
-        requestBody: corpo('Status e resposta.', { status: 'EM_ANALISE', response: 'Conversamos com o morador do 202 e vamos acompanhar.' }, {
-          type: 'object', properties: { status: { type: 'string', enum: ['PENDENTE', 'EM_ANALISE', 'RESOLVIDO'] }, response: { type: 'string' } },
-        }),
-        responses: {
-          200: resposta('Atualizada.', {
-            sucesso: true,
-            reclamacao: { ...RECLAMACAO_GESTAO, status: 'EM_ANALISE', interactions: [{ id: 1792944000000, response: 'Conversamos com o morador do 202 e vamos acompanhar.', status: 'EM_ANALISE', createdAt: '2026-10-19T16:40:00.000Z' }] },
-          }),
-          401: E401, 403: E403, 404: falha('Não existe, ou é de outro condomínio.', 'Reclamação não encontrada'),
-        },
-      }),
-    },
     // ── Estatísticas ────────────────────────────────────────────────────────
     '/api/estatisticas/plataforma': {
-      get: op('Estatísticas', 'Números da plataforma', `Condomínios, usuários e ocorrências de toda a plataforma, com os filtros aplicados na consulta. ${soAdminGeral}`, {
+      get: op('Estatísticas', 'Números da plataforma', `Condomínios e usuários de toda a plataforma, com os filtros aplicados na consulta. Devolve também os ids dos condomínios que passaram no filtro, para o gestao-geral pedir as ocorrências ao ocorrencias-service com o mesmo recorte. ${soAdminGeral}`, {
         parameters: [
           pQuery('meses', 'Janela das séries, de 1 a 36 (padrão 12).', 12, { type: 'integer' }),
           pQuery('status', 'Restringe aos condomínios com este status.', 'todos', { type: 'string', enum: ['todos', 'active', 'inactive'] }),
@@ -631,17 +567,17 @@ export const openapi = {
             sucesso: true, filtros: { meses: 12, status: 'todos' },
             condominios: { total: 10, ativos: 10, inativos: 0, novosUltimos30: 0, criadosPorMes: [{ mes: '2025-11', total: 0 }, { mes: '2025-12', total: 1 }], meses: 12 },
             usuarios: { total: 388, ativos: 321, porPerfil: { ADMIN_GERAL: 1, ADMIN_SINDICO: 11, MORADOR: 293 }, porStatus: { active: 321, inactive: 24, pending_activation: 43 }, porCondominio: [{ condominioId: 'qa-vila-serena', nome: 'Residencial Vila Serena', total: 122 }], convitesPendentes: 0 },
-            ocorrencias: { total: 35, abertas: 23, porStatus: { PENDENTE: 12, EM_ANALISE: 11, RESOLVIDO: 12 } },
+            condominioIds: null,
           }),
           401: E401, 403: falha('Não é Admin Geral.', 'Apenas o Admin Geral pode consultar dados da plataforma.'),
         },
       }),
     },
     '/api/estatisticas/condominios/{id}': {
-      get: op('Estatísticas', 'Resumo de um condomínio', 'Usuários por perfil e status, convites pendentes e ocorrências. Perfis: ADMIN_GERAL e quem pertence ao condomínio.', {
+      get: op('Estatísticas', 'Resumo de um condomínio', 'Usuários por perfil e status e convites pendentes. Perfis: ADMIN_GERAL e quem pertence ao condomínio.', {
         parameters: [pId('id', 'Id do condomínio.', COND)],
         responses: {
-          200: resposta('Resumo.', { sucesso: true, resumo: { condominioId: COND, usuarios: { total: 8, ativos: 8, porPerfil: { ADMIN_SINDICO: 1, PORTEIRO: 1, MORADOR: 4, DONO_ALUGUEL: 1, CONVIDADO: 1 }, porStatus: { active: 8 } }, convitesPendentes: 0, ocorrencias: 3 } }),
+          200: resposta('Resumo.', { sucesso: true, resumo: { condominioId: COND, usuarios: { total: 8, ativos: 8, porPerfil: { ADMIN_SINDICO: 1, PORTEIRO: 1, MORADOR: 4, DONO_ALUGUEL: 1, CONVIDADO: 1 }, porStatus: { active: 8 } }, convitesPendentes: 0 } }),
           401: E401, 403: falha('Condomínio de outro cliente.', 'Acesso negado'),
         },
       }),

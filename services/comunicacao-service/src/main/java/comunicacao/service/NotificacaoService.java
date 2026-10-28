@@ -112,11 +112,18 @@ public class NotificacaoService {
         return notificacaoRepository.findByChaveUnica(chaveUnica).orElse(null);
     }
 
-    /** O id da fatura ou da multa vira a referência que a tela usa para abrir o destino. */
+    /**
+     * O id do que originou a notificação vira a referência que a tela usa para
+     * abrir o destino: fatura ou multa (financeiro), ocorrência ou ordem de
+     * serviço (ocorrencias).
+     */
     private static String referenciaDe(Map<String, Object> dados) {
         if (dados == null) return null;
-        Object ref = dados.getOrDefault("faturaId", dados.get("multaId"));
-        return ref == null ? null : String.valueOf(ref);
+        for (String chave : List.of("faturaId", "multaId", "ordemServicoId", "reclamacaoId")) {
+            Object ref = dados.get(chave);
+            if (ref != null) return String.valueOf(ref);
+        }
+        return null;
     }
 
     private static boolean isBlank(String s) {

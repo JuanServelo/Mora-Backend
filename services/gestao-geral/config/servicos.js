@@ -5,6 +5,7 @@ export const SERVICOS = {
   plan: process.env.PLAN_SERVICE_URL || 'http://localhost:8093',
   comunicacao: process.env.COMUNICACAO_SERVICE_URL || 'http://localhost:8094',
   financeiro: process.env.FINANCEIRO_SERVICE_URL || 'http://localhost:3004',
+  ocorrencias: process.env.OCORRENCIAS_SERVICE_URL || 'http://localhost:8095',
 };
 
 /** Uma fonte lenta não pode segurar o dashboard inteiro. */

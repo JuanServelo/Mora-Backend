@@ -8,13 +8,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import setupPassport from './config/passport.js';
 import './models/index.js';
-import User from './models/User.js';
-import Reclamacao from './models/Reclamacao.js';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import invitesRoutes from './routes/invites.js';
 import userManagementRoutes from './routes/user-management.js';
-import reclamacoesRoutes from './routes/reclamacoes.js';
 import condominiosRoutes from './routes/condominios.js';
 import perfisRoutes from './routes/perfis.js';
 import portariaRoutes from './routes/portaria.js';
@@ -26,9 +23,6 @@ import { ehProducao } from './config/regras.js';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-Reclamacao.belongsTo(User, { foreignKey: 'userId', as: 'usuario' });
-User.hasMany(Reclamacao, { foreignKey: 'userId', as: 'reclamacoes' });
 
 /**
  * Checagens de ambiente que derrubam o processo.
@@ -101,7 +95,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/invites', invitesRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/users', usersRoutes);
-app.use('/api/reclamacoes', reclamacoesRoutes);
 app.use('/api/condominios', condominiosRoutes);
 app.use('/api/perfis', perfisRoutes);
 app.use('/api/portaria', portariaRoutes);

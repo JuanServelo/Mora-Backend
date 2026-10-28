@@ -7,6 +7,8 @@
 --   mora_meeting     meeting-service                          Flyway
 --   auth_db          auth-api                                 Umzug
 --   mora_financeiro  financeiro                               node-pg-migrate
+--   mora_ocorrencias ocorrencias-service                      Flyway
+--   mora_gestao      gestao-geral (preferencias dos paineis)  node-pg-migrate
 --
 -- O banco 'mora' e criado pela variavel POSTGRES_DB do container.
 --
@@ -18,9 +20,12 @@
 -- ATENCAO: este script so roda quando o volume postgres_data e criado do zero.
 -- Em volume ja existente o Postgres ignora docker-entrypoint-initdb.d, entao um
 -- banco novo adicionado aqui NAO aparece em maquina que ja subiu antes. Use
--- docker/criar-banco-financeiro.sql para criar no volume atual.
+-- docker/criar-banco-financeiro.sql (e criar-banco-ocorrencias.sql,
+-- criar-banco-gestao.sql) para criar no volume atual.
 CREATE DATABASE auth_db;
 CREATE DATABASE mora_meeting;
 CREATE DATABASE vagas_db;
 CREATE DATABASE mora_plan;
 CREATE DATABASE mora_financeiro;
+CREATE DATABASE mora_ocorrencias;
+CREATE DATABASE mora_gestao;

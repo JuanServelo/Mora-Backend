@@ -22,8 +22,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "pm.test('é a página do portal', () => pm.expect(pm.response.text()).to.include('Mora — documentação da API'));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('é a página do portal', () => pm.expect(pm.response.text()).to.include('Mora — documentação da API'));"
                 ]
               }
             }
@@ -147,6 +147,57 @@
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
                   "const spec = pm.response.json();",
                   "pm.test('título comunicacao-service', () => pm.expect(spec.info.title).to.eql('comunicacao-service'));",
+                  "pm.test('descrição do serviço preenchida', () => pm.expect(spec.info.description).to.be.a('string').and.not.empty);",
+                  "const resolver = (s) => { let a = s; for (let i = 0; a && a.$ref && i < 10; i++) a = a.$ref.split('/').slice(1).reduce((o, k) => o && o[k], spec); return a; };",
+                  "const temExemplo = (s, d = 0) => {",
+                  "  s = resolver(s);",
+                  "  if (!s || d > 6) return false;",
+                  "  if (s.example !== undefined || s.examples !== undefined || s.enum || s.type === 'boolean') return true;",
+                  "  if (s.type === 'array') return temExemplo(s.items, d + 1);",
+                  "  if (s.type === 'string' && s.format === 'binary') return true;",
+                  "  const props = Object.values(s.properties || {});",
+                  "  return props.length > 0 && props.every((p) => temExemplo(p, d + 1));",
+                  "};",
+                  "const conteudoOk = (c) => { const t = Object.values(c || {}); return t.length > 0 && t.every((m) => m.example !== undefined || (m.examples && Object.keys(m.examples).length) || temExemplo(m.schema)); };",
+                  "const problemas = [];",
+                  "let total = 0;",
+                  "for (const [caminho, ops] of Object.entries(spec.paths || {})) {",
+                  "  for (const metodo of ['get', 'post', 'put', 'patch', 'delete']) {",
+                  "    const op = ops[metodo];",
+                  "    if (!op) continue;",
+                  "    total++;",
+                  "    const chave = metodo.toUpperCase() + ' ' + caminho;",
+                  "    if (!op.summary) problemas.push(chave + ': sem summary');",
+                  "    if (!op.description) problemas.push(chave + ': sem description');",
+                  "    if (op.requestBody && !conteudoOk(op.requestBody.content)) problemas.push(chave + ': corpo sem exemplo');",
+                  "    for (const [codigo, r] of Object.entries(op.responses || {})) {",
+                  "      if (/^[23]/.test(codigo) && r.content && !conteudoOk(r.content)) problemas.push(chave + ': resposta ' + codigo + ' sem exemplo');",
+                  "    }",
+                  "  }",
+                  "}",
+                  "pm.test('documenta ' + total + ' operações', () => pm.expect(total).to.be.above(0));",
+                  "pm.test('toda operação com sumário, descrição e exemplos', () => pm.expect(problemas).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Especificação do ocorrencias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gw}}/api/ocorrencias/v3/api-docs"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const spec = pm.response.json();",
+                  "pm.test('título ocorrencias-service', () => pm.expect(spec.info.title).to.eql('ocorrencias-service'));",
                   "pm.test('descrição do serviço preenchida', () => pm.expect(spec.info.description).to.be.a('string').and.not.empty);",
                   "const resolver = (s) => { let a = s; for (let i = 0; a && a.$ref && i < 10; i++) a = a.$ref.split('/').slice(1).reduce((o, k) => o && o[k], spec); return a; };",
                   "const temExemplo = (s, d = 0) => {",
@@ -354,12 +405,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const s = pm.response.json();\r",
-                  "['auth-api', 'comunicacao-service', 'financeiro', 'gestao-geral', 'portaria-service']\r",
-                  "  .forEach((nome) => pm.test(`${nome} registrado`, () => pm.expect(s).to.have.property(nome)));\r",
-                  "pm.test('auth-api não anuncia /api/portaria (é do portaria-service)', () => {\r",
-                  "  pm.expect(s['auth-api'].join(' ')).to.not.include('/api/portaria');\r",
-                  "});\r"
+                  "const s = pm.response.json();",
+                  "['auth-api', 'comunicacao-service', 'financeiro', 'gestao-geral', 'ocorrencias-service', 'portaria-service']",
+                  "  .forEach((nome) => pm.test(`${nome} registrado`, () => pm.expect(s).to.have.property(nome)));",
+                  "pm.test('auth-api não anuncia /api/portaria (é do portaria-service)', () => {",
+                  "  pm.expect(s['auth-api'].join(' ')).to.not.include('/api/portaria');",
+                  "});"
                 ]
               }
             }
@@ -378,8 +429,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "pm.test('é um documento OpenAPI', () => pm.expect(pm.response.json().openapi).to.match(/^3\\./));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('é um documento OpenAPI', () => pm.expect(pm.response.json().openapi).to.match(/^3\\./));"
                 ]
               }
             }
@@ -398,8 +449,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "pm.test('é um documento OpenAPI', () => pm.expect(pm.response.json().openapi).to.match(/^3\\./));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('é um documento OpenAPI', () => pm.expect(pm.response.json().openapi).to.match(/^3\\./));"
                 ]
               }
             }
@@ -443,12 +494,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });\r",
-                  "const fim = new Date(Date.now() + 7 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });\r",
-                  "pm.collectionVariables.set('hoje', hoje);\r",
-                  "pm.collectionVariables.set('fim', fim);\r",
-                  "pm.collectionVariables.set('mesAtual', hoje.slice(0, 7));\r",
-                  "pm.collectionVariables.set('categoria', `[newman] Teste ${Date.now()}`);\r"
+                  "const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });",
+                  "const fim = new Date(Date.now() + 7 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });",
+                  "pm.collectionVariables.set('hoje', hoje);",
+                  "pm.collectionVariables.set('fim', fim);",
+                  "pm.collectionVariables.set('mesAtual', hoje.slice(0, 7));"
                 ]
               }
             },
@@ -675,8 +725,8 @@
       ]
     },
     {
-      "name": "02 auth-api — estatísticas de ocorrências",
-      "description": "RNF-20: as contagens do painel saem do banco do auth-api, já recortadas pelo condomínio do token.",
+      "name": "02 ocorrencias-service — ocorrências e ordens de serviço",
+      "description": "RF de ocorrências e ordens de serviço: registro, atendimento, OS vinculada e preventiva, recorte por condomínio. As contagens do painel saem do banco do ocorrencias-service (RNF-20).",
       "item": [
         {
           "name": "Morador abre uma ocorrência",
@@ -692,10 +742,10 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{gw}}/api/reclamacoes",
+            "url": "{{gw}}/api/ocorrencias/reclamacoes",
             "body": {
               "mode": "raw",
-              "raw": "{ \"category\": \"{{categoria}}\", \"description\": \"[newman] Ocorrência criada pelo teste de API\" }",
+              "raw": "{ \"categoria\": \"OUTROS\", \"descricao\": \"[newman] Ocorrência criada pelo teste de API\" }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -709,7 +759,50 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 201', () => pm.response.to.have.status(201));"
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.test('nasce PENDENTE, com protocolo', () => {",
+                  "  pm.expect(r.status).to.eql('PENDENTE');",
+                  "  pm.expect(r.protocolo).to.match(/^REC-/);",
+                  "});",
+                  "pm.collectionVariables.set('reclamacaoId', String(r.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categoria fora da lista é recusada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMorador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/reclamacoes",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"categoria\": \"QUALQUER\", \"descricao\": \"[newman] não deve gravar\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
                 ]
               }
             }
@@ -725,7 +818,7 @@
                 "value": "Bearer {{tokenSindico}}"
               }
             ],
-            "url": "{{gw}}/api/reclamacoes/estatisticas?meses=6"
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/estatisticas?meses=6"
           },
           "event": [
             {
@@ -733,22 +826,22 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "const r = pm.response.json();\r",
-                  "pm.test('janela de 6 meses, terminando no mês atual', () => {\r",
-                  "  pm.expect(r.meses).to.have.length(6);\r",
-                  "  pm.expect(r.meses[5]).to.eql(pm.collectionVariables.get('mesAtual'));\r",
-                  "});\r",
-                  "pm.test('série mensal sem buracos', () => pm.expect(r.porMes).to.have.length(6));\r",
-                  "pm.test('situação atual conta a ocorrência nova', () => {\r",
-                  "  pm.expect(r.atual.pendentes).to.be.at.least(1);\r",
-                  "  pm.expect(r.atual.abertas).to.eql(r.atual.pendentes + r.atual.emAnalise);\r",
-                  "});\r",
-                  "pm.test('categoria nova aparece com 1', () => {\r",
-                  "  const c = r.porCategoria.find((x) => x.categoria === pm.collectionVariables.get('categoria'));\r",
-                  "  pm.expect(c && c.total).to.eql(1);\r",
-                  "});\r",
-                  "pm.test('abertas do mês atual ≥ 1', () => pm.expect(r.porMes[5].abertas).to.be.at.least(1));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('janela de 6 meses, terminando no mês atual', () => {",
+                  "  pm.expect(r.meses).to.have.length(6);",
+                  "  pm.expect(r.meses[5]).to.eql(pm.collectionVariables.get('mesAtual'));",
+                  "});",
+                  "pm.test('série mensal sem buracos', () => pm.expect(r.porMes).to.have.length(6));",
+                  "pm.test('situação atual conta a ocorrência nova', () => {",
+                  "  pm.expect(r.atual.pendentes).to.be.at.least(1);",
+                  "  pm.expect(r.atual.abertas).to.eql(r.atual.pendentes + r.atual.emAnalise);",
+                  "});",
+                  "pm.test('categoria OUTROS aparece', () => {",
+                  "  const c = r.porCategoria.find((x) => x.categoria === 'OUTROS');",
+                  "  pm.expect(c && c.total).to.be.at.least(1);",
+                  "});",
+                  "pm.test('abertas do mês atual ≥ 1', () => pm.expect(r.porMes[5].abertas).to.be.at.least(1));"
                 ]
               }
             }
@@ -764,7 +857,7 @@
                 "value": "Bearer {{tokenSindico}}"
               }
             ],
-            "url": "{{gw}}/api/reclamacoes/estatisticas?meses=999"
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/estatisticas?meses=999"
           },
           "event": [
             {
@@ -789,7 +882,7 @@
                 "value": "Bearer {{tokenSindicoOutro}}"
               }
             ],
-            "url": "{{gw}}/api/reclamacoes/estatisticas?meses=1"
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/{{reclamacaoId}}"
           },
           "event": [
             {
@@ -797,11 +890,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "pm.test('categoria do teste não aparece', () => {\r",
-                  "  const cat = pm.collectionVariables.get('categoria');\r",
-                  "  pm.expect(pm.response.json().porCategoria.map((c) => c.categoria)).to.not.include(cat);\r",
-                  "});\r"
+                  "pm.test('responde 404', () => pm.response.to.have.status(404));"
                 ]
               }
             }
@@ -817,7 +906,44 @@
                 "value": "Bearer {{tokenMorador}}"
               }
             ],
-            "url": "{{gw}}/api/reclamacoes/estatisticas"
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/estatisticas"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Morador não responde ocorrência",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMorador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/{{reclamacaoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"RESOLVIDO\", \"mensagem\": \"[newman] tentativa\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "event": [
             {
@@ -836,7 +962,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{gw}}/api/reclamacoes/estatisticas"
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/estatisticas"
           },
           "event": [
             {
@@ -845,6 +971,265 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Síndico responde e põe em análise",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSindico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/{{reclamacaoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"EM_ANALISE\", \"mensagem\": \"[newman] Vamos verificar.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('status mudou', () => pm.expect(r.status).to.eql('EM_ANALISE'));",
+                  "pm.test('histórico com autor e a mudança', () => {",
+                  "  const i = r.interacoes.at(-1);",
+                  "  pm.expect(i.statusAnterior).to.eql('PENDENTE');",
+                  "  pm.expect(i.statusNovo).to.eql('EM_ANALISE');",
+                  "  pm.expect(i.autorPerfil).to.eql('ADMIN_SINDICO');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Síndico abre OS a partir da ocorrência",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSindico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/ordens-servico",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"descricao\": \"[newman] Trocar a peça\", \"prioridade\": \"ALTA\", \"prazo\": \"{{fim}}\", \"responsavel\": \"Equipe interna\", \"reclamacaoId\": {{reclamacaoId}} }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.test('nasce ABERTA e vinculada', () => {",
+                  "  pm.expect(r.status).to.eql('ABERTA');",
+                  "  pm.expect(String(r.reclamacao.id)).to.eql(pm.collectionVariables.get('reclamacaoId'));",
+                  "  pm.expect(r.preventiva).to.eql(false);",
+                  "});",
+                  "pm.collectionVariables.set('ordemServicoId', String(r.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OS preventiva, sem ocorrência",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSindico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/ordens-servico",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"descricao\": \"[newman] Revisão do gerador\", \"prioridade\": \"BAIXA\", \"prazo\": \"{{fim}}\", \"responsavel\": \"Equipe interna\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('preventiva', () => pm.expect(pm.response.json().preventiva).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Morador vê a OS vinculada à ocorrência",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenMorador}}"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/reclamacoes/minhas"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().find((x) => String(x.id) === pm.collectionVariables.get('reclamacaoId'));",
+                  "pm.test('OS no vínculo', () => pm.expect(r.ordensServico.map((o) => String(o.id)))",
+                  "  .to.include(pm.collectionVariables.get('ordemServicoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Síndico registra andamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSindico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/ordens-servico/{{ordemServicoId}}/andamentos",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"mensagem\": \"[newman] Peça encomendada.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('em execução', () => pm.expect(pm.response.json().status).to.eql('EM_EXECUCAO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Síndico conclui a OS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSindico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/ordens-servico/{{ordemServicoId}}/conclusao",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"custo\": 150.00, \"observacoes\": \"[newman] Peça trocada.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('concluída no prazo', () => {",
+                  "  pm.expect(r.status).to.eql('CONCLUIDA');",
+                  "  pm.expect(r.concluidaNoPrazo).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Indicadores das OS",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSindico}}"
+              }
+            ],
+            "url": "{{gw}}/api/ocorrencias/ordens-servico/estatisticas"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('conta a concluída no prazo', () => pm.expect(pm.response.json().concluidasNoPrazo).to.be.at.least(1));"
                 ]
               }
             }
@@ -1118,10 +1503,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "const a = pm.response.json().avisos.find((x) => x.id === pm.collectionVariables.get('avisoMoradores'));\r",
-                  "pm.test('aviso está no panorama', () => pm.expect(a).to.be.an('object'));\r",
-                  "pm.test('1 confirmação', () => pm.expect(a.confirmacoes).to.eql(1));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const a = pm.response.json().avisos.find((x) => x.id === pm.collectionVariables.get('avisoMoradores'));",
+                  "pm.test('aviso está no panorama', () => pm.expect(a).to.be.an('object'));",
+                  "pm.test('1 confirmação', () => pm.expect(a.confirmacoes).to.eql(1));"
                 ]
               }
             }
@@ -1145,17 +1530,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "const r = pm.response.json();\r",
-                  "pm.test('total de destinatários vem do auth-api', () => pm.expect(r.total).to.be.a('number').and.at.least(1));\r",
-                  "pm.test('1 confirmado', () => pm.expect(r.confirmados).to.eql(1));\r",
-                  "pm.test('o morador consta como lido', () => {\r",
-                  "  const d = r.destinatarios.find((x) => String(x.usuarioId) === pm.collectionVariables.get('idMorador'));\r",
-                  "  pm.expect(d && d.lido).to.eql(true);\r",
-                  "});\r",
-                  "pm.test('porteiro não entra num aviso para moradores', () => {\r",
-                  "  pm.expect(r.destinatarios.map((x) => String(x.usuarioId))).to.not.include(pm.collectionVariables.get('idPorteiro'));\r",
-                  "});\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('total de destinatários vem do auth-api', () => pm.expect(r.total).to.be.a('number').and.at.least(1));",
+                  "pm.test('1 confirmado', () => pm.expect(r.confirmados).to.eql(1));",
+                  "pm.test('o morador consta como lido', () => {",
+                  "  const d = r.destinatarios.find((x) => String(x.usuarioId) === pm.collectionVariables.get('idMorador'));",
+                  "  pm.expect(d && d.lido).to.eql(true);",
+                  "});",
+                  "pm.test('porteiro não entra num aviso para moradores', () => {",
+                  "  pm.expect(r.destinatarios.map((x) => String(x.usuarioId))).to.not.include(pm.collectionVariables.get('idPorteiro'));",
+                  "});"
                 ]
               }
             }
@@ -1237,10 +1622,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 201', () => pm.response.to.have.status(201));\r",
-                  "const url = pm.response.json().url;\r",
-                  "pm.test('nome sorteado no servidor', () => pm.expect(url).to.match(/^\\/uploads\\/avisos\\/[0-9a-f-]{36}\\.(png|jpg)$/));\r",
-                  "pm.collectionVariables.set('imagemUrl', url);\r"
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const url = pm.response.json().url;",
+                  "pm.test('nome sorteado no servidor', () => pm.expect(url).to.match(/^\\/uploads\\/avisos\\/[0-9a-f-]{36}\\.(png|jpg)$/));",
+                  "pm.collectionVariables.set('imagemUrl', url);"
                 ]
               }
             }
@@ -1259,8 +1644,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "pm.test('é imagem', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('é imagem', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//));"
                 ]
               }
             }
@@ -1511,10 +1896,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 201', () => pm.response.to.have.status(201));\r",
-                  "const m = pm.response.json().multa;\r",
-                  "pm.test('valor em centavos', () => pm.expect(m.valorCentavos).to.eql(15000));\r",
-                  "pm.collectionVariables.set('multaId', String(m.id));\r"
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const m = pm.response.json().multa;",
+                  "pm.test('valor em centavos', () => pm.expect(m.valorCentavos).to.eql(15000));",
+                  "pm.collectionVariables.set('multaId', String(m.id));"
                 ]
               }
             }
@@ -1582,8 +1967,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200 (não 201)', () => pm.response.to.have.status(200));\r",
-                  "pm.test('marcada como repetida', () => pm.expect(pm.response.json().repetida).to.eql(true));\r"
+                  "pm.test('responde 200 (não 201)', () => pm.response.to.have.status(200));",
+                  "pm.test('marcada como repetida', () => pm.expect(pm.response.json().repetida).to.eql(true));"
                 ]
               }
             }
@@ -1635,9 +2020,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));\r",
-                  "const atual = pm.response.json().meses.find((m) => m.mes === pm.collectionVariables.get('mesAtual'));\r",
-                  "pm.test('mês atual conta a multa', () => pm.expect(atual && atual.aplicadas).to.be.at.least(1));\r"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const atual = pm.response.json().meses.find((m) => m.mes === pm.collectionVariables.get('mesAtual'));",
+                  "pm.test('mês atual conta a multa', () => pm.expect(atual && atual.aplicadas).to.be.at.least(1));"
                 ]
               }
             }

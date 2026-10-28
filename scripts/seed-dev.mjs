@@ -154,7 +154,9 @@ async function limpar() {
   log('🧹', 'Limpando auth_db, mora e mora_financeiro...');
 
   const alvos = {
-    auth_db: ['users', 'invites', 'reclamacoes', 'condominios', 'registros_acesso'],
+    auth_db: ['users', 'invites', 'condominios', 'registros_acesso'],
+    mora_ocorrencias: ['ordem_servico_andamentos', 'ordens_servico', 'reclamacao_interacoes',
+      'reclamacoes', 'fornecedores'],
     mora: ['apartamentos', 'areas_comuns', 'blocos', 'carros', 'chaves', 'visitantes',
       'vagas_estacionamento', 'turno_saidas', 'entregas', 'moradores', 'funcionarios',
       'turno_entradas', 'turnos', 'avisos', 'veiculos', 'artigos_conhecimento'],

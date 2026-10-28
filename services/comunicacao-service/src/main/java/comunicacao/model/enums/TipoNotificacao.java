@@ -15,5 +15,10 @@ public enum TipoNotificacao {
     FATURA_VENCIDA,
     PAGAMENTO_CONFIRMADO,
     MULTA_APLICADA,
-    MULTA_JULGADA
+    MULTA_JULGADA,
+
+    // Publicados pelo ocorrencias-service pela fila `mora.notificacoes`.
+    OCORRENCIA_RESPONDIDA,
+    ORDEM_SERVICO_ABERTA,
+    ORDEM_SERVICO_ATRASADA
 }

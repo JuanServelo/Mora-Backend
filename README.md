@@ -25,17 +25,20 @@ separação mais do que qualquer critério técnico:
                                      │
                           Traefik (gateway — 8087)
                                      │
-        ┌──────────┬──────────┬──────┴─────┬──────────┬──────────┐
-        │          │          │            │          │          │
-     auth-api  portaria  comunicacao  financeiro   plan    meeting
-      :3001     :8090      :8094        :3004     :8093    :8091
-        │          │          │            │          │          │
-     auth_db     mora       mora     mora_financeiro mora_plan mora_meeting
+        ┌──────────┬──────────┬──────┴─────┬───────────┬──────────┬──────────┐
+        │          │          │            │           │          │          │
+     auth-api  portaria  comunicacao  ocorrencias  financeiro   plan    meeting
+      :3001     :8090      :8094        :8095       :3004     :8093    :8091
+        │          │          │            │           │          │          │
+     auth_db     mora       mora   mora_ocorrencias mora_financeiro mora_plan mora_meeting
+                              ▲            │
+                              └─ RabbitMQ ─┘  notificações (fila mora.notificacoes)
                                      │
                               gestao-geral :3002
-                          (agrega, não tem banco)
+                     (agrega; mora_gestao: preferências)
 
         Consul :8500  —  descoberta de serviço e roteamento do Traefik
+        RabbitMQ :5672 (painel :15672)  —  fila de notificações entre serviços
         PostgreSQL 16 :5433  —  um container, vários bancos
         pgAdmin :5050
 ```
@@ -47,10 +50,11 @@ separação mais do que qualquer critério técnico:
 | `auth-api` | Identidade, perfis, condomínios clientes, convites, portaria de acesso | Node 20 · Express | 3001 | `auth_db` |
 | `portaria-service` | Estrutura física, acessos, entregas, chaves, vagas, veículos, reservas | Java 21 · Spring Boot | 8090 | `mora` |
 | `comunicacao-service` | Avisos, base de conhecimento, chat e notificações | Java 21 · Spring Boot | 8094 | `mora` |
+| `ocorrencias-service` | Reclamações, ordens de serviço e fornecedores | Java 21 · Spring Boot | 8095 | `mora_ocorrencias` |
 | `financeiro` | Taxas, rateio, faturas, multas, cobrança via Asaas | Node 20 · Express | 3004 | `mora_financeiro` |
 | `plan-service` | Planos comerciais e assinaturas | Java 21 · Spring Boot | 8093 | `mora_plan` |
 | `meeting-service` | Assembleias, atas e votações | Java 21 · Spring Boot | 8091 | `mora_meeting` |
-| `gestao-geral` | Agrega indicadores dos demais para o painel do Admin Geral | Node 20 · Express | 3002 | — |
+| `gestao-geral` | Agrega indicadores dos demais para os painéis; guarda as preferências dos painéis | Node 20 · Express | 3002 | `mora_gestao` |
 
 > `vagas-service` foi **incorporado ao `portaria-service`** (decisão D11) e o diretório foi
 > removido. O código continua no histórico do Git: `git show e6d607a:services/vagas-service`.
@@ -156,6 +160,7 @@ faça `POST /api/auth/login` no auth-api com uma conta do seed e cole o `token` 
 | auth-api | `/api/auth/docs/openapi.json` |
 | portaria-service | `/api/portaria/v3/api-docs` |
 | comunicacao-service | `/api/comunicacao/v3/api-docs` |
+| ocorrencias-service | `/api/ocorrencias/v3/api-docs` |
 | financeiro | `/api/financeiro/docs/openapi.json` |
 | gestao-geral | `/api/gestao/docs/openapi.json` |
 | plan-service | `/api/plans/v3/api-docs` |

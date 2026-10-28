@@ -30,6 +30,27 @@ const meses = {
 
 // ── Exemplos: respostas reais do ambiente de desenvolvimento ────────────────
 
+const EX_PREFERENCIA = {
+  versao: 2,
+  blocos: [
+    { id: 'ordens-servico', visivel: true, largura: null, altura: null, tipo: null, cor: 'coral' },
+    { id: 'ocorrencias', visivel: true, largura: null, altura: null, tipo: null, cor: null },
+    { id: 'entregas', visivel: false, largura: null, altura: null, tipo: null, cor: null },
+  ],
+};
+
+const chavePreferencia = {
+  name: 'chave', in: 'path', required: true,
+  description: 'Qual painel: `painel.geral`, `painel.condominio.operacional` ou `painel.condominio.estrategico`.',
+  schema: { type: 'string', pattern: '^painel(\\.[a-z0-9-]{1,30}){1,3}$' }, example: 'painel.condominio.operacional',
+};
+
+const ERROS_PREFERENCIA = {
+  400: falha('Chave fora do padrão, ou valor que não é objeto ou passa de 8 KB.', 'Chave de preferência desconhecida.'),
+  401: falha('Sem token, token inválido, ou sessão encerrada/usuário desativado no auth-api.', 'Sessão inválida ou encerrada. Entre de novo.'),
+  503: falha('O auth-api não confirmou a sessão: recusa em vez de deixar passar.', 'Não foi possível confirmar a sessão agora. Tente novamente.'),
+};
+
 const EX_DASHBOARD = {
   sucesso: true,
   geradoEm: '2026-10-20T23:33:19.774Z',
@@ -121,6 +142,7 @@ const EX_OPERACIONAL = {
   reservas: { aguardandoAprovacao: 1, proximoPrazo: '2026-10-22T18:00:00' },
   presenca: { atendimentosAbertos: 0, visitantesDentro: 1 },
   ocorrencias: { abertas: 1, pendentes: 1, emAnalise: 0, maisAntigaDesde: '2026-10-19T14:12:03.000Z' },
+  ordensServico: { abertas: 2, atrasadas: 1, criticasAtrasadas: 0, percentualNoPrazo: 75 },
   conversas: { abertas: 3, comMensagemNova: 0 },
   avisos: {
     vigentes: 2,
@@ -180,6 +202,7 @@ export const openapi = {
     { name: 'Plataforma', description: 'Números de todos os condomínios. Exclusivo do Admin Geral.' },
     { name: 'Condomínio', description: 'Números de um condomínio: o Admin Geral escolhe qual; a gestão vê o próprio.' },
     { name: 'Painéis do síndico', description: 'RF-18: o operacional (o que pede ação agora) e o estratégico (séries mensais).' },
+    { name: 'Preferências', description: 'Como cada usuário monta os próprios painéis, guardado no banco `mora_gestao`.' },
     { name: 'Documentação', description: 'O portal de documentação e esta especificação.' },
     { name: 'Saúde', description: 'Verificação usada pelo Consul.' },
   ],
@@ -267,7 +290,7 @@ export const openapi = {
       get: {
         tags: ['Painéis do síndico'],
         summary: 'Painel operacional',
-        description: 'O que pede ação agora: entregas esperando retirada, reservas a aprovar, quem está dentro, ocorrências abertas, conversas, leitura dos avisos vigentes e faturas da competência. Só o síndico.',
+        description: 'O que pede ação agora: entregas esperando retirada, reservas a aprovar, quem está dentro, ocorrências abertas e ordens de serviço atrasadas (ocorrencias-service), conversas, leitura dos avisos vigentes e faturas da competência. Só o síndico.',
         responses: {
           200: resposta('Painel operacional.', EX_OPERACIONAL),
           400: falha('Síndico sem condomínio no cadastro.', 'Seu usuário não está vinculado a um condomínio.'),
@@ -290,6 +313,42 @@ export const openapi = {
           400: falha('Janela fora das permitidas.', 'Use meses=3, 6 ou 12.'),
           401: ERROS[401],
           403: falha('Não é síndico.', 'Os painéis do condomínio são do síndico.'),
+        },
+      },
+    },
+    '/api/gestao/preferencias/{chave}': {
+      get: {
+        tags: ['Preferências'],
+        summary: 'Ler a preferência de um painel',
+        description: 'A configuração que quem chama salvou para o painel, ou `valor: null` se nunca personalizou (a tela usa o padrão). O token é conferido e a sessão é confirmada no auth-api; o usuário sai dessa confirmação, nunca da URL. Qualquer perfil, só a própria.',
+        parameters: [chavePreferencia],
+        responses: {
+          200: resposta('Preferência.', { sucesso: true, chave: 'painel.condominio.operacional', valor: EX_PREFERENCIA, atualizadoEm: '2026-10-27T18:20:11.204Z' }),
+          ...ERROS_PREFERENCIA,
+        },
+      },
+      put: {
+        tags: ['Preferências'],
+        summary: 'Salvar a preferência de um painel',
+        description: 'Grava (ou substitui) a configuração do painel para quem chama: blocos visíveis, ordem, largura, altura, tipo de gráfico e cor. Até 8 KB. Qualquer perfil, só a própria.',
+        parameters: [chavePreferencia],
+        requestBody: {
+          required: true,
+          content: json({ valor: EX_PREFERENCIA }),
+        },
+        responses: {
+          200: resposta('Salva.', { sucesso: true, chave: 'painel.condominio.operacional', valor: EX_PREFERENCIA }),
+          ...ERROS_PREFERENCIA,
+        },
+      },
+      delete: {
+        tags: ['Preferências'],
+        summary: 'Voltar o painel ao padrão',
+        description: 'Apaga a preferência de quem chama para o painel; ele volta a aparecer no padrão da tela. Qualquer perfil, só a própria.',
+        parameters: [chavePreferencia],
+        responses: {
+          200: resposta('Removida.', { sucesso: true, chave: 'painel.condominio.operacional', valor: null }),
+          ...ERROS_PREFERENCIA,
         },
       },
     },

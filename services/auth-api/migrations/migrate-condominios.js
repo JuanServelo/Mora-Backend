@@ -68,19 +68,7 @@ export async function garantirTabelaCondominios() {
     ON CONFLICT (id) DO NOTHING
   `);
 
-  // Criar tabela reclamacoes se não existir (não está no init-databases.sql)
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS reclamacoes (
-      id SERIAL PRIMARY KEY,
-      "userId" INTEGER NOT NULL REFERENCES users(id),
-      "protocolNumber" VARCHAR(255) NOT NULL UNIQUE,
-      category VARCHAR(255) NOT NULL,
-      description TEXT NOT NULL,
-      "attachmentUrl" VARCHAR(255),
-      status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
-      interactions JSON NOT NULL DEFAULT '[]',
-      "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  // A tabela `reclamacoes` não é mais criada aqui: as ocorrências migraram
+  // para o ocorrencias-service (D27). A que já existe no auth_db fica como
+  // cópia até a migração ser conferida.
 }

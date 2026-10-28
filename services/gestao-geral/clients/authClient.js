@@ -2,8 +2,9 @@ import { SERVICOS } from '../config/servicos.js';
 import { buscar } from './httpClient.js';
 
 /**
- * O auth-api é o dono de condomínios, usuários, convites e ocorrências, e
- * agrega os próprios dados em SQL. Aqui só consumimos o resultado.
+ * O auth-api é o dono de condomínios, usuários e convites, e agrega os próprios
+ * dados em SQL. Aqui só consumimos o resultado. Ocorrências são do
+ * ocorrencias-service (ver ocorrenciasClient.js).
  */
 export function estatisticasPlataforma(authorization, filtros = {}) {
   // Os filtros viajam até o dono do dado, que agrega já recortado. O painel
@@ -22,17 +23,6 @@ export function estatisticasPlataforma(authorization, filtros = {}) {
 export function resumoCondominio(id, authorization) {
   return buscar(
     `${SERVICOS.auth}/api/estatisticas/condominios/${encodeURIComponent(id)}`,
-    authorization,
-  );
-}
-
-/**
- * Totais das ocorrências do condomínio de quem pede, já agregados no auth-api:
- * situação atual e as séries dos últimos `meses`. O auth-api recorta pelo token.
- */
-export function estatisticasReclamacoes(meses, authorization) {
-  return buscar(
-    `${SERVICOS.auth}/api/reclamacoes/estatisticas?meses=${encodeURIComponent(meses)}`,
     authorization,
   );
 }

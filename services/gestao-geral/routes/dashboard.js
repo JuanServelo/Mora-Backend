@@ -84,7 +84,8 @@ router.get('/dashboard/exportar', exigirAdminGeral, async (req, res) => {
     ...r.usuarios.porCondominio.map((c) => ({
       secao: 'usuarios_por_condominio', chave: c.nome, valor: c.total,
     })),
-    ...Object.entries(r.ocorrencias.porStatus).map(([k, v]) => ({
+    // Sem o ocorrencias-service a seção sai vazia, em vez de derrubar o CSV.
+    ...Object.entries(r.ocorrencias?.porStatus ?? {}).map(([k, v]) => ({
       secao: 'ocorrencias_por_status', chave: k, valor: v,
     })),
   ];

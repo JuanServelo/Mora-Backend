@@ -35,8 +35,12 @@ test('operacional conta o que pede ação e aponta o mais antigo', () => {
     reservasPendentes: [{ prazoDecisao: '2026-10-20T10:00:00' }, { prazoDecisao: '2026-10-16T08:00:00' }],
     pessoasDentro: [{}, {}, {}],
     visitantesDentro: [{}],
-    // Já agregado pelo auth-api.
+    // Já agregado pelo ocorrencias-service.
     ocorrencias: { abertas: 2, pendentes: 1, emAnalise: 1, maisAntigaDesde: '2026-09-20T12:00:00Z' },
+    ordensServico: {
+      abertas: 1, emExecucao: 2, atrasadas: 3, criticasAtrasadas: 1, concluidas: 4, concluidasNoPrazo: 3,
+      percentualNoPrazo: 75,
+    },
     conversas: [
       { naoLidas: 2, encerradaEm: null },
       { naoLidas: 0, encerradaEm: null },
@@ -55,6 +59,8 @@ test('operacional conta o que pede ação e aponta o mais antigo', () => {
   assert.deepEqual(r.reservas, { aguardandoAprovacao: 2, proximoPrazo: '2026-10-16T08:00:00' });
   assert.deepEqual(r.presenca, { atendimentosAbertos: 3, visitantesDentro: 1 });
   assert.deepEqual(r.ocorrencias, { abertas: 2, pendentes: 1, emAnalise: 1, maisAntigaDesde: '2026-09-20T12:00:00Z' });
+  assert.deepEqual(r.ordensServico, { abertas: 3, atrasadas: 3, criticasAtrasadas: 1, percentualNoPrazo: 75 },
+    'em execução também está em aberto');
   assert.deepEqual(r.conversas, { abertas: 2, comMensagemNova: 1 }, 'encerrada não conta');
   assert.equal(r.avisos.vigentes, 2);
   assert.equal(r.avisos.leitura[0].id, 'a', 'a de menor leitura primeiro');
@@ -76,6 +82,7 @@ test('fonte fora do ar vira bloco nulo, sem derrubar os outros', () => {
   assert.equal(r.conversas, null);
   assert.equal(r.avisos, null);
   assert.equal(r.financeiro, null);
+  assert.equal(r.ordensServico, null);
   assert.equal(r.ocorrencias.abertas, 0, 'a fonte que respondeu continua no painel');
 
   assert.equal(resumirOperacional({ ocorrencias: null }).ocorrencias, null);
@@ -100,7 +107,7 @@ test('estratégico: séries mensais na janela do painel, com os agregados das fo
       { inicio: '2026-10-21T10:00:00', status: 'CANCELADA', areaComumNome: 'Salão' },
       { inicio: '2026-05-01T10:00:00', status: 'APROVADA', areaComumNome: 'Salão' },
     ],
-    // Resposta do auth-api: o mês de agosto não veio (sem ocorrência).
+    // Resposta do ocorrencias-service: o mês de agosto não veio (sem ocorrência).
     ocorrencias: {
       porMes: [
         { mes: '2026-09', abertas: 1, resolvidas: 1 },
