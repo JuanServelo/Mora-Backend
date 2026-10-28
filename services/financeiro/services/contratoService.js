@@ -120,8 +120,11 @@ export async function criar(condominioId, corpo, { donoId = null, unidadeDoDono 
     unidadeId, proprietarioUsuarioId, inquilinoUsuarioId, inicio, fim,
     valorAluguelCentavos, responsavelTaxas,
   });
-  if (criado.conflito) {
+  if (criado.conflito === 'vigente') {
     return erro('Esta unidade já tem um contrato vigente. Encerre o atual antes de cadastrar outro.', 409);
+  }
+  if (criado.conflito === 'periodo') {
+    return erro('O período informado cruza o de outro contrato desta unidade. Ajuste o início ou o fim.', 409);
   }
 
   const [comAviso] = await comDivergencia([criado], authorization);

@@ -36,9 +36,12 @@ export async function porId(condominioId, id) {
 }
 
 /**
- * Cria o contrato. Se a unidade já tiver um vigente, o índice parcial
- * `uq_contrato_ativo` recusa, e a função devolve `{ conflito: true }` em vez de
- * deixar o erro do banco subir.
+ * Cria o contrato. O banco recusa em dois casos, e a função devolve o motivo
+ * em vez de deixar o erro subir:
+ * - `{ conflito: 'vigente' }`: a unidade já tem um contrato ativo
+ *   (`uq_contrato_ativo`, 23505);
+ * - `{ conflito: 'periodo' }`: o período cruza o de outro contrato da unidade,
+ *   mesmo encerrado (`ex_contrato_periodo_unico`, 23P01).
  */
 export async function criar(condominioId, d) {
   try {
@@ -53,13 +56,20 @@ export async function criar(condominioId, d) {
     );
     return rows[0];
   } catch (err) {
-    if (err.code === '23505') return { conflito: true };
+    if (err.code === '23505') return { conflito: 'vigente' };
+    if (err.code === '23P01') return { conflito: 'periodo' };
     throw err;
   }
 }
 
 /**
- * Encerra: deixa de ser vigente e ganha data de fim, se ainda não tinha.
+ * Encerra: deixa de ser vigente, e o fim passa a ser hoje — ou fica o que já
+ * estava, se for anterior.
+ *
+ * `LEAST` porque um contrato encerrado antes do prazo acabou hoje, não na data
+ * prevista. Mantido o fim futuro, o período dele cruzaria o do contrato
+ * seguinte da unidade, e a restrição `ex_contrato_periodo_unico` recusaria o
+ * novo inquilino.
  *
  * `GREATEST` porque um contrato que ainda não começou, encerrado hoje, teria
  * fim antes do início — e a constraint `ck_contrato_vigencia` recusaria.
@@ -67,7 +77,7 @@ export async function criar(condominioId, d) {
 export async function encerrar(condominioId, id, fim) {
   const { rows } = await consultar(
     `UPDATE contratos_locacao
-        SET ativo = false, fim = COALESCE(fim, GREATEST(inicio, $3::date)),
+        SET ativo = false, fim = GREATEST(inicio, LEAST(COALESCE(fim, $3::date), $3::date)),
             atualizado_em = now()
       WHERE condominio_id = $1 AND id = $2 AND ativo
       RETURNING ${CAMPOS}`,

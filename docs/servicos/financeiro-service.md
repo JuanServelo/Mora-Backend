@@ -250,7 +250,26 @@ UNIQUE (evento_id) -- webhook_eventos
 -- estorno; apagar o item original reescreveria uma fatura já emitida.
 CHECK ((tipo = 'ESTORNO' AND valor_centavos <= 0)
     OR (tipo <> 'ESTORNO' AND valor_centavos >= 0)) -- fatura_itens
+
+-- Contratos da mesma unidade não se sobrepõem no tempo, ativos ou encerrados.
+-- GiST com btree_gist; intervalo [) porque o dia do fim é o dia da troca.
+EXCLUDE USING gist (condominio_id WITH =, unidade_id WITH =,
+                    daterange(inicio, fim, '[)') WITH &&) -- contratos_locacao
 ```
+
+### Gatilhos e funções
+
+Migração `20261028120000_recursos-do-banco`:
+
+| Objeto | O que faz |
+|---|---|
+| `trg_fatura_encerrada` (PL/pgSQL) | Fatura paga não muda valor, competência nem baixa, e não é apagada. Cancelada não volta a valer. Recusa com SQLSTATE 23001, que a API devolve como 409 |
+| `trg_itens_fatura_paga` (PL/pgSQL) | Itens de fatura paga não são incluídos, alterados nem apagados |
+| `kpis_faturas_por_mes(condominio, meses)` | Situação das faturas mês a mês numa consulta agrupada, com `generate_series` garantindo uma linha por mês. Atende `GET /admin/faturas/kpis/por-mes`, usado pelo painel estratégico |
+
+Encerrar um contrato antes do prazo grava o fim como o dia do encerramento. Mantido o fim
+previsto, o período cruzaria o do próximo inquilino e a restrição de exclusão recusaria o
+novo contrato.
 
 Os dias de fechamento e vencimento vão até **28**, e não 31: fevereiro existe, e a regra precisa
 valer para os doze meses.
@@ -272,6 +291,49 @@ Sandbox, autenticação por header **`access_token`** — o Asaas **não** usa
 
 A retentativa não é zelo excessivo: sem ela, uma fatura cancelada aqui deixaria a cobrança viva
 no gateway, e o morador pagaria o que já não existe.
+
+Fatura em atraso é cobrada com vencimento de hoje: o Asaas recusa vencimento no passado, e sem
+isso justamente o morador inadimplente não conseguia gerar PIX nem boleto.
+
+### Cobrança recorrente da mensalidade do Mora
+
+O condomínio paga a plataforma por uma **assinatura no Asaas** (`POST /subscriptions`, mensal):
+o gateway gera a cobrança de cada mês sozinho, sem job nosso.
+
+| Rota | Perfil | O que faz |
+|---|---|---|
+| `POST /plataforma/assinaturas` | Admin Geral | Ativa: plano e valor da assinatura vigente no plan-service, pagador pelo CNPJ do condomínio no auth-api |
+| `GET /plataforma/assinaturas` | Admin Geral | Todas, com as cobranças geradas |
+| `PATCH /plataforma/assinaturas/:id/cancelar` | Admin Geral | Remove no Asaas; as cobranças não pagas viram CANCELADA |
+| `GET /plataforma/minha-assinatura` | Síndico | A do próprio condomínio, com o link de pagamento de cada mês |
+
+Uma ativa por condomínio (`uq_assinatura_plataforma_ativa`, índice parcial). As cobranças chegam
+pelo webhook e pela **conciliação**, que pergunta ao Asaas antes de cada listagem: o webhook não
+alcança um ambiente local. Webhook e conciliação gravam por `ON CONFLICT` no id do pagamento, em
+qualquer ordem e quantas vezes vierem.
+
+### Estorno
+
+Devolução, pelo gateway, de um pagamento recebido (`POST /payments/{id}/refund`). Não é o
+ESTORNO de `fatura_itens`, que é crédito de multa cancelada na fatura seguinte.
+
+| Rota | Perfil |
+|---|---|
+| `POST /admin/faturas/:id/estornar` | Síndico |
+| `GET /admin/estornos` | Gestão |
+| `POST /plataforma/pagamentos/:id/estornar` | Admin Geral |
+
+- **Só PIX.** O Asaas não estorna boleto (recusa com 400); a regra é conferida antes de chamar.
+  Baixa manual também não: o dinheiro não passou pelo gateway.
+- **Assíncrono.** O pedido é aceito na hora (202) e se conclui depois — a conta pode exigir que a
+  devolução seja autorizada no painel ("ações críticas"). Até lá a fatura segue PAGA; quando o
+  gateway confirma (webhook `PAYMENT_REFUNDED` ou conciliação, inclusive no job noturno), ela vira
+  **ESTORNADA**, sai dos totais, libera a competência para reemissão, e o morador recebe
+  `PAGAMENTO_ESTORNADO` no sino.
+- **Uma vez só.** `uq_estorno_por_pagamento` (índice parcial que ignora os FALHOU) impede pedir
+  duas vezes; o gatilho de fatura encerrada só deixa a paga sair para ESTORNADA, sem tocar em
+  valor nem baixa.
+- Estorno feito direto no painel do Asaas também é registrado, com esse motivo.
 
 ### A armadilha do `$` na chave
 

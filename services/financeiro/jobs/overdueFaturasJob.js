@@ -2,14 +2,9 @@ import cron from 'node-cron';
 import * as faturasModel from '../models/faturasModel.js';
 import * as notificacaoService from '../services/notificacaoService.js';
 import * as emailService from '../services/emailFinanceiroService.js';
+import * as estornoService from '../services/estornoService.js';
 import { formatarBRL } from '../utils/dinheiro.js';
-
-function competenciaLabel(competenciaDate) {
-  const [ano, mes] = String(competenciaDate).split('-');
-  const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-    'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  return `${meses[Number(mes) - 1]}/${ano}`;
-}
+import { rotulo as rotuloCompetencia } from '../utils/competencia.js';
 
 async function marcarFaturasVencidas() {
   const atualizadas = await faturasModel.marcarEmAtraso();
@@ -18,7 +13,7 @@ async function marcarFaturasVencidas() {
   console.log(`[overdue-job] ${atualizadas.length} fatura(s) marcadas como EM_ATRASO`);
 
   for (const f of atualizadas) {
-    const label = competenciaLabel(String(f.competencia).slice(0, 7));
+    const label = rotuloCompetencia(f.competencia);
 
     await notificacaoService.criar(
       f.responsavelUsuarioId, f.condominioId,
@@ -38,6 +33,13 @@ export function iniciarJobOverdue() {
       await marcarFaturasVencidas();
     } catch (err) {
       console.error('[overdue-job] falha:', err.message);
+    }
+    // Estornos que o webhook não fechou: pergunta ao gateway. Independente da
+    // inadimplência, para uma falha numa não impedir a outra.
+    try {
+      await estornoService.conciliar();
+    } catch (err) {
+      console.error('[overdue-job] conciliação de estornos falhou:', err.message);
     }
   });
   console.log('[financeiro] job de inadimplência agendado (01:00 diário)');

@@ -51,3 +51,16 @@ export function vencimentoDe(competencia, dia) {
 }
 
 export const ehValida = (competencia) => paraData(competencia) !== null;
+
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+/**
+ * Date ou "2026-09-01" -> "set/2026", para mensagens.
+ *
+ * Os avisos faziam `String(fatura.competencia).slice(0, 7)`, que num Date dá
+ * "Tue Sep": era o que chegava ao morador e à descrição da cobrança no Asaas.
+ */
+export function rotulo(valor) {
+  const [ano, mes] = (paraTexto(valor) ?? '').split('-');
+  return mes ? `${MESES[Number(mes) - 1]}/${ano}` : '';
+}

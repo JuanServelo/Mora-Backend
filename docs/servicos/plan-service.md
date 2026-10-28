@@ -82,6 +82,20 @@ O banco também **não tem seed**: a plataforma sobe sem nenhum plano cadastrado
 
 CRUD do catálogo. Não há endpoints de assinatura.
 
+### Receita da plataforma — `GET /api/assinaturas/receita`
+
+Só `ADMIN_GERAL`. Devolve o painel de receita pronto, calculado no PostgreSQL pela função
+`receita_plataforma(meses, plano)` (migração `V3__receita_plataforma.sql`):
+
+- `GROUP BY` por plano e por mês;
+- `generate_series` para a janela de meses, com uma linha por mês mesmo sem cliente;
+- `daterange` e `&&` para saber se a vigência cobre o mês;
+- `DISTINCT ON` para escolher uma assinatura por condomínio;
+- `jsonb_build_object` e `jsonb_agg` para montar a resposta.
+
+É o que o `gestao-geral` consome em `/api/gestao/receita`. Antes ele baixava todas as
+assinaturas e somava em JavaScript.
+
 ---
 
 ## Integrações
